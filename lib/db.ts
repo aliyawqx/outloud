@@ -10,10 +10,15 @@ function getPool(): Pool {
     if (!connectionString) {
       throw new Error('DATABASE_URL is not set')
     }
+    // Managed Postgres (Neon/Render/Railway) requires SSL. Enable it whenever the
+    // URL asks for it or we're in production; skip for a plain local Postgres.
+    const needsSsl =
+      process.env.NODE_ENV === 'production' ||
+      /sslmode=require/.test(connectionString) ||
+      /\.neon\.tech|\.render\.com|\.railway\./.test(connectionString)
     pool = new Pool({
       connectionString,
-      // Railway Postgres requires SSL in production; ignore self-signed chain.
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+      ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
     })
   }
   return pool

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateSignup, type SignupInput } from '@/lib/validateSignup'
 import { ensureSchema, upsertSignup } from '@/lib/db'
+import { sendSignupNotification } from '@/lib/notify'
 
 export async function POST(req: NextRequest) {
   let body: unknown
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
   try {
     await ensureSchema()
     const { alreadyOnList } = await upsertSignup(result.value)
+    await sendSignupNotification({ ...result.value, alreadyOnList })
     return NextResponse.json({ ok: true, alreadyOnList })
   } catch {
     return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
