@@ -1,9 +1,9 @@
-// Twitter/X handles: 1–15 chars, letters/digits/underscore. A leading @ is stripped.
+// X handles: 1–15 chars, letters/digits/underscore. A leading @ is stripped.
 const HANDLE_RE = /^[A-Za-z0-9_]{1,15}$/
-const SHIPPING_MAX = 280
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export type SignupInput = { handle?: unknown; shipping?: unknown }
-export type SignupValue = { handle: string; shipping: string | null }
+export type SignupInput = { handle?: unknown; email?: unknown }
+export type SignupValue = { handle: string; email: string }
 export type ValidationResult =
   | { ok: true; value: SignupValue }
   | { ok: false; error: string }
@@ -15,14 +15,10 @@ export function validateSignup(input: SignupInput): ValidationResult {
   }
   const handle = raw.toLowerCase()
 
-  let shipping: string | null = null
-  if (typeof input.shipping === 'string') {
-    const s = input.shipping.trim()
-    if (s.length > SHIPPING_MAX) {
-      return { ok: false, error: 'Keep it under 280 characters.' }
-    }
-    shipping = s.length ? s : null
+  const email = typeof input.email === 'string' ? input.email.trim().toLowerCase() : ''
+  if (!EMAIL_RE.test(email)) {
+    return { ok: false, error: 'Enter a valid email.' }
   }
 
-  return { ok: true, value: { handle, shipping } }
+  return { ok: true, value: { handle, email } }
 }

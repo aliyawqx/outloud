@@ -43,17 +43,17 @@ export function ensureSchema(): Promise<void> {
 
 export type UpsertInput = {
   handle: string
-  shipping: string | null
+  email: string
 }
 
 export async function upsertSignup(input: UpsertInput): Promise<{ alreadyOnList: boolean }> {
   const result = await getPool().query<{ inserted: boolean }>(
-    `INSERT INTO early_access_signups (handle, shipping)
+    `INSERT INTO early_access_signups (handle, email)
      VALUES ($1, $2)
      ON CONFLICT (handle)
-     DO UPDATE SET shipping = COALESCE(EXCLUDED.shipping, early_access_signups.shipping)
+     DO UPDATE SET email = EXCLUDED.email
      RETURNING (xmax = 0) AS inserted`,
-    [input.handle, input.shipping],
+    [input.handle, input.email],
   )
   const inserted = result.rows[0]?.inserted ?? true
   return { alreadyOnList: !inserted }

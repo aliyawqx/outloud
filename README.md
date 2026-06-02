@@ -1,56 +1,61 @@
-# Outloud — Landing Page
+# Outloud
 
-AI build-in-public copilot that turns what you ship into X posts in your own voice — not
-generic AI mush. This repo is the landing page + waitlist (email + willingness-to-pay).
+AI build-in-public copilot: turns what you ship into X posts in **your own voice** (or a
+chosen style), and writes sharp **replies** to grow your account — not generic AI slop.
+
+## Status
+
+| Part | State |
+|---|---|
+| Landing + early-access form (X handle + ship) → Neon Postgres + email notify (Resend) | ✅ built, deployed on Render |
+| Reply Composer `/reply` — paste a post → 1 witty reply (your voice or a celebrity preset) | ✅ built (Claude) |
+| Generation core (`lib/anthropic.ts`) — voice/style + HSO + subtle humor | ✅ built, unit-tested |
+| Full MVP (Sign in with X, voice capture, compose sessions) | 📐 designed, not built |
 
 ## Stack
 
-- Next.js 15 (App Router, TypeScript)
-- Tailwind CSS (dark, X-native theme)
-- Postgres (`pg`) for the waitlist
-- Vitest for unit tests
+Next.js 15 (App Router, TS) · React 19 · PostgreSQL (Neon) · Anthropic Claude (Sonnet 4.6, swappable via `ANTHROPIC_MODEL`) · Resend (email) · Vitest · deployed on Render.
+
+## Structure
+
+```
+app/
+  page.tsx                 landing
+  reply/page.tsx           Reply Composer page
+  api/early-access/route   waitlist signup → DB + email
+  api/reply/route          generate a reply
+components/                landing sections + reply/ReplyComposer
+lib/
+  anthropic.ts             Claude: captureVoice + generateDrafts (HSO, hook intensity, subtle humor)
+  styles.ts                celebrity style presets (e.g. Elon)
+  validateReply.ts         reply input validation
+  validateSignup.ts        waitlist validation
+  db.ts / notify.ts        Postgres + Resend
+docs/superpowers/          specs & plans (see below)
+```
 
 ## Run locally
 
 ```bash
 npm install
-cp .env.example .env        # set DATABASE_URL to a local Postgres
-npm run dev                 # http://localhost:3000
+cp .env.example .env.local   # fill the keys
+npm run dev                  # http://localhost:3000
+npm test                     # unit tests (Claude mocked — no API cost)
 ```
 
-The `waitlist_signups` table is created automatically on the first API request
-(`ensureSchema()` runs `db/schema.sql`).
+## Env vars
 
-## Test
+- `DATABASE_URL` — Postgres (Neon)
+- `RESEND_API_KEY`, `NOTIFY_EMAIL` — signup email notifications
+- `ANTHROPIC_API_KEY` — generation; optional `ANTHROPIC_MODEL` (default `claude-sonnet-4-6`)
 
-```bash
-npm test
-```
+## Deploy
 
-## Waitlist API
+Render web service from `github.com/aliyawqx/outloud` (build `npm run build`, start `npm start`); Neon for Postgres; set the env vars above in Render.
 
-`POST /api/waitlist`
+## Design docs
 
-```json
-{ "email": "you@startup.com", "willingnessToPay": 50 }
-```
-
-`willingnessToPay` must be one of `0, 10, 50, 100, 101` (101 = "$100+").
-Duplicate emails upsert (update the willingness) and respond with `{ ok: true, alreadyOnList: true }`.
-
-## Deploy on Railway
-
-1. Create a new Railway project from this repo.
-2. Add the **Postgres** plugin — Railway injects `DATABASE_URL` automatically.
-3. Build command: `npm run build`. Start command: `npm start`.
-4. Deploy. The schema is created on first signup.
-
-## Read signups
-
-Until there's an admin view, query Railway Postgres directly:
-
-```sql
-SELECT email, willingness_to_pay, referrer, created_at
-FROM waitlist_signups
-ORDER BY created_at DESC;
-```
+- Landing: `docs/superpowers/specs/2026-05-30-outloud-landing-design.md`
+- MVP (full product): `docs/superpowers/specs/2026-06-01-outloud-mvp-design.md`
+- Reply Composer: `docs/superpowers/specs/2026-06-01-reply-composer-design.md`
+- Plans: `docs/superpowers/plans/` (landing, MVP phase 1 auth)

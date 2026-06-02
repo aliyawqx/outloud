@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS early_access_signups (
   id SERIAL PRIMARY KEY,
   handle TEXT UNIQUE NOT NULL,
-  shipping TEXT,
+  email TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

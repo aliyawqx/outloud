@@ -2,36 +2,26 @@ import { describe, it, expect } from 'vitest'
 import { validateSignup } from './validateSignup'
 
 describe('validateSignup', () => {
-  it('accepts a valid handle + shipping', () => {
-    expect(validateSignup({ handle: 'jack_builds', shipping: 'Friends Map, $6k MRR' })).toEqual({
+  it('accepts a valid handle + email', () => {
+    expect(validateSignup({ handle: 'jack_builds', email: 'jack@startup.com' })).toEqual({
       ok: true,
-      value: { handle: 'jack_builds', shipping: 'Friends Map, $6k MRR' },
+      value: { handle: 'jack_builds', email: 'jack@startup.com' },
     })
   })
 
-  it('strips a leading @ and lowercases the handle', () => {
-    const r = validateSignup({ handle: '  @Jack_Builds ' })
-    expect(r.ok && r.value.handle).toBe('jack_builds')
+  it('strips @ and lowercases handle + email', () => {
+    const r = validateSignup({ handle: '  @Jack_Builds ', email: ' Jack@Startup.com ' })
+    expect(r.ok && r.value).toEqual({ handle: 'jack_builds', email: 'jack@startup.com' })
   })
 
-  it('treats missing/empty shipping as null', () => {
-    const r = validateSignup({ handle: 'jack' })
-    expect(r.ok && r.value.shipping).toBe(null)
-    const r2 = validateSignup({ handle: 'jack', shipping: '   ' })
-    expect(r2.ok && r2.value.shipping).toBe(null)
+  it('rejects a missing/invalid handle', () => {
+    expect(validateSignup({ email: 'a@b.com' }).ok).toBe(false)
+    expect(validateSignup({ handle: 'bad handle!', email: 'a@b.com' }).ok).toBe(false)
+    expect(validateSignup({ handle: 'a'.repeat(16), email: 'a@b.com' }).ok).toBe(false)
   })
 
-  it('rejects a missing handle', () => {
-    expect(validateSignup({ shipping: 'hi' }).ok).toBe(false)
-  })
-
-  it('rejects an invalid handle (spaces / symbols / too long)', () => {
-    expect(validateSignup({ handle: 'not a handle' }).ok).toBe(false)
-    expect(validateSignup({ handle: 'bad!' }).ok).toBe(false)
-    expect(validateSignup({ handle: 'a'.repeat(16) }).ok).toBe(false)
-  })
-
-  it('rejects shipping over 280 characters', () => {
-    expect(validateSignup({ handle: 'jack', shipping: 'x'.repeat(281) }).ok).toBe(false)
+  it('rejects a missing/invalid email', () => {
+    expect(validateSignup({ handle: 'jack' }).ok).toBe(false)
+    expect(validateSignup({ handle: 'jack', email: 'nope' }).ok).toBe(false)
   })
 })

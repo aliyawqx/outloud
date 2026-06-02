@@ -1,23 +1,26 @@
+import Link from 'next/link'
+import { Logo } from '@/components/Logo'
 import { ReplyComposer } from '@/components/reply/ReplyComposer'
 
-export const metadata = {
-  title: 'Outloud — Reply Composer',
-}
+export const metadata = { title: 'Outloud | Reply Composer' }
 
 export default function ReplyPage() {
   return (
-    <main className="wrap" style={{ paddingTop: 56, paddingBottom: 80, maxWidth: 760 }}>
-      <div className="kicker" style={{ marginBottom: 18 }}>
-        reply composer
-      </div>
-      <h1 className="h-sec" style={{ marginBottom: 12 }}>
-        Reply like you — and get noticed.
-      </h1>
-      <p className="lede" style={{ marginBottom: 36 }}>
-        The fastest way to your first followers is sharp replies under bigger accounts. Paste a post, get one
-        witty reply in your voice — then post it on X yourself.
-      </p>
-      <ReplyComposer />
-    </main>
+    <>
+      <header className="bg-surface-glass fixed top-0 z-50 w-full border-b border-border-muted backdrop-blur-md">
+        <div className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
+          <Link href="/"><Logo /></Link>
+          <nav className="hidden items-center gap-gutter md:flex">
+            <Link className="font-body-md text-body-md font-bold text-primary" href="/reply">Compose</Link>
+            <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/">Home</Link>
+          </nav>
+          <Link href="/early-access" className="rounded-lg bg-electric-indigo px-6 py-2 font-bold text-white transition-transform active:scale-95">Early Access</Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-container-max px-margin-mobile pb-16 pt-32 md:px-margin-desktop">
+        <ReplyComposer />
+      </main>
+    </>
   )
 }

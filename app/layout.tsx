@@ -1,42 +1,27 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Instrument_Sans, JetBrains_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono, Hanken_Grotesk } from 'next/font/google'
 import './globals.css'
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-space-grotesk',
-})
-const instrumentSans = Instrument_Sans({
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
-  variable: '--font-instrument-sans',
-})
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains-mono',
-})
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-inter' })
+const jetbrains = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-jetbrains' })
+const hanken = Hanken_Grotesk({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-hanken' })
 
 export const metadata: Metadata = {
-  title: 'Outloud — ship in public, in your voice',
+  title: 'Outloud AI | Turn Ships into Posts',
   description:
-    'Outloud turns what you ship into X posts that sound like you — approved in 30 seconds, posted, measured. Build in public, stay consistent, get known.',
-  openGraph: {
-    title: 'Outloud — ship in public, in your voice',
-    description:
-      'Outloud turns what you ship into X posts that sound like you — approved in 30 seconds, posted, measured.',
-    type: 'website',
-  },
+    'Outloud captures your voice and turns code updates and build-in-public logs into high-signal X posts and witty replies — not generic AI slop.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`}
-    >
-      <body>{children}</body>
+    <html lang="en" className={`dark ${inter.variable} ${jetbrains.variable} ${hanken.variable}`}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        />
+      </head>
+      <body className="selection:bg-electric-indigo selection:text-white">{children}</body>
     </html>
   )
 }

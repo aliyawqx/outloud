@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateReplyInput, type ReplyInput } from '@/lib/validateReply'
-import { generateDrafts } from '@/lib/anthropic'
+import { generateDrafts, type VoiceProfile } from '@/lib/anthropic'
+import { getPreset } from '@/lib/styles'
 
 export async function POST(req: NextRequest) {
   let body: unknown
@@ -15,13 +16,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: 400 })
   }
 
-  const { samples, replyTo, angle, hookIntensity, subtleHumor } = result.value
+  const { samples, replyTo, angle, hookIntensity, subtleHumor, styleId } = result.value
+
+  // A celebrity preset overrides the user's own samples; otherwise write as the user.
+  const preset = styleId ? getPreset(styleId) : undefined
+  const profile: VoiceProfile = preset
+    ? { summary: preset.summary, samples: preset.samples }
+    : { samples }
 
   try {
-    const drafts = await generateDrafts(
-      { summary: '', samples },
-      { kind: 'reply', replyTo, input: angle ?? '', hookIntensity, subtleHumor, count: 1 },
-    )
+    const drafts = await generateDrafts(profile, {
+      kind: 'reply',
+      replyTo,
+      input: angle ?? '',
+      hookIntensity,
+      subtleHumor,
+      count: 1,
+    })
     const draft = drafts[0]
     if (!draft) {
       return NextResponse.json({ error: "Couldn't generate a reply. Try again." }, { status: 500 })

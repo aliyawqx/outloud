@@ -9,7 +9,7 @@ const DEFAULT_TO = 'zhanabayaliya@gmail.com'
  */
 export async function sendSignupNotification(input: {
   handle: string
-  shipping: string | null
+  email: string
   alreadyOnList: boolean
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
@@ -25,7 +25,7 @@ export async function sendSignupNotification(input: {
   const subject = `New Outloud early-access: @${input.handle} ${status}`
   const lines = [
     `X handle: @${input.handle}`,
-    `Shipping: ${input.shipping ?? '—'}`,
+    `Email: ${input.email}`,
     '',
     `Profile: https://x.com/${input.handle}`,
     input.alreadyOnList ? 'Note: this handle was already on the list.' : '',

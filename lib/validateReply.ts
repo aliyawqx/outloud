@@ -11,6 +11,7 @@ export type ReplyInput = {
   angle?: unknown
   hookIntensity?: unknown
   subtleHumor?: unknown
+  styleId?: unknown
 }
 
 export type ReplyValue = {
@@ -19,6 +20,8 @@ export type ReplyValue = {
   angle?: string
   hookIntensity: HookIntensity
   subtleHumor: boolean
+  /** A celebrity style preset id. When set, it overrides the user's own samples. */
+  styleId?: string
 }
 
 export type ReplyValidation = { ok: true; value: ReplyValue } | { ok: false; error: string }
@@ -56,5 +59,8 @@ export function validateReplyInput(input: ReplyInput): ReplyValidation {
 
   const subtleHumor = input.subtleHumor === undefined ? true : Boolean(input.subtleHumor)
 
-  return { ok: true, value: { samples, replyTo, angle, hookIntensity, subtleHumor } }
+  const styleId =
+    typeof input.styleId === 'string' && input.styleId.trim() ? input.styleId.trim() : undefined
+
+  return { ok: true, value: { samples, replyTo, angle, hookIntensity, subtleHumor, styleId } }
 }
