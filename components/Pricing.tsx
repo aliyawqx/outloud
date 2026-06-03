@@ -1,0 +1,123 @@
+'use client'
+
+import Link from 'next/link'
+import { useState } from 'react'
+import { PLANS, ANNUAL_BADGE, PRICING_NOTE, type BillingMode, type Plan } from '@/lib/pricing'
+
+function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
+  const pill = (active: boolean) =>
+    `rounded-full px-5 py-1.5 font-code-label text-code-label transition-colors ${
+      active ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
+    }`
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <div className="inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
+        <button type="button" className={pill(mode === 'monthly')} onClick={() => setMode('monthly')}>
+          Monthly
+        </button>
+        <button type="button" className={pill(mode === 'annual')} onClick={() => setMode('annual')}>
+          Annual
+        </button>
+      </div>
+      <span className="rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-1 font-code-label text-code-label text-cyber-lime">
+        {ANNUAL_BADGE}
+      </span>
+    </div>
+  )
+}
+
+function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
+  const annual = mode === 'annual'
+  const price = annual ? plan.annual.perMo : plan.monthly.perMo
+  const sub = annual ? plan.annual.sub : plan.monthly.sub
+
+  return (
+    <div
+      className={`glass-card relative flex flex-col rounded-3xl p-8 ${
+        plan.highlight
+          ? 'border-electric-indigo indigo-glow md:-translate-y-3'
+          : 'hover:border-border-muted'
+      }`}
+    >
+      {plan.badge && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-electric-indigo px-3 py-1 font-code-label text-code-label font-bold text-white">
+          {plan.badge}
+        </span>
+      )}
+
+      <h3 className="font-headline-lg text-headline-lg">{plan.name}</h3>
+      <p className="mt-2 mb-6 font-body-sm text-body-sm text-on-surface-variant">{plan.tagline}</p>
+
+      <div className="mb-1 flex items-end gap-1">
+        <span className="font-headline-xl text-headline-xl leading-none">${price}</span>
+        <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo</span>
+      </div>
+      <div className="font-body-sm text-body-sm text-on-surface-variant">{sub}</div>
+      <div className="mt-1 font-code-label text-code-label text-secondary">
+        {annual ? plan.annual.save : `${plan.annual.save} with annual`}
+      </div>
+
+      <ul className="my-8 flex-1 space-y-3">
+        {plan.features.map((f) => (
+          <li key={f} className="flex items-start gap-3 font-body-sm text-body-sm text-on-surface">
+            <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
+            {f}
+          </li>
+        ))}
+      </ul>
+
+      <Link
+        href={`/early-access?plan=${plan.id}`}
+        className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
+          plan.highlight
+            ? 'indigo-glow bg-electric-indigo text-white'
+            : 'border border-border-muted text-on-surface hover:border-electric-indigo'
+        }`}
+      >
+        {plan.cta}
+      </Link>
+    </div>
+  )
+}
+
+export function Pricing({ condensed = false }: { condensed?: boolean }) {
+  const [mode, setMode] = useState<BillingMode>('annual')
+
+  return (
+    <section id="pricing" className="mx-auto max-w-container-max px-margin-mobile py-20 md:px-margin-desktop">
+      <div className="reveal mb-10 text-center">
+        <div className="mb-3 inline-block border-b border-cyber-lime/30 pb-1 font-code-label text-code-label text-cyber-lime">
+          0x02 // PRICING
+        </div>
+        <h2 className="mb-3 font-headline-lg text-headline-lg">
+          {condensed ? 'Simple pricing for builders.' : 'Pick your plan.'}
+        </h2>
+        <p className="mx-auto mb-8 max-w-xl font-body-md text-body-md text-on-surface-variant">
+          Start in your own voice. Upgrade when you go all-in on growth.
+        </p>
+        <Toggle mode={mode} setMode={setMode} />
+      </div>
+
+      <div className="reveal mx-auto grid max-w-3xl grid-cols-1 gap-8 md:grid-cols-2" style={{ transitionDelay: '100ms' }}>
+        {PLANS.map((p) => (
+          <PlanCard key={p.id} plan={p} mode={mode} />
+        ))}
+      </div>
+
+      <p className="reveal mx-auto mt-8 max-w-xl text-center font-code-label text-code-label text-on-surface-variant">
+        {PRICING_NOTE}
+      </p>
+
+      {condensed && (
+        <div className="reveal mt-6 text-center">
+          <Link
+            href="/pricing"
+            className="font-body-md text-body-md text-electric-indigo transition-colors hover:text-primary"
+          >
+            See full pricing →
+          </Link>
+        </div>
+      )}
+    </section>
+  )
+}

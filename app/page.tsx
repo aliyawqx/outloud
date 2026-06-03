@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 import { ScrollReveal } from '@/components/ScrollReveal'
+import { CountdownBar } from '@/components/CountdownBar'
+import { Pricing } from '@/components/Pricing'
 
 export default function Page() {
   return (
@@ -12,6 +14,7 @@ export default function Page() {
             <a className="font-bold text-primary" href="#">Home</a>
             <a className="text-on-surface-variant transition-colors hover:text-primary" href="#features">Features</a>
             <a className="text-on-surface-variant transition-colors hover:text-primary" href="#social-proof">Examples</a>
+            <a className="text-on-surface-variant transition-colors hover:text-primary" href="#pricing">Pricing</a>
           </div>
           <div className="flex items-center gap-4">
             <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/early-access">Login</Link>
@@ -213,6 +216,12 @@ export default function Page() {
             </div>
           </div>
         </section>
+
+        {/* Pricing */}
+        <div className="mb-4 mt-8">
+          <CountdownBar />
+        </div>
+        <Pricing condensed />
 
         {/* Final CTA */}
         <section className="mx-auto max-w-container-max px-margin-mobile py-32 text-center md:px-margin-desktop">
