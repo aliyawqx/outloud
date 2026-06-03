@@ -21,7 +21,7 @@ export const OFFER = {
   href: '/early-access?plan=pro',
 }
 
-export const ANNUAL_BADGE = '2 months free'
+export const ANNUAL_BADGE = '3 days free'
 
 export const PRICING_NOTE = 'Pricing is for launch and may change.'
 
