@@ -1,6 +1,15 @@
 import { Pool } from 'pg'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+
+// Inlined so it ships in the serverless bundle (reading db/schema.sql from disk
+// fails on Vercel — the file isn't traced into the function).
+const SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS early_access_signups (
+  id SERIAL PRIMARY KEY,
+  handle TEXT UNIQUE NOT NULL,
+  email TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+`
 
 let pool: Pool | null = null
 
@@ -28,9 +37,8 @@ let schemaReady: Promise<void> | null = null
 
 export function ensureSchema(): Promise<void> {
   if (!schemaReady) {
-    const sql = readFileSync(join(process.cwd(), 'db', 'schema.sql'), 'utf8')
     schemaReady = getPool()
-      .query(sql)
+      .query(SCHEMA_SQL)
       .then(() => undefined)
       .catch((err) => {
         // Reset so a later request can retry after a transient failure.
