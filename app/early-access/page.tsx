@@ -62,8 +62,8 @@ export default function EarlyAccessPage() {
             </p>
 
             <div className="mb-8 inline-flex items-center gap-3 rounded-2xl border border-cyber-lime/30 bg-cyber-lime/10 px-5 py-3">
-              <span className="font-code-label text-code-label text-on-surface-variant line-through">$19/mo</span>
-              <span className="font-headline-lg text-headline-lg text-cyber-lime">$10/mo</span>
+              <span className="font-code-label text-code-label text-on-surface-variant line-through">$15/mo</span>
+              <span className="font-headline-lg text-headline-lg text-cyber-lime">$1/mo</span>
               <span className="font-code-label text-code-label text-on-surface-variant">first 10 founders, for life</span>
             </div>
 

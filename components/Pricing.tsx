@@ -31,16 +31,24 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
   const price = annual ? plan.annual.perMo : plan.monthly.perMo
   const sub = annual ? plan.annual.sub : plan.monthly.sub
 
+  const saveLine = annual ? plan.annual.save : plan.annual.save ? `${plan.annual.save} with annual` : ''
+
   return (
     <div
       className={`glass-card relative flex flex-col rounded-3xl p-8 ${
-        plan.highlight
-          ? 'border-electric-indigo indigo-glow md:-translate-y-3'
-          : 'hover:border-border-muted'
+        plan.founder
+          ? 'border-cyber-lime shadow-[0_0_40px_-12px] shadow-cyber-lime/40'
+          : plan.highlight
+            ? 'border-electric-indigo indigo-glow md:-translate-y-3'
+            : 'hover:border-border-muted'
       }`}
     >
       {plan.badge && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-electric-indigo px-3 py-1 font-code-label text-code-label font-bold text-white">
+        <span
+          className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-code-label text-code-label font-bold ${
+            plan.founder ? 'bg-cyber-lime text-charcoal-black' : 'bg-electric-indigo text-white'
+          }`}
+        >
           {plan.badge}
         </span>
       )}
@@ -53,9 +61,7 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
         <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo</span>
       </div>
       <div className="font-body-sm text-body-sm text-on-surface-variant">{sub}</div>
-      <div className="mt-1 font-code-label text-code-label text-secondary">
-        {annual ? plan.annual.save : `${plan.annual.save} with annual`}
-      </div>
+      <div className="mt-1 min-h-[1.25rem] font-code-label text-code-label text-secondary">{saveLine}</div>
 
       <ul className="my-8 flex-1 space-y-3">
         {plan.features.map((f) => (
@@ -69,9 +75,11 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
       <Link
         href={`/early-access?plan=${plan.id}`}
         className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
-          plan.highlight
-            ? 'indigo-glow bg-electric-indigo text-white'
-            : 'border border-border-muted text-on-surface hover:border-electric-indigo'
+          plan.founder
+            ? 'bg-cyber-lime text-charcoal-black hover:brightness-110'
+            : plan.highlight
+              ? 'indigo-glow bg-electric-indigo text-white'
+              : 'border border-border-muted text-on-surface hover:border-electric-indigo'
         }`}
       >
         {plan.cta}
@@ -98,7 +106,7 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
         <Toggle mode={mode} setMode={setMode} />
       </div>
 
-      <div className="reveal mx-auto grid max-w-3xl grid-cols-1 gap-8 md:grid-cols-2" style={{ transitionDelay: '100ms' }}>
+      <div className="reveal mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-3" style={{ transitionDelay: '100ms' }}>
         {PLANS.map((p) => (
           <PlanCard key={p.id} plan={p} mode={mode} />
         ))}

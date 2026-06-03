@@ -7,6 +7,8 @@ export type Plan = {
   name: string
   tagline: string
   highlight?: boolean
+  /** limited founding tier — distinct lime treatment, no annual discount */
+  founder?: boolean
   badge?: string
   monthly: { perMo: number; sub: string }
   annual: { perMo: number; sub: string; save: string }
@@ -15,10 +17,10 @@ export type Plan = {
 }
 
 export const OFFER = {
-  text: 'Founding offer ends soon — 50% off for the first 10 founders',
+  text: 'Founding offer ends soon — $1/mo locked for life, first 10 founders',
   cta: 'Claim it',
   /** where the urgency CTA routes (existing waitlist flow) */
-  href: '/early-access?plan=pro',
+  href: '/early-access?plan=founders',
 }
 
 export const ANNUAL_BADGE = '3 days free'
@@ -27,11 +29,27 @@ export const PRICING_NOTE = 'Pricing is for launch and may change.'
 
 export const PLANS: Plan[] = [
   {
+    id: 'founders',
+    name: 'Founders',
+    tagline: 'first 10 builders only — your rate is locked for life',
+    founder: true,
+    badge: 'Only 10 spots',
+    monthly: { perMo: 1, sub: 'first 10 founders · locked for life' },
+    annual: { perMo: 1, sub: 'first 10 founders · locked for life', save: '' },
+    features: [
+      'Everything in Pro',
+      '$1/mo locked for life — never goes up',
+      'Direct line to the founder',
+      'Shape the roadmap',
+    ],
+    cta: 'Claim my spot',
+  },
+  {
     id: 'starter',
     name: 'Starter',
     tagline: 'for solo builders posting in their own voice',
-    monthly: { perMo: 19, sub: 'billed monthly' },
-    annual: { perMo: 15, sub: 'billed annually · $180/year', save: 'save $48/year' },
+    monthly: { perMo: 5, sub: 'billed monthly' },
+    annual: { perMo: 4.17, sub: 'billed annually · $50/year', save: 'save $10/year' },
     features: [
       'Posts in your voice across X, LinkedIn & Telegram',
       'Voice capture from your existing posts',
@@ -47,8 +65,8 @@ export const PLANS: Plan[] = [
     tagline: 'for founders & creators going all-in on growth',
     highlight: true,
     badge: 'Most popular',
-    monthly: { perMo: 49, sub: 'billed monthly' },
-    annual: { perMo: 39, sub: 'billed annually · $468/year', save: 'save $120/year' },
+    monthly: { perMo: 15, sub: 'billed monthly' },
+    annual: { perMo: 12.5, sub: 'billed annually · $150/year', save: 'save $30/year' },
     features: [
       'Everything in Starter',
       'Unlimited posts',

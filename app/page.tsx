@@ -238,12 +238,12 @@ export default function Page() {
                 Post without <span className="bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">friction.</span>
               </h2>
               <p className="mb-10 max-w-xl font-body-md text-body-md text-on-surface-variant">
-                Join the early-access waitlist. The first 10 founders lock in $10/mo for life and help shape Outloud before launch. No generic AI slop, just your voice, on tap.
+                Join the early-access waitlist. The first 10 founders lock in $1/mo for life and help shape Outloud before launch. No generic AI slop, just your voice, on tap.
               </p>
 
               <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
-                  { icon: 'lock', color: 'bg-cyber-lime/15 text-cyber-lime', t: '$10/mo, locked', d: 'first 10 founders, for life' },
+                  { icon: 'lock', color: 'bg-cyber-lime/15 text-cyber-lime', t: '$1/mo, locked', d: 'first 10 founders, for life' },
                   { icon: 'graphic_eq', color: 'bg-electric-indigo/15 text-electric-indigo', t: 'your real voice', d: 'captured from your posts, never slop' },
                   { icon: 'bolt', color: 'bg-cyber-lime/15 text-cyber-lime', t: 'shape the product', d: 'first access to every new feature' },
                 ].map((p) => (
