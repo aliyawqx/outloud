@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 import { ReplyComposer } from '@/components/reply/ReplyComposer'
+import { ScrollReveal } from '@/components/ScrollReveal'
 
 export const metadata = { title: 'Outloud | Reply Composer' }
 
@@ -14,13 +15,14 @@ export default function ReplyPage() {
             <Link className="font-body-md text-body-md font-bold text-primary" href="/reply">Compose</Link>
             <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/">Home</Link>
           </nav>
-          <Link href="/early-access" className="rounded-lg bg-electric-indigo px-6 py-2 font-bold text-white transition-transform active:scale-95">Early Access</Link>
+          <Link href="/early-access" className="rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform active:scale-95">Early Access</Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-container-max px-margin-mobile pb-16 pt-32 md:px-margin-desktop">
         <ReplyComposer />
       </main>
+      <ScrollReveal />
     </>
   )
 }

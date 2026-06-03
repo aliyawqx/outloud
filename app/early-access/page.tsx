@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
+import { ScrollReveal } from '@/components/ScrollReveal'
 
 export default function EarlyAccessPage() {
   const [handle, setHandle] = useState('')
@@ -45,11 +46,11 @@ export default function EarlyAccessPage() {
         <div className="glow-sphere left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-60" />
         <div className="glow-sphere -right-20 -top-20 opacity-30" />
 
-        <section className="bg-surface-glass relative z-10 w-full max-w-[480px] rounded-xl border border-border-muted p-8 backdrop-blur-md md:p-10">
+        <section className="reveal bg-surface-glass relative z-10 w-full max-w-[480px] rounded-xl border border-border-muted p-8 backdrop-blur-md md:p-10">
           <div className="mb-8">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border-muted bg-surface-container-high px-3 py-1">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-electric-indigo" />
-              <span className="font-code-label text-code-label text-electric-indigo">NOW IN PRIVATE ALPHA</span>
+              <span className="h-2 w-2 animate-pulse rounded-full bg-cyber-lime" />
+              <span className="font-code-label text-code-label text-cyber-lime">NOW IN PRIVATE ALPHA</span>
             </div>
             <h1 className="mb-4 font-headline-lg text-headline-lg leading-tight md:text-headline-xl">Get early access to Outloud.</h1>
             <p className="font-body-md text-body-md text-on-surface-variant">Join the waitlist of builders and creators. We let pioneers in small cohorts to keep it high-signal.</p>
@@ -83,7 +84,7 @@ export default function EarlyAccessPage() {
               </div>
               {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}
               <button type="submit" disabled={loading}
-                className="group flex w-full items-center justify-center gap-2 rounded-lg bg-electric-indigo py-4 font-headline-lg-mobile text-headline-lg-mobile text-white transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] active:scale-[0.98] disabled:opacity-60">
+                className="group flex w-full items-center justify-center gap-2 rounded-full bg-electric-indigo py-4 font-headline-lg-mobile text-headline-lg-mobile text-white transition-all hover:shadow-[0_0_20px_rgba(176,107,255,0.3)] active:scale-[0.98] disabled:opacity-60">
                 <span>{loading ? 'Reserving…' : 'Reserve my spot'}</span>
                 <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
               </button>
@@ -91,6 +92,7 @@ export default function EarlyAccessPage() {
           )}
         </section>
       </main>
+      <ScrollReveal />
     </div>
   )
 }

@@ -88,7 +88,7 @@ export function ReplyComposer() {
   return (
     <>
       {/* Voice selector */}
-      <section className="mb-12">
+      <section className="reveal mb-12">
         <div className="mb-4 flex items-center gap-4">
           <span className="material-symbols-outlined text-electric-indigo">settings_voice</span>
           <h2 className="font-code-label text-code-label uppercase tracking-widest text-on-surface-variant">Select AI Voice Identity</h2>
@@ -101,7 +101,7 @@ export function ReplyComposer() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+      <div className="reveal grid grid-cols-1 items-start gap-8 lg:grid-cols-2" style={{ transitionDelay: '120ms' }}>
         {/* Input */}
         <div className="flex flex-col gap-6">
           {isYou && (
@@ -115,7 +115,7 @@ export function ReplyComposer() {
             <div className="flex items-center justify-between">
               <h3 className="font-code-label text-code-label uppercase text-electric-indigo">Target Content</h3>
               <span className="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
-                <span className="ai-pulse h-2 w-2 rounded-full bg-electric-indigo" /> AI Ready
+                <span className="ai-pulse h-2 w-2 rounded-full bg-cyber-lime" /> AI Ready
               </span>
             </div>
             <textarea value={replyTo} onChange={(e) => setReplyTo(e.target.value)} className={`${field} h-48 resize-none`} placeholder="Paste the post you want to reply to here..." />
@@ -136,7 +136,7 @@ export function ReplyComposer() {
 
             {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}
 
-            <button onClick={onGenerate} disabled={loading} className="w-full rounded-lg bg-electric-indigo py-4 font-bold text-white shadow-lg shadow-electric-indigo/20 transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60">
+            <button onClick={onGenerate} disabled={loading} className="w-full rounded-full bg-electric-indigo py-4 font-bold text-white shadow-lg shadow-electric-indigo/20 transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60">
               {loading ? 'Generating…' : 'Generate Reply'}
             </button>
           </div>
