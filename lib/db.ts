@@ -6,9 +6,10 @@ const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS early_access_signups (
   id SERIAL PRIMARY KEY,
   handle TEXT UNIQUE NOT NULL,
-  email TEXT NOT NULL,
+  email TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE early_access_signups ADD COLUMN IF NOT EXISTS email TEXT;
 `
 
 let pool: Pool | null = null
