@@ -19,19 +19,20 @@ export function CountdownBar({ sticky = false }: { sticky?: boolean }) {
 
   return (
     <div
-      className={`${sticky ? 'sticky top-0' : ''} z-[60] w-full border-b border-border-muted bg-electric-indigo/10 backdrop-blur-md`}
+      className={`${sticky ? 'sticky top-0' : ''} z-[60] w-full bg-gradient-to-r from-[#dc2626] to-[#db2777] text-white shadow-lg shadow-[#dc2626]/25`}
     >
-      <div className="mx-auto flex max-w-container-max flex-wrap items-center justify-center gap-x-4 gap-y-2 px-margin-mobile py-2.5 text-center md:px-margin-desktop">
-        <span className="font-body-sm text-body-sm text-on-surface">{OFFER.text}</span>
+      <div className="mx-auto flex max-w-container-max flex-wrap items-center justify-center gap-x-3 gap-y-2 px-margin-mobile py-2.5 text-center md:px-margin-desktop">
+        <span className="material-symbols-outlined animate-pulse text-[18px] text-white motion-reduce:animate-none">bolt</span>
+        <span className="font-body-sm text-body-sm font-bold uppercase tracking-wide">{OFFER.text}</span>
         <span
           aria-live="off"
-          className="rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-0.5 font-code-label text-code-label tabular-nums text-cyber-lime"
+          className="rounded-full bg-white/20 px-3 py-0.5 font-code-label text-code-label font-bold tabular-nums text-white ring-1 ring-white/40"
         >
           {mm}:{ss}
         </span>
         <Link
           href={OFFER.href}
-          className="rounded-full bg-electric-indigo px-4 py-1 font-code-label text-code-label font-bold text-white transition-transform active:scale-95"
+          className="rounded-full bg-white px-4 py-1 font-code-label text-code-label font-bold text-[#dc2626] transition-transform hover:scale-105 active:scale-95"
         >
           {OFFER.cta}
         </Link>

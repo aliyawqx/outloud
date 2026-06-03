@@ -7,8 +7,10 @@ import { Pricing } from '@/components/Pricing'
 export default function Page() {
   return (
     <>
-      <header className="bg-surface-glass fixed top-0 z-50 w-full border-b border-border-muted backdrop-blur-md">
-        <nav className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
+      <div className="sticky top-0 z-50">
+        <CountdownBar />
+        <header className="bg-surface-glass w-full border-b border-border-muted backdrop-blur-md">
+          <nav className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
           <Logo />
           <div className="hidden items-center gap-8 font-body-md text-body-md md:flex">
             <a className="font-bold text-primary" href="#">Home</a>
@@ -19,10 +21,11 @@ export default function Page() {
           <div className="flex items-center gap-4">
             <Link className="indigo-glow rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform hover:scale-95" href="/early-access">Early Access</Link>
           </div>
-        </nav>
-      </header>
+          </nav>
+        </header>
+      </div>
 
-      <main className="pt-32 pb-24">
+      <main className="pb-24 pt-10">
         {/* Hero */}
         <section className="mx-auto mb-32 max-w-container-max px-margin-mobile text-center md:px-margin-desktop">
           <div className="reveal mb-8 inline-flex items-center gap-2 rounded-full border border-border-muted bg-surface-container-low px-3 py-1">
@@ -217,9 +220,6 @@ export default function Page() {
         </section>
 
         {/* Pricing */}
-        <div className="mb-4 mt-8">
-          <CountdownBar />
-        </div>
         <Pricing condensed />
 
         {/* Final CTA / Waitlist */}
