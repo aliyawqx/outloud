@@ -13,20 +13,34 @@ CREATE TABLE IF NOT EXISTS early_access_signups (
 
 let pool: Pool | null = null
 
+// Neon's connection string ships with `channel_binding=require` (breaks node-postgres
+// on serverless) and `sslmode=require` (now treated as strict verify-full). Strip both
+// and drive TLS ourselves via the `ssl` option below.
+function cleanDbUrl(raw: string): string {
+  try {
+    const u = new URL(raw)
+    u.searchParams.delete('channel_binding')
+    u.searchParams.delete('sslmode')
+    return u.toString()
+  } catch {
+    return raw.replace(/[?&](channel_binding|sslmode)=[^&]*/g, '')
+  }
+}
+
 function getPool(): Pool {
   if (!pool) {
-    const connectionString = process.env.DATABASE_URL
-    if (!connectionString) {
+    const raw = process.env.DATABASE_URL
+    if (!raw) {
       throw new Error('DATABASE_URL is not set')
     }
-    // Managed Postgres (Neon/Render/Railway) requires SSL. Enable it whenever the
-    // URL asks for it or we're in production; skip for a plain local Postgres.
+    // Managed Postgres (Neon/Render/Railway) requires SSL. Enable for those hosts,
+    // in production, or when the original URL asked for it.
     const needsSsl =
       process.env.NODE_ENV === 'production' ||
-      /sslmode=require/.test(connectionString) ||
-      /\.neon\.tech|\.render\.com|\.railway\./.test(connectionString)
+      /sslmode=require/.test(raw) ||
+      /\.neon\.tech|\.render\.com|\.railway\./.test(raw)
     pool = new Pool({
-      connectionString,
+      connectionString: cleanDbUrl(raw),
       ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
     })
   }

@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
     const { alreadyOnList } = await upsertSignup(result.value)
     await sendSignupNotification({ ...result.value, alreadyOnList })
     return NextResponse.json({ ok: true, alreadyOnList })
-  } catch {
+  } catch (err) {
+    console.error('[early-access] failed:', err)
     return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }
