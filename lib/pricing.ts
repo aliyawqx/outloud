@@ -23,8 +23,7 @@ export const OFFER = {
 
 export const ANNUAL_BADGE = '2 months free'
 
-export const PRICING_NOTE =
-  'Pricing is for launch and may change. No card needed, this is a pre-launch waitlist.'
+export const PRICING_NOTE = 'Pricing is for launch and may change.'
 
 export const PLANS: Plan[] = [
   {

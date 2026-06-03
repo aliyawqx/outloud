@@ -17,7 +17,6 @@ export default function Page() {
             <a className="text-on-surface-variant transition-colors hover:text-primary" href="#pricing">Pricing</a>
           </div>
           <div className="flex items-center gap-4">
-            <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/early-access">Login</Link>
             <Link className="indigo-glow rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform hover:scale-95" href="/early-access">Early Access</Link>
           </div>
         </nav>
@@ -223,16 +222,46 @@ export default function Page() {
         </div>
         <Pricing condensed />
 
-        {/* Final CTA */}
-        <section className="mx-auto max-w-container-max px-margin-mobile py-32 text-center md:px-margin-desktop">
-          <div className="reveal glass-card relative overflow-hidden rounded-2xl p-12">
-            <div className="absolute -bottom-20 -right-20 h-80 w-80 animate-[drift_11s_ease-in-out_infinite] rounded-full bg-secondary/10 blur-[80px]" />
+        {/* Final CTA / Waitlist */}
+        <section id="waitlist" className="mx-auto max-w-container-max px-margin-mobile py-32 md:px-margin-desktop">
+          <div className="reveal glass-card relative overflow-hidden rounded-3xl p-10 md:p-16">
+            <div className="absolute -bottom-24 -right-20 h-80 w-80 animate-[drift_11s_ease-in-out_infinite] rounded-full bg-secondary/15 blur-[90px]" />
+            <div className="absolute -top-24 -left-16 h-72 w-72 animate-[drift_13s_ease-in-out_infinite] rounded-full bg-electric-indigo/15 blur-[90px]" />
             <div className="relative z-10">
-              <h2 className="mb-6 font-headline-xl text-headline-xl">Build in public.<br />Post without friction.</h2>
-              <p className="mx-auto mb-10 max-w-xl font-body-md text-body-md text-on-surface-variant">Ready to stop the generic AI slop? Join early access and start shipping posts as fast as you ship code.</p>
-              <div className="flex flex-col items-center">
-                <Link href="/early-access" className="indigo-glow mb-6 rounded-full bg-electric-indigo px-10 py-5 text-xl font-bold text-white transition-all active:scale-95">Join Early Access</Link>
-                <p className="font-code-label text-code-label uppercase tracking-widest text-on-surface-variant">Limited spots available</p>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-1">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-cyber-lime" />
+                <span className="font-code-label text-code-label uppercase tracking-widest text-cyber-lime">3 of 10 founder spots left</span>
+              </div>
+              <h2 className="mb-4 max-w-2xl font-headline-xl text-headline-xl">
+                Build in public.
+                <br />
+                Post without <span className="bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">friction.</span>
+              </h2>
+              <p className="mb-10 max-w-xl font-body-md text-body-md text-on-surface-variant">
+                Join the early-access waitlist. The first 10 founders lock in $20/mo for life and help shape Outloud before launch. No generic AI slop, just your voice, on tap.
+              </p>
+
+              <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {[
+                  { icon: 'lock', color: 'bg-cyber-lime/15 text-cyber-lime', t: '$20/mo, locked', d: 'first 10 founders, for life' },
+                  { icon: 'graphic_eq', color: 'bg-electric-indigo/15 text-electric-indigo', t: 'your real voice', d: 'captured from your posts, never slop' },
+                  { icon: 'bolt', color: 'bg-cyber-lime/15 text-cyber-lime', t: 'shape the product', d: 'first access to every new feature' },
+                ].map((p) => (
+                  <div key={p.t} className="rounded-2xl border border-border-muted bg-white/[0.03] p-5 backdrop-blur-sm">
+                    <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${p.color}`}>
+                      <span className="material-symbols-outlined">{p.icon}</span>
+                    </div>
+                    <div className="font-body-md font-bold text-on-surface">{p.t}</div>
+                    <div className="font-body-sm text-body-sm text-on-surface-variant">{p.d}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                <Link href="/early-access" className="indigo-glow rounded-full bg-electric-indigo px-10 py-5 text-xl font-bold text-white transition-all active:scale-95">
+                  Join the waitlist →
+                </Link>
+                <span className="font-code-label text-code-label text-on-surface-variant">~30 sec · X handle + email · i reply within 24h</span>
               </div>
             </div>
           </div>
