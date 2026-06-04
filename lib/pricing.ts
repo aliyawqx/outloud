@@ -17,7 +17,7 @@ export type Plan = {
 }
 
 export const OFFER = {
-  text: 'Founding offer ends soon — $1/mo locked for life, first 10 founders',
+  text: 'Founding offer ends soon — $1/mo for the first 10 founders',
   cta: 'Claim it',
   /** where the urgency CTA routes (existing waitlist flow) */
   href: '/early-access?plan=founders',
@@ -31,14 +31,14 @@ export const PLANS: Plan[] = [
   {
     id: 'founders',
     name: 'Founders',
-    tagline: 'first 10 builders only — your rate is locked for life',
+    tagline: 'first 10 builders only — founding price',
     founder: true,
     badge: 'Only 10 spots',
-    monthly: { perMo: 1, sub: 'first 10 founders · locked for life' },
-    annual: { perMo: 1, sub: 'first 10 founders · locked for life', save: '' },
+    monthly: { perMo: 1, sub: 'first 10 founders' },
+    annual: { perMo: 1, sub: 'first 10 founders', save: '' },
     features: [
       'Everything in Pro',
-      '$1/mo locked for life — never goes up',
+      '$1/mo founding price',
       'Direct line to the founder',
       'Shape the roadmap',
     ],

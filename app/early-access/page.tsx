@@ -58,13 +58,13 @@ export default function EarlyAccessPage() {
               <span className="bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">Outloud.</span>
             </h1>
             <p className="mb-6 max-w-md font-body-md text-body-md text-on-surface-variant">
-              Builders and creators, let in in small cohorts to keep it high-signal. The first 10 founders lock in a price that never comes back.
+              Builders and creators, let in in small cohorts to keep it high-signal. The first 10 founders get our lowest founding price.
             </p>
 
             <div className="mb-8 inline-flex items-center gap-3 rounded-2xl border border-cyber-lime/30 bg-cyber-lime/10 px-5 py-3">
               <span className="font-code-label text-code-label text-on-surface-variant line-through">$15/mo</span>
               <span className="font-headline-lg text-headline-lg text-cyber-lime">$1/mo</span>
-              <span className="font-code-label text-code-label text-on-surface-variant">first 10 founders, for life</span>
+              <span className="font-code-label text-code-label text-on-surface-variant">for the first 10 founders</span>
             </div>
 
             <ul className="space-y-3">
