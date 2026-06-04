@@ -13,6 +13,7 @@ export default function ReplyPage() {
           <Link href="/"><Logo /></Link>
           <nav className="hidden items-center gap-gutter md:flex">
             <Link className="font-body-md text-body-md font-bold text-primary" href="/reply">Compose</Link>
+            <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/voices">Voices</Link>
             <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/">Home</Link>
           </nav>
           <Link href="/early-access" className="rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform active:scale-95">Early Access</Link>

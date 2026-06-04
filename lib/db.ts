@@ -10,6 +10,23 @@ CREATE TABLE IF NOT EXISTS early_access_signups (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE early_access_signups ADD COLUMN IF NOT EXISTS email TEXT;
+
+CREATE TABLE IF NOT EXISTS voice_profiles (
+  id TEXT PRIMARY KEY,
+  owner_key TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  name TEXT NOT NULL,
+  sources JSONB NOT NULL DEFAULT '[]'::jsonb,
+  merged_tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  style_summary TEXT NOT NULL DEFAULT '',
+  is_active BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS voice_profiles_owner_idx ON voice_profiles (owner_key);
+-- At most one active profile per owner.
+CREATE UNIQUE INDEX IF NOT EXISTS voice_profiles_one_active_idx
+  ON voice_profiles (owner_key) WHERE is_active;
 `
 
 let pool: Pool | null = null
@@ -28,7 +45,7 @@ function cleanDbUrl(raw: string): string {
   }
 }
 
-function getPool(): Pool {
+export function getPool(): Pool {
   if (!pool) {
     const raw = process.env.DATABASE_URL
     if (!raw) {
