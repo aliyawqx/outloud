@@ -4,12 +4,19 @@
 
 html {
   scroll-behavior: smooth;
+  /* match body so no black canvas shows beyond content on mobile */
+  background-color: #0f1115;
+  /* clip decorative ambient glows that overflow the viewport.
+     `clip` (not `hidden`) avoids creating a scroll container, so the
+     sticky countdown banner keeps working. */
+  overflow-x: clip;
 }
 
 body {
   background-color: #0f1115;
   color: #e2e2e8;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 
 .material-symbols-outlined {
