@@ -38,13 +38,11 @@ export function MyVoices({
   onSetActive,
   onDelete,
   onRename,
-  busyId,
 }: {
   profiles: VoiceProfile[]
   onSetActive: (id: string) => void
   onDelete: (id: string) => void
   onRename: (id: string, name: string) => void
-  busyId: string | null
 }) {
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -52,7 +50,6 @@ export function MyVoices({
   return (
     <ul className="flex flex-col gap-4">
       {profiles.map((p) => {
-        const busy = busyId === p.id
         return (
           <li
             key={p.id}
@@ -116,7 +113,7 @@ export function MyVoices({
             <div className="flex flex-wrap items-center gap-4 border-t border-border-muted pt-3">
               <button
                 type="button"
-                disabled={busy || p.isActive}
+                disabled={p.isActive}
                 onClick={() => onSetActive(p.id)}
                 className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-cyber-lime disabled:opacity-40"
               >
@@ -125,7 +122,6 @@ export function MyVoices({
               </button>
               <button
                 type="button"
-                disabled={busy}
                 onClick={() => {
                   setEditing(p.id)
                   setDraft(p.name)
@@ -137,7 +133,6 @@ export function MyVoices({
               </button>
               <button
                 type="button"
-                disabled={busy}
                 onClick={() => onDelete(p.id)}
                 className="ml-auto flex items-center gap-1 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error disabled:opacity-40"
               >

@@ -27,7 +27,6 @@ export function VoiceStudio() {
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [busyId, setBusyId] = useState<string | null>(null)
 
   async function refresh() {
     setLoadError('')
@@ -84,21 +83,22 @@ export function VoiceStudio() {
     }
   }
 
-  async function withBusy(id: string, fn: () => Promise<unknown>) {
-    setBusyId(id)
-    try {
-      await fn()
-      await refresh()
-    } catch {
-      /* surfaced on next load; keep the UI responsive */
-    } finally {
-      setBusyId(null)
-    }
+  // Optimistic updates: reflect the change in the UI immediately, then sync in
+  // the background and only refetch if the server rejects it. Set-active is a
+  // slow multi-statement transaction over the network, so blocking the UI on it
+  // (await call → await refetch) read as "nothing happened / it's broken".
+  const onSetActive = (id: string) => {
+    setProfiles((ps) => ps.map((p) => ({ ...p, isActive: p.id === id })))
+    patchProfile(id, { isActive: true }).catch(refresh)
   }
-
-  const onSetActive = (id: string) => withBusy(id, () => patchProfile(id, { isActive: true }))
-  const onRename = (id: string, newName: string) => withBusy(id, () => patchProfile(id, { name: newName }))
-  const onDelete = (id: string) => withBusy(id, () => removeProfile(id))
+  const onRename = (id: string, newName: string) => {
+    setProfiles((ps) => ps.map((p) => (p.id === id ? { ...p, name: newName } : p)))
+    patchProfile(id, { name: newName }).catch(refresh)
+  }
+  const onDelete = (id: string) => {
+    setProfiles((ps) => ps.filter((p) => p.id !== id))
+    removeProfile(id).catch(refresh)
+  }
 
   const tabBtn = (t: Tab, label: string, count?: number) => (
     <button
@@ -161,7 +161,6 @@ export function VoiceStudio() {
               onSetActive={onSetActive}
               onDelete={onDelete}
               onRename={onRename}
-              busyId={busyId}
             />
           )}
         </div>
