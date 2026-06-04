@@ -13,6 +13,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
     "@vercel/analytics": "^2.0.1",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.3",
     "next": "^15.5.18",
     "pg": "^8.21.0",
     "react": "^19.2.6",
@@ -21,6 +23,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^25.9.1",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2.15",

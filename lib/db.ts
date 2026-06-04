@@ -11,6 +11,24 @@ CREATE TABLE IF NOT EXISTS early_access_signups (
 );
 ALTER TABLE early_access_signups ADD COLUMN IF NOT EXISTS email TEXT;
 
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  display_name TEXT NOT NULL DEFAULT '',
+  handle TEXT,
+  avatar_url TEXT,
+  email TEXT,
+  plan TEXT NOT NULL DEFAULT 'free',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS voice_profiles (
   id TEXT PRIMARY KEY,
   owner_key TEXT NOT NULL,
