@@ -6,6 +6,8 @@ import { getSource } from '@/lib/voice/catalog'
 
 export function BlendPreview({
   selectedIds,
+  weights,
+  onWeight,
   name,
   onName,
   onClear,
@@ -14,6 +16,8 @@ export function BlendPreview({
   error,
 }: {
   selectedIds: string[]
+  weights: Record<string, number>
+  onWeight: (id: string, w: number) => void
   name: string
   onName: (v: string) => void
   onClear: () => void
@@ -26,9 +30,16 @@ export function BlendPreview({
     [selectedIds],
   )
   const blend = useMemo(
-    () => (sources.length ? blendProfile(sources.map((source) => ({ source }))) : null),
-    [sources],
+    () =>
+      sources.length
+        ? blendProfile(sources.map((source) => ({ source, weight: weights[source.id] ?? 3 })))
+        : null,
+    [sources, weights],
   )
+  // Live display percentages, matching the blend's normalization.
+  const total = sources.reduce((sum, s) => sum + (weights[s.id] ?? 3), 0)
+  const pct = (id: string) => (total > 0 ? Math.round(((weights[id] ?? 3) / total) * 100) : 0)
+  const multi = sources.length > 1
 
   return (
     <aside className="glass-panel sticky top-28 flex flex-col gap-4 rounded-2xl p-6" aria-label="Hybrid voice preview">
@@ -53,16 +64,43 @@ export function BlendPreview({
         </div>
       ) : (
         <>
-          {/* built from */}
-          <div className="flex flex-wrap items-center gap-2">
-            {sources.map((s) => (
-              <span key={s.id} className="flex items-center gap-1.5 rounded-full bg-surface-container px-2.5 py-1">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.avatarUrl} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-full" />
-                <span className="font-code-label text-[11px] text-on-surface">{s.displayName}</span>
-              </span>
-            ))}
-          </div>
+          {/* blend mix: chips when single, weighted sliders when multiple */}
+          {!multi ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {sources.map((s) => (
+                <span key={s.id} className="flex items-center gap-1.5 rounded-full bg-surface-container px-2.5 py-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.avatarUrl} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-full" />
+                  <span className="font-code-label text-[11px] text-on-surface">{s.displayName}</span>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {sources.map((s) => (
+                <div key={s.id} className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.avatarUrl} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0 rounded-full ring-1 ring-border-muted" />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="truncate font-code-label text-[11px] text-on-surface">{s.displayName}</span>
+                      <span className="shrink-0 font-code-label text-[11px] tabular-nums text-cyber-lime">{pct(s.id)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      step={1}
+                      value={weights[s.id] ?? 3}
+                      onChange={(e) => onWeight(s.id, Number(e.target.value))}
+                      aria-label={`Weight for ${s.displayName}`}
+                      className="h-1 w-full cursor-pointer appearance-none rounded-full bg-surface-container-high accent-electric-indigo"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* merged tags */}
           <div className="flex flex-wrap gap-1.5">

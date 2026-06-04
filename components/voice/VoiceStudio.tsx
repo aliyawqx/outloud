@@ -23,6 +23,7 @@ export function VoiceStudio() {
   const [loadError, setLoadError] = useState('')
 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [weights, setWeights] = useState<Record<string, number>>({})
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -45,7 +46,16 @@ export function VoiceStudio() {
   }, [])
 
   const toggle = (id: string) =>
-    setSelectedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
+    setSelectedIds((cur) => {
+      if (cur.includes(id)) {
+        setWeights(({ [id]: _drop, ...rest }) => rest)
+        return cur.filter((x) => x !== id)
+      }
+      setWeights((w) => ({ ...w, [id]: w[id] ?? 3 }))
+      return [...cur, id]
+    })
+
+  const setWeight = (id: string, w: number) => setWeights((cur) => ({ ...cur, [id]: w }))
 
   async function onSave() {
     setSaveError('')
@@ -59,10 +69,11 @@ export function VoiceStudio() {
       await saveProfile({
         name: name.trim() || fallback,
         kind: 'inspiration',
-        sources: selectedIds.map((id) => ({ sourceId: id, weight: 1 })),
+        sources: selectedIds.map((id) => ({ sourceId: id, weight: weights[id] ?? 3 })),
         isActive: true,
       })
       setSelectedIds([])
+      setWeights({})
       setName('')
       await refresh()
       setTab('mine')
@@ -116,9 +127,14 @@ export function VoiceStudio() {
           <VoiceLibrary selectedIds={selectedIds} onToggle={toggle} />
           <BlendPreview
             selectedIds={selectedIds}
+            weights={weights}
+            onWeight={setWeight}
             name={name}
             onName={setName}
-            onClear={() => setSelectedIds([])}
+            onClear={() => {
+              setSelectedIds([])
+              setWeights({})
+            }}
             onSave={onSave}
             saving={saving}
             error={saveError}
