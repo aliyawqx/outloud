@@ -17,7 +17,7 @@ export default function Page() {
             <a className="text-on-surface-variant transition-colors hover:text-primary" href="#features">Features</a>
             <a className="text-on-surface-variant transition-colors hover:text-primary" href="#social-proof">Examples</a>
             <a className="text-on-surface-variant transition-colors hover:text-primary" href="#pricing">Pricing</a>
-            <Link className="text-on-surface-variant transition-colors hover:text-primary" href="/voices">Voices</Link>
+            <Link className="text-on-surface-variant transition-colors hover:text-primary" href="/login">Log in</Link>
           </div>
           <div className="flex items-center gap-4">
             <Link className="indigo-glow rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform hover:scale-95" href="/early-access">Early Access</Link>

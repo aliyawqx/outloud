@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
-import { getOwnerKey } from '@/lib/voice/owner'
+import { getSession } from '@/lib/auth/session'
 import { validateCreateProfile } from '@/lib/voice/validateProfile'
 import { buildInspiration, buildOwn, UnknownSourceError } from '@/lib/voice/build'
 import { createProfile, listProfiles } from '@/lib/voice/store'
 
-// GET /api/voice/profiles — list the caller's saved profiles.
-export async function GET(req: Request) {
-  const ownerKey = getOwnerKey(req)
-  if (!ownerKey) return NextResponse.json({ error: 'Missing owner key.' }, { status: 401 })
+// GET /api/voice/profiles — list the signed-in user's saved profiles.
+export async function GET() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
+  const ownerKey = session.userId
 
   try {
     const profiles = await listProfiles(ownerKey)
@@ -19,8 +20,9 @@ export async function GET(req: Request) {
 
 // POST /api/voice/profiles — save a new profile (own or inspiration blend).
 export async function POST(req: Request) {
-  const ownerKey = getOwnerKey(req)
-  if (!ownerKey) return NextResponse.json({ error: 'Missing owner key.' }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
+  const ownerKey = session.userId
 
   let body: unknown
   try {

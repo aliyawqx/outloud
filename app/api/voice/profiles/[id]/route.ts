@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getOwnerKey } from '@/lib/voice/owner'
+import { getSession } from '@/lib/auth/session'
 import { validateUpdateProfile } from '@/lib/voice/validateProfile'
 import { buildInspiration, UnknownSourceError } from '@/lib/voice/build'
 import {
@@ -15,8 +15,9 @@ type Ctx = { params: Promise<{ id: string }> }
 
 // PATCH /api/voice/profiles/:id — edit fields, re-blend on source change, toggle active.
 export async function PATCH(req: Request, { params }: Ctx) {
-  const ownerKey = getOwnerKey(req)
-  if (!ownerKey) return NextResponse.json({ error: 'Missing owner key.' }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
+  const ownerKey = session.userId
   const { id } = await params
 
   let body: unknown
@@ -62,9 +63,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 // DELETE /api/voice/profiles/:id
-export async function DELETE(req: Request, { params }: Ctx) {
-  const ownerKey = getOwnerKey(req)
-  if (!ownerKey) return NextResponse.json({ error: 'Missing owner key.' }, { status: 401 })
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
+  const ownerKey = session.userId
   const { id } = await params
 
   try {
