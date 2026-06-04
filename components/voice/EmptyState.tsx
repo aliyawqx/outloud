@@ -20,9 +20,6 @@ export function EmptyState({ onBrowse }: { onBrowse: () => void }) {
       >
         Browse creators
       </button>
-      <p className="font-code-label text-code-label text-on-surface-variant/60">
-        Training your own voice from your posts is coming later.
-      </p>
     </div>
   )
 }
