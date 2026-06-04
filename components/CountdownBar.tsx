@@ -4,18 +4,29 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { OFFER } from '@/lib/pricing'
 
-const START = 59 * 60 + 59 // 59:59, evergreen loop
+const TOTAL_MS = ((59 * 60 + 59) * 1000) + 999 // 59:59.999, evergreen loop
 
 export function CountdownBar({ sticky = false }: { sticky?: boolean }) {
-  const [secs, setSecs] = useState(START)
+  const [remaining, setRemaining] = useState(TOTAL_MS)
 
   useEffect(() => {
-    const id = setInterval(() => setSecs((s) => (s <= 0 ? START : s - 1)), 1000)
+    // Drive from a wall-clock end time so the ms stay accurate regardless of
+    // tick jitter; ~50ms updates keep the milliseconds visibly ticking.
+    let end = Date.now() + TOTAL_MS
+    const id = setInterval(() => {
+      let left = end - Date.now()
+      if (left <= 0) {
+        end = Date.now() + TOTAL_MS
+        left = TOTAL_MS
+      }
+      setRemaining(left)
+    }, 50)
     return () => clearInterval(id)
   }, [])
 
-  const mm = String(Math.floor(secs / 60)).padStart(2, '0')
-  const ss = String(secs % 60).padStart(2, '0')
+  const mm = String(Math.floor(remaining / 60000)).padStart(2, '0')
+  const ss = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')
+  const ms = String(Math.floor(remaining % 1000)).padStart(3, '0')
 
   return (
     <div
@@ -28,7 +39,7 @@ export function CountdownBar({ sticky = false }: { sticky?: boolean }) {
           aria-live="off"
           className="rounded-full bg-white/20 px-3 py-0.5 font-code-label text-code-label font-bold tabular-nums text-white ring-1 ring-white/40"
         >
-          {mm}:{ss}
+          {mm}:{ss}<span className="opacity-80">.{ms}</span>
         </span>
         <Link
           href={OFFER.href}
