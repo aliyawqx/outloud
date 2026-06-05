@@ -40,6 +40,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'No voice selected. Pick or set one active first.' }, { status: 400 })
   }
 
+  // Challenge/progress framing (Day N · followers) is opt-in per request, not the default.
+  const challenge = b.challenge === true
+
   try {
     const samples = await listEnabledTexts(session.userId, profile.id, 5)
     const drafts = await generatePost({
@@ -49,8 +52,7 @@ export async function POST(req: Request) {
       count,
       hookIntensity,
       link,
-      dayNumber: challengeDay(),
-      followerCount: followerCount(),
+      ...(challenge ? { dayNumber: challengeDay(), followerCount: followerCount() } : {}),
     })
     return NextResponse.json({ drafts, voiceName: profile.name })
   } catch (err) {
