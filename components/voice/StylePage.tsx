@@ -33,6 +33,7 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
   const [genBusy, setGenBusy] = useState(false)
   const [error, setError] = useState('')
   const [stale, setStale] = useState(false)
+  const [importing, setImporting] = useState(false)
 
   const [panelOpen, setPanelOpen] = useState(false)
   const [guideDraft, setGuideDraft] = useState('')
@@ -79,6 +80,30 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
       setError(e instanceof Error ? e.message : 'Could not read that file.')
     } finally {
       setAdding(false)
+    }
+  }
+
+  async function importFromX() {
+    setError('')
+    setImporting(true)
+    try {
+      const res = await fetch('/api/x/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId: profile.id }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(res.status === 409 ? data.error ?? 'Connect your X account in Profile first.' : data.error ?? 'Could not import.')
+        return
+      }
+      const added: WritingSample[] = data.samples ?? []
+      setSamples((s) => [...added, ...s])
+      if (guide && added.length) setStale(true)
+    } catch {
+      setError('Network error. Try again.')
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -161,15 +186,12 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          disabled
-          title="X connection coming soon"
-          className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-border-muted px-4 py-1.5 font-code-label text-code-label text-on-surface-variant/50"
+        <Link
+          href="/app/profile"
+          className="inline-flex items-center gap-2 rounded-full border border-border-muted px-4 py-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:border-electric-indigo hover:text-on-surface"
         >
           <span className="material-symbols-outlined text-[16px]">link</span> Connect X
-          <span className="rounded-full border border-border-muted px-1.5 text-[10px] uppercase">soon</span>
-        </button>
+        </Link>
       </div>
 
       {error && <p className="mb-4 font-body-sm text-body-sm text-error">{error}</p>}
@@ -200,6 +222,15 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
             className="rounded-full border border-border-muted px-3 py-1 font-code-label text-code-label text-on-surface transition-colors hover:border-electric-indigo"
           >
             Add URL
+          </button>
+          <button
+            type="button"
+            onClick={importFromX}
+            disabled={importing}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border-muted px-3 py-1 font-code-label text-code-label text-on-surface transition-colors hover:border-electric-indigo disabled:opacity-60"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">download</span>
+            {importing ? 'Importing…' : 'Import from X'}
           </button>
         </div>
 
