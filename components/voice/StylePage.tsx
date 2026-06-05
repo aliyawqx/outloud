@@ -216,7 +216,7 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="https://… (a post, blog, or page you wrote)"
+                placeholder="https://… (an X post link, blog, or page you wrote)"
                 className="w-full rounded-lg border border-border-muted bg-surface-container-lowest p-3 font-body-sm text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none"
               />
             )}

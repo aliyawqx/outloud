@@ -65,6 +65,31 @@ async function assertPublicHost(hostname: string): Promise<void> {
   }
 }
 
+/** Tweet id from an x.com / twitter.com status URL, else null. */
+function parseTweetId(u: URL): string | null {
+  const host = u.hostname.toLowerCase().replace(/^www\./, '')
+  if (host !== 'x.com' && host !== 'twitter.com' && host !== 'mobile.twitter.com') return null
+  const m = u.pathname.match(/\/status(?:es)?\/(\d+)/)
+  return m ? m[1] : null
+}
+
+/** Read a public X post's full text via the syndication endpoint (no auth). */
+async function fetchTweetText(id: string, signal: AbortSignal): Promise<string> {
+  await assertPublicHost('cdn.syndication.twimg.com')
+  // Cache-buster token, same scheme the official embeds use.
+  const token = ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '')
+  const api = `https://cdn.syndication.twimg.com/tweet-result?id=${id}&lang=en&token=${token}`
+  const res = await fetch(api, { signal, headers: { 'user-agent': 'OutloudBot/1.0' } })
+  if (!res.ok) throw new UrlFetchError("Couldn't read that X post (it may be private or deleted).")
+  const data = (await res.json().catch(() => null)) as
+    | { text?: string; note_tweet?: { note_tweet_results?: { result?: { text?: string } } } }
+    | null
+  // Prefer the long-form note text when present, else the tweet body.
+  const text = (data?.note_tweet?.note_tweet_results?.result?.text || data?.text || '').trim()
+  if (!text) throw new UrlFetchError('No text found in that X post.')
+  return text.slice(0, MAX_CHARS)
+}
+
 function stripHtml(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -86,6 +111,11 @@ export async function fetchSampleFromUrl(input: string): Promise<string> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
   try {
+    // X/Twitter posts are client-rendered, so fetch the post text via the
+    // public syndication endpoint instead of scraping the (empty) HTML.
+    const tweetId = parseTweetId(url)
+    if (tweetId) return await fetchTweetText(tweetId, ctrl.signal)
+
     // Manually follow redirects so each hop's host is re-validated.
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
       if (!/^https?:$/.test(url.protocol)) throw new UrlFetchError('That URL is not allowed.')
