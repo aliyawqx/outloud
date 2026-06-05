@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { listProfiles } from '@/lib/voice/store'
 import { AppSidebar } from '@/components/app/AppSidebar'
+import { ComingSoonGate } from '@/components/app/ComingSoonGate'
+import { APP_COMING_SOON } from '@/lib/appLock'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -23,7 +25,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         }}
         voiceCount={voices.length}
       />
-      <main className="min-w-0 flex-1 px-margin-mobile py-8 md:px-10 lg:px-12">{children}</main>
+      <main className="relative min-w-0 flex-1 px-margin-mobile py-8 md:px-10 lg:px-12">
+        {APP_COMING_SOON ? (
+          <>
+            <div className="pointer-events-none select-none opacity-40 blur-[6px]" aria-hidden="true">
+              {children}
+            </div>
+            <ComingSoonGate />
+          </>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   )
 }
