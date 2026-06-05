@@ -12,11 +12,37 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
   const [text, setText] = useState(draft.fullText)
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [publishError, setPublishError] = useState('')
+  const [publishedUrl, setPublishedUrl] = useState('')
 
   async function copy() {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
+  }
+
+  async function publish() {
+    setPublishError('')
+    setPublishedUrl('')
+    setPublishing(true)
+    try {
+      const res = await fetch('/api/x/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setPublishError(res.status === 409 ? 'Connect your X account in Profile first.' : data.error ?? 'Could not publish.')
+        return
+      }
+      setPublishedUrl(data.url)
+    } catch {
+      setPublishError('Network error. Try again.')
+    } finally {
+      setPublishing(false)
+    }
   }
 
   return (
@@ -46,6 +72,25 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
       ) : (
         <p className="whitespace-pre-wrap font-body-md leading-relaxed text-on-surface">{text}</p>
       )}
+
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={publish}
+          disabled={publishing || !text.trim()}
+          className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">send</span>
+          {publishing ? 'Publishing…' : 'Publish to X'}
+        </button>
+        <span className="font-code-label text-code-label text-on-surface-variant/60">{text.length} chars</span>
+        {publishedUrl && (
+          <a href={publishedUrl} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
+            View on X →
+          </a>
+        )}
+      </div>
+      {publishError && <p className="mt-2 font-body-sm text-body-sm text-error">{publishError}</p>}
     </div>
   )
 }
