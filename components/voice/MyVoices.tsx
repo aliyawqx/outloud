@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { getSource } from '@/lib/voice/catalog'
 import type { VoiceProfile } from '@/lib/voice/types'
@@ -131,6 +132,15 @@ export function MyVoices({
                 <span className="material-symbols-outlined text-[16px]">edit</span>
                 Rename
               </button>
+              {p.kind === 'own' && (
+                <Link
+                  href={`/app/voices/${p.id}`}
+                  className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-electric-indigo"
+                >
+                  <span className="material-symbols-outlined text-[16px]">tune</span>
+                  Edit style
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() => onDelete(p.id)}

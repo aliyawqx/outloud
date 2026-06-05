@@ -10,7 +10,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 
 process.env.ANTHROPIC_API_KEY = 'test-key'
 
-import { generateDrafts, captureVoice, type VoiceProfile } from './anthropic'
+import { generateDrafts, generateStyleGuide, captureVoice, type VoiceProfile } from './anthropic'
 
 const profile: VoiceProfile = {
   summary: 'lowercase, short lines, dry humor, no emoji',
@@ -77,6 +77,44 @@ describe('generateDrafts', () => {
   it('throws on non-JSON output', async () => {
     createMock.mockResolvedValue({ content: [{ type: 'text', text: 'oops not json' }] })
     await expect(generateDrafts(profile, { input: 'x' })).rejects.toThrow()
+  })
+})
+
+describe('generateDrafts with a captured Style Guide', () => {
+  it('injects the style guide + raw sample anchors into the system prompt', async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }] }) }],
+    })
+    await generateDrafts(
+      { styleGuide: '## Sentence Architecture\nshort additive clauses joined by and', samples: ['shipped at 2am again'] },
+      { input: 'shipped billing' },
+    )
+    const sys = JSON.stringify(createMock.mock.calls[0][0].system)
+    expect(sys).toContain('Captured Style Guide')
+    expect(sys).toContain('short additive clauses')
+    expect(sys).toContain('shipped at 2am again') // raw sample anchor
+  })
+})
+
+describe('generateStyleGuide', () => {
+  it('runs the universal analysis prompt over the samples and returns the guide', async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ summary: 'dry, lowercase, additive', guideMarkdown: '## Voice summary\ndry' }) }],
+    })
+    const r = await generateStyleGuide(['пост на русском', 'a punchy english line'])
+    expect(r.summary).toBe('dry, lowercase, additive')
+    expect(r.guideMarkdown).toContain('Voice summary')
+
+    const args = createMock.mock.calls[0][0]
+    // universal style-analysis meta-prompt drives it
+    expect(args.system[0].text).toContain('writing-style analyst')
+    // samples are passed in the user message
+    expect(args.messages[0].content).toContain('a punchy english line')
+    expect(args.output_config.format.type).toBe('json_schema')
+  })
+
+  it('throws when there are no samples', async () => {
+    await expect(generateStyleGuide([])).rejects.toThrow(/No samples/)
   })
 })
 

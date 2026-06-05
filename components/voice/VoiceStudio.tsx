@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
+  createOwnVoice,
   fetchProfiles,
   patchProfile,
   removeProfile,
@@ -17,6 +19,7 @@ import { EmptyState } from './EmptyState'
 type Tab = 'library' | 'mine'
 
 export function VoiceStudio() {
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>('library')
   const [profiles, setProfiles] = useState<VoiceProfile[]>([])
   const [loading, setLoading] = useState(true)
@@ -114,12 +117,32 @@ export function VoiceStudio() {
     </button>
   )
 
+  async function createOwn() {
+    const name = window.prompt('Name your voice', 'My voice')?.trim()
+    if (!name) return
+    try {
+      const { profile } = await createOwnVoice(name)
+      router.push(`/app/voices/${profile.id}`)
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Could not create that voice.')
+    }
+  }
+
   return (
     <>
       {/* tabs */}
-      <div className="reveal mb-8 inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
-        {tabBtn('library', 'Voice library')}
-        {tabBtn('mine', 'My voices', profiles.length)}
+      <div className="reveal mb-8 flex flex-wrap items-center gap-3">
+        <div className="inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
+          {tabBtn('library', 'Voice library')}
+          {tabBtn('mine', 'My voices', profiles.length)}
+        </div>
+        <button
+          type="button"
+          onClick={createOwn}
+          className="inline-flex items-center gap-1.5 rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-4 py-2 font-code-label text-code-label text-cyber-lime transition-all hover:bg-cyber-lime/20"
+        >
+          <span className="material-symbols-outlined text-[16px]">add</span> Capture your own voice
+        </button>
       </div>
 
       {tab === 'library' && (
