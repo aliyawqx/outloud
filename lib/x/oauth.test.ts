@@ -36,7 +36,7 @@ describe('buildAuthUrl', () => {
 
 describe('exchangeCode', () => {
   it('POSTs the authorization_code grant with Basic auth and returns tokens', async () => {
-    const fetchMock = vi.fn(async () => new Response(
+    const fetchMock = vi.fn(async (_url: string | URL, _init: RequestInit) => new Response(
       JSON.stringify({ access_token: 'at', refresh_token: 'rt', expires_in: 7200, scope: X_SCOPES, token_type: 'bearer' }),
       { status: 200 },
     ))
@@ -61,7 +61,7 @@ describe('exchangeCode', () => {
 
 describe('refreshToken', () => {
   it('POSTs the refresh_token grant', async () => {
-    const fetchMock = vi.fn(async () => new Response(
+    const fetchMock = vi.fn(async (_url: string | URL, _init: RequestInit) => new Response(
       JSON.stringify({ access_token: 'at2', refresh_token: 'rt2', expires_in: 7200, scope: X_SCOPES, token_type: 'bearer' }),
       { status: 200 },
     ))
