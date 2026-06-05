@@ -47,7 +47,7 @@ describe('fetchOriginalTweets', () => {
 
   it('throws ImportNotAvailableError on 403 (tier gate)', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 403 })))
-    await expect(fetchOriginalTweets('tok', '42', 20)).rejects.toThrow(/Basic access/)
+    await expect(fetchOriginalTweets('tok', '42', 20)).rejects.toThrow(/isn't available right now/)
   })
 
   it('returns [] when the user has no posts', async () => {

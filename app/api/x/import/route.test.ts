@@ -62,6 +62,6 @@ describe('POST /api/x/import', () => {
     fetchTweetsMock.mockRejectedValue(new ImportNotAvailableError())
     const res = await POST(json({ profileId: 'p1' }))
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toMatch(/Basic access/)
+    expect((await res.json()).error).toMatch(/isn't available right now/)
   })
 })

@@ -14,10 +14,11 @@ export class XAuthError extends Error {
   }
 }
 
-/** Reading the user's timeline needs X API Basic+ (Free tier returns 403). */
+// Internal note (not user-facing): reading the user's timeline needs X API
+// Basic+; the Free tier returns 403. The customer-facing message stays generic.
 export class ImportNotAvailableError extends Error {
   constructor() {
-    super('Importing your X posts needs X API Basic access. Publishing still works.')
+    super("Importing your X posts isn't available right now. You can add posts manually instead.")
     this.name = 'ImportNotAvailableError'
   }
 }
