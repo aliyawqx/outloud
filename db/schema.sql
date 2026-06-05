@@ -43,3 +43,17 @@ CREATE INDEX IF NOT EXISTS voice_profiles_owner_idx ON voice_profiles (owner_key
 -- At most one active profile per owner.
 CREATE UNIQUE INDEX IF NOT EXISTS voice_profiles_one_active_idx
   ON voice_profiles (owner_key) WHERE is_active;
+ALTER TABLE voice_profiles ADD COLUMN IF NOT EXISTS style_guide TEXT NOT NULL DEFAULT '';
+ALTER TABLE voice_profiles ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'x';
+
+-- Writing samples ingested for own-voice capture.
+CREATE TABLE IF NOT EXISTS writing_samples (
+  id TEXT PRIMARY KEY,
+  voice_profile_id TEXT NOT NULL REFERENCES voice_profiles(id) ON DELETE CASCADE,
+  owner_key TEXT NOT NULL,
+  source TEXT NOT NULL,                   -- 'x' | 'paste' | 'upload' | 'url'
+  text TEXT NOT NULL,
+  used_in_style BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS writing_samples_profile_idx ON writing_samples (voice_profile_id);

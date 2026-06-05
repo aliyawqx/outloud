@@ -44,11 +44,30 @@ export type VoiceProfile = {
   sources: SourceRef[]
   /** Union of the sources' tags (deduped). */
   mergedTags: string[]
-  /** Human-readable hybrid style summary. Phase 1: templated from descriptors. */
+  /** Human-readable style summary. For 'inspiration': templated from descriptors.
+   *  For 'own': the short summary from the captured Style Guide. */
   styleSummary: string
+  /** The full captured Style Guide (markdown). Own-voice profiles only. */
+  styleGuide: string
+  /** Target channel for this voice. */
+  channel: Channel
   isActive: boolean
   createdAt: string
   updatedAt: string
+}
+
+export type Channel = 'x' | 'linkedin' | 'telegram'
+
+export type SampleSource = 'x' | 'paste' | 'upload' | 'url'
+
+/** A single ingested writing sample for own-voice capture. */
+export type WritingSample = {
+  id: string
+  voiceProfileId: string
+  source: SampleSource
+  text: string
+  usedInStyle: boolean
+  createdAt: string
 }
 
 // ── The seam for later: generation plugs in HERE and nowhere else ──────────────

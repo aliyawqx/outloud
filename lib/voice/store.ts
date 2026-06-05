@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
-import type { ProfileKind, SourceRef, VoiceProfile } from './types'
+import type { Channel, ProfileKind, SourceRef, VoiceProfile } from './types'
 
 // Persistence for voice profiles. Every query is scoped to an owner_key so one
 // owner can never read or mutate another's rows. Phase 1 owner_key is an
@@ -14,6 +14,8 @@ type Row = {
   sources: SourceRef[]
   merged_tags: string[]
   style_summary: string
+  style_guide: string | null
+  channel: string | null
   is_active: boolean
   created_at: Date
   updated_at: Date
@@ -28,6 +30,8 @@ function mapRow(r: Row): VoiceProfile {
     sources: r.sources ?? [],
     mergedTags: r.merged_tags ?? [],
     styleSummary: r.style_summary,
+    styleGuide: r.style_guide ?? '',
+    channel: (r.channel as Channel) ?? 'x',
     isActive: r.is_active,
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
@@ -41,6 +45,7 @@ export type CreateProfileRecord = {
   sources: SourceRef[]
   mergedTags: string[]
   styleSummary: string
+  channel?: Channel
   isActive?: boolean
 }
 
@@ -56,8 +61,8 @@ export async function createProfile(rec: CreateProfileRecord): Promise<VoiceProf
     }
     const id = randomUUID()
     const { rows } = await client.query<Row>(
-      `INSERT INTO voice_profiles (id, owner_key, kind, name, sources, merged_tags, style_summary, is_active)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8)
+      `INSERT INTO voice_profiles (id, owner_key, kind, name, sources, merged_tags, style_summary, channel, is_active)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9)
        RETURNING *`,
       [
         id,
@@ -67,6 +72,7 @@ export async function createProfile(rec: CreateProfileRecord): Promise<VoiceProf
         JSON.stringify(rec.sources),
         JSON.stringify(rec.mergedTags),
         rec.styleSummary,
+        rec.channel ?? 'x',
         Boolean(rec.isActive),
       ],
     )
@@ -78,6 +84,21 @@ export async function createProfile(rec: CreateProfileRecord): Promise<VoiceProf
   } finally {
     client.release()
   }
+}
+
+/** Save a generated/edited Style Guide (+ its short summary) onto an own-voice profile. */
+export async function setStyleGuide(
+  ownerKey: string,
+  id: string,
+  guide: { guideMarkdown: string; summary: string },
+): Promise<VoiceProfile | null> {
+  await ensureSchema()
+  const { rows } = await getPool().query<Row>(
+    `UPDATE voice_profiles SET style_guide = $1, style_summary = $2, updated_at = now()
+     WHERE owner_key = $3 AND id = $4 RETURNING *`,
+    [guide.guideMarkdown, guide.summary, ownerKey, id],
+  )
+  return rows[0] ? mapRow(rows[0]) : null
 }
 
 /** List an owner's profiles, active first, then newest. */
