@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { generatePost, VoiceNotReadyError } from '@/lib/voice/generate'
+import { saveComposeSession } from '@/lib/voice/history'
 import { challengeDay, followerCount } from '@/lib/voice/challenge'
 import type { HookIntensity } from '@/lib/voice/types'
 
@@ -54,7 +55,23 @@ export async function POST(req: Request) {
       link,
       ...(challenge ? { dayNumber: challengeDay(), followerCount: followerCount() } : {}),
     })
-    return NextResponse.json({ drafts, voiceName: profile.name })
+
+    // Save the session for History (best-effort — never fail the response on this).
+    let historyId: string | undefined
+    try {
+      const entry = await saveComposeSession({
+        ownerKey: session.userId,
+        voiceProfileId: profile.id,
+        voiceName: profile.name,
+        idea,
+        drafts,
+      })
+      historyId = entry.id
+    } catch (e) {
+      console.error('[compose] history save failed:', e)
+    }
+
+    return NextResponse.json({ drafts, voiceName: profile.name, historyId })
   } catch (err) {
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: err.message }, { status: 400 })

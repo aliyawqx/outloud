@@ -83,6 +83,16 @@ export type DraftPost = {
   fullText: string
 }
 
+/** A saved compose session for the History panel. */
+export type HistoryEntry = {
+  id: string
+  voiceProfileId: string | null
+  voiceName: string
+  idea: string
+  drafts: DraftPost[]
+  createdAt: string
+}
+
 /** Input to the post generator. */
 export type GeneratePostInput = {
   /** The rough line about what the user shipped / wants to post about. */

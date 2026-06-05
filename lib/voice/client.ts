@@ -93,6 +93,10 @@ export function compose(body: {
   count?: number
   hookIntensity?: HookIntensity
   link?: string
-}): Promise<{ drafts: DraftPost[]; voiceName: string }> {
+}): Promise<{ drafts: DraftPost[]; voiceName: string; historyId?: string }> {
   return api('/api/voice/compose', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function deleteHistory(id: string): Promise<{ ok: true }> {
+  return api(`/api/voice/history/${id}`, { method: 'DELETE' })
 }

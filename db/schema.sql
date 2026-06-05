@@ -57,3 +57,15 @@ CREATE TABLE IF NOT EXISTS writing_samples (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS writing_samples_profile_idx ON writing_samples (voice_profile_id);
+
+-- Saved compose sessions (History panel).
+CREATE TABLE IF NOT EXISTS compose_history (
+  id TEXT PRIMARY KEY,
+  owner_key TEXT NOT NULL,
+  voice_profile_id TEXT,
+  voice_name TEXT NOT NULL DEFAULT '',
+  idea TEXT NOT NULL,
+  drafts JSONB NOT NULL DEFAULT '[]'::jsonb,   -- DraftPost[]
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS compose_history_owner_idx ON compose_history (owner_key, created_at DESC);
