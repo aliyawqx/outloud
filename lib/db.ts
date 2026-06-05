@@ -71,6 +71,18 @@ CREATE TABLE IF NOT EXISTS compose_history (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS compose_history_owner_idx ON compose_history (owner_key, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS x_accounts (
+  user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  x_user_id         TEXT NOT NULL,
+  username          TEXT NOT NULL,
+  access_token_enc  TEXT NOT NULL,
+  refresh_token_enc TEXT,
+  scope             TEXT NOT NULL DEFAULT '',
+  expires_at        TIMESTAMPTZ NOT NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 `
 
 let pool: Pool | null = null

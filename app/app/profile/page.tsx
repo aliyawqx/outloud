@@ -1,13 +1,16 @@
 import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { ProfileForm } from '@/components/app/ProfileForm'
+import { XConnection } from '@/components/app/XConnection'
 
 export const metadata = { title: 'Outloud | Profile' }
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ x?: string }> }) {
   const session = await getSession()
   if (!session) return null
   const profile = await getProfile(session.userId)
+  const { x } = await searchParams
+  const flash = x === 'connected' || x === 'error' ? x : undefined
 
   return (
     <div className="mx-auto max-w-xl">
@@ -21,6 +24,9 @@ export default async function ProfilePage() {
           plan: profile?.plan ?? 'free',
         }}
       />
+      <div className="mt-8">
+        <XConnection flash={flash} />
+      </div>
     </div>
   )
 }
