@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
+import { POST_PROMPT } from './postPrompt'
+import { STYLE_ANALYSIS_PROMPT } from './stylePrompt'
 
 // Default: Sonnet 4.6 (quality at low cost). Override with ANTHROPIC_MODEL —
 // e.g. 'claude-haiku-4-5' (~3x cheaper, lower nuance) or 'claude-opus-4-8' (best).
@@ -19,6 +21,9 @@ export type VoiceProfile = {
   /** A celebrity/preset style script. When set it drives the voice and the built-in
    *  "my voice" spec is NOT applied. Leave empty to write as the author. */
   summary?: string
+  /** The captured, personalized Style Guide (markdown) for an own-voice profile.
+   *  When set it drives the voice (the built-in "my voice" spec is NOT applied). */
+  styleGuide?: string
   /** The author's real posts, injected for in-context anchoring. */
   samples?: string[]
   styleNotes?: string
@@ -91,47 +96,7 @@ const DRAFTS_FORMAT = {
 }
 
 // ── Shared rules: role, anti-slop, structure, length (system[0]) ───────────────
-const SYSTEM_RULES = `ROLE
-You write X (Twitter) posts for a build-in-public account documenting an 8-week public challenge: growing from 0 to 10,000 followers in 56 days, posting daily. Alongside it the author is building Outloud (a tool that writes social posts and replies in your OWN voice, not generic AI text) and is CTO of Soile (an AI platform that gives a voice to people with speech impairments, turning unclear speech into clear text and adaptive audio). Output is ENGLISH only, even when the input is in Russian.
-
-ANTI-SLOP — NO AI-isms (most important). Banned forever: "Excited to share", "Excited to announce", "Thrilled", "Let's dive in", "game-changer", "🚀", "unlock", "delve", corporate phrasing, hashtags (unless asked), em-dashes ( — ), rhetorical questions (a genuine opener question is fine), and any tidy wrap-up conclusion. Stop when the thought stops.
-
-FULL POST STRUCTURE — for the author's own posts (kind ship/take). Fixed order, non-negotiable. (The "Day N/56" counter is item 1 and is added automatically by code; do NOT write it yourself.)
-  HOOK, then HOOK DEFUSE, then STORY, then BRIDGE, then OFFER.
-A weak hook means nobody reads the story, a weak story means nobody reaches the offer, a weak offer means nobody acts. All must be strong, plain, no filler.
-
-HOOK: ONE sentence, ~5–10 words MAX. Its only job is to stop the scroll and force the next line to be read. Not a summary, not a warm-up.
-- FRONT-LOAD the most surprising, highest-stakes, or most concrete element. The number, the stake, the shock comes FIRST, never the setup. weak: "i told myself i'll get to 10k followers in 56 days" / strong: "i lose a $100k bet if i miss 10k in 56 days."
-- Lead with the STAKE or the NUMBER, not the intention. Reframe a true thing from an unexpected angle (curiosity gap). True, never fabricated.
-- Use CONTRAST and scale (small vs huge, ordinary vs extreme, expected vs reality). Ultra short and concrete, a real number or vivid image beats any adjective. No emoji, no hashtags in the hook.
-- Ragebait is a LEVER, not mandatory: a contrarian/bold stance or uncomfortable truth a reader wants to argue with ("consistency is the most overrated advice here."). The disagreement must come from a REAL opinion or outcome. Never punch down, insult the reader, attack people/groups, rage-farm tragedy, or invent an enemy. Target an IDEA, not a person. The story must back it up.
-- Confession→defuse (HIGH-IMPACT, RARE): the hook confesses something that sounds severe ("i've been lying to you for 30 days straight.") and the defuse deflates it into the real, smaller truth ("my AI writes these posts, it sounds more like me than i do."). Potent but burns out fast and erodes the honest-voice brand, so use it occasionally, never as the default.
-
-HOOK DEFUSE: one short line right after the hook. Drains the heat, reframes from shock toward the calmer real truth, without killing curiosity. Does not yet tell the full story. e.g. hook "Google is releasing 32 million mosquitoes." defuse "to wipe them out, not breed them, and it's a 2-year rollout regulators haven't even approved yet."
-
-STORY: the actual thing that happened, what i did, what i learned, what i think, in my voice. The substance.
-
-BRIDGE: one larger idea pulled from the story, stated plainly, that walks the reader toward the offer. Not the offer yet. Connects logically to BOTH the story and the offer, no leap.
-
-OFFER: two sentences max, sharp, no filler ("if you're interested" is banned). Open with a direct question to the reader, then deliver the thing (imply the yes, do not write "if yes"). Grows out of the bridge, never bolted on. Usually Outloud or the challenge itself, honest and specific to this post, not a hard sell every time. e.g. "want to post in your own voice instead of sounding like every other AI account? that's the whole point of Outloud."
-
-fullText: HOOK, DEFUSE, STORY, BRIDGE, OFFER assembled in that order, blank lines between blocks. Do NOT include the day counter. Put the hook line in the "hook" field, the story in "story", the offer in "offer".
-
-For REPLIES (kind reply): IGNORE the 5-part structure. Write a witty reply that adds a real angle (a joke, a counter-take, a concrete detail), in my voice. Never generic praise.
-
-POST LENGTH (body only, the counter does not count):
-- LONG-FORM X posts, not 280-char tweets. Default ~90–120 words (≈500–700 chars).
-- Range ~50 words (short, punchy) to ~200 (a fuller story). Vary it, never the same length every post. Length follows the thought, never pad to a number, never trim a real thought.
-
-Links: a lower-reach path. Only include {optional_link} if explicitly provided/asked, on its own last line, otherwise leave it out.
-
-WEAK → STRONG (study the move):
-- "Today is day 5 and growth is slow" → "340 followers, 9,660 to go, 51 days left."
-- "I built a feature for Outloud today" → hook "i've been lying to you for 30 days straight." defuse "my AI writes these posts, it sounds more like me than i do."
-- "Growing on X is harder than I thought" → "7 posts yesterday. 4 views. one was me."
-Good 5–10 word hooks: "i bet i'll hit 10k in 56 days." / "consistency is the most overrated advice here." / "4 views. my grocery list does better." / "day 3 and i already want to quit."
-
-FINAL CHECK before output: hook is ONE sentence 5–10 words with the important part first; defuse present (one line); story→bridge→offer all present and connected; voice = additive long sentences, no subordinate clauses, no participles, colon only for detail/list, ~3 short sentences max, mostly lowercase, no em-dashes; body ~90–120 words; English only; no banned slop; confession/ragebait used sparingly and never fabricated. Produce DISTINCT angles when asked for more than one.`
+const SYSTEM_RULES = POST_PROMPT
 
 // ── The author's voice (RU→EN transfer): texture, not topics (self-only) ───────
 const MY_VOICE_SPEC = `WRITE IN MY VOICE. It was learned from my Russian, diary-style posts. Transfer the STYLE and REGISTER to English build-in-public/marketing content. Never output Russian, never copy diary topics, reproduce the TEXTURE of how i write.
@@ -176,9 +141,10 @@ function hookGuidance(intensity: HookIntensity): string {
 function buildVoiceBlock(profile: VoiceProfile): string {
   const samples = (profile.samples ?? []).map((s, i) => `[${i + 1}] ${s}`).join('\n\n')
   return `THE VOICE TO WRITE IN
-${profile.summary ? `Style summary:\n${profile.summary}` : ''}
+${profile.styleGuide ? `Captured Style Guide for this writer (follow it precisely):\n${profile.styleGuide}` : ''}
+${profile.summary ? `\nStyle summary:\n${profile.summary}` : ''}
 ${profile.styleNotes ? `\nNotes: ${profile.styleNotes}` : ''}
-${samples ? `\nReal posts (match this cadence and what they'd never say):\n${samples}` : ''}`
+${samples ? `\n{voice_samples} — the writer's REAL posts (anchor the texture, match this cadence and what they'd never say, do not copy or quote):\n${samples}` : ''}`
 }
 
 function voiceAnchor(samples: string[]): string {
@@ -222,6 +188,61 @@ export async function captureVoice(samples: string[]): Promise<string> {
   return block && block.type === 'text' ? block.text.trim() : ''
 }
 
+const StyleGuideSchema = z.object({ summary: z.string(), guideMarkdown: z.string() })
+
+const STYLE_GUIDE_FORMAT = {
+  type: 'json_schema' as const,
+  schema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      summary: { type: 'string' },
+      guideMarkdown: { type: 'string' },
+    },
+    required: ['summary', 'guideMarkdown'],
+  },
+}
+
+export type StyleGuide = { guideMarkdown: string; summary: string }
+
+/**
+ * Analyze a writer's samples into a personalized, sectioned Style Guide, driven
+ * by the universal style-analysis meta-prompt. Works for any writer/language;
+ * the guide is written in English. This is the engine that produces each client's
+ * personalized voice prompt.
+ */
+export async function generateStyleGuide(samples: string[]): Promise<StyleGuide> {
+  const enabled = samples.map((s) => s.trim()).filter(Boolean)
+  if (!enabled.length) throw new Error('No samples to analyze')
+
+  const model = getModel()
+  const effort = supportsEffort(model)
+  const msg = await getClient().messages.create({
+    model,
+    max_tokens: 4000,
+    system: [{ type: 'text', text: STYLE_ANALYSIS_PROMPT, cache_control: { type: 'ephemeral' } }],
+    ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
+    output_config: effort ? { effort: 'medium', format: STYLE_GUIDE_FORMAT } : { format: STYLE_GUIDE_FORMAT },
+    messages: [
+      {
+        role: 'user',
+        content: `Writer's samples (analyze ONLY these):\n\n${enabled.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`,
+      },
+    ],
+  })
+
+  const text = msg.content.find((b) => b.type === 'text')
+  if (!text || text.type !== 'text') throw new Error('No content returned')
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text.text)
+  } catch {
+    throw new Error('Model returned non-JSON output')
+  }
+  const r = StyleGuideSchema.parse(parsed)
+  return { guideMarkdown: r.guideMarkdown.trim(), summary: r.summary.trim() }
+}
+
 let client: Anthropic | null = null
 function getClient(): Anthropic {
   if (!client) {
@@ -238,7 +259,9 @@ function getClient(): Anthropic {
  */
 export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput): Promise<Draft[]> {
   const { hookIntensity = 'bold', subtleHumor = true, count = 1 } = opts
-  const writingAsSelf = !profile.summary?.trim()
+  // A captured Style Guide (or a preset summary) drives the voice; only fall back
+  // to the built-in author spec when neither is present.
+  const writingAsSelf = !profile.summary?.trim() && !profile.styleGuide?.trim()
 
   const baseRules = subtleHumor ? `${SYSTEM_RULES}\n\n${SUBTLE_HUMOR_RULE}` : SYSTEM_RULES
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: baseRules }]
