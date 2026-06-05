@@ -53,7 +53,6 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
 export function ComposeHome({ name, voices }: { name: string; voices: VoiceOption[] }) {
   const active = voices.find((v) => v.isActive) ?? voices[0]
   const [idea, setIdea] = useState('')
-  const [count, setCount] = useState(3)
   const [voiceId, setVoiceId] = useState(active?.id ?? '')
   const [intensity, setIntensity] = useState<HookIntensity>('bold')
   const [loading, setLoading] = useState(false)
@@ -71,7 +70,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
     }
     setLoading(true)
     try {
-      const { drafts } = await compose({ idea, profileId: voiceId || undefined, count, hookIntensity: intensity })
+      const { drafts } = await compose({ idea, profileId: voiceId || undefined, hookIntensity: intensity })
       setDrafts(drafts)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't generate posts. Try again.")
@@ -145,20 +144,6 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
             </select>
           </label>
 
-          <label className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
-            Drafts
-            <select
-              value={count}
-              onChange={(e) => setCount(Number(e.target.value))}
-              aria-label="Number of drafts"
-              className="rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none"
-            >
-              {[1, 2, 3, 4].map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </label>
-
           <button
             type="button"
             onClick={onGenerate}
@@ -175,7 +160,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
       {/* drafts */}
       {loading && (
         <div className="mt-6 rounded-2xl border border-dashed border-border-muted py-12 text-center font-code-label text-code-label text-on-surface-variant/60">
-          writing {count} draft{count > 1 ? 's' : ''} in your voice…
+          writing your draft in your voice…
         </div>
       )}
       {drafts.length > 0 && (
