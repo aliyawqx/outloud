@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   addSample,
   deleteSample as apiDeleteSample,
@@ -37,6 +37,14 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
   const [panelOpen, setPanelOpen] = useState(false)
   const [guideDraft, setGuideDraft] = useState('')
   const [savingGuide, setSavingGuide] = useState(false)
+
+  // Close the full-guide dialog on Escape.
+  useEffect(() => {
+    if (!panelOpen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPanelOpen(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [panelOpen])
 
   const enabledCount = samples.filter((s) => s.usedInStyle).length
 
@@ -76,9 +84,9 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
 
   async function onToggle(id: string, used: boolean) {
     setSamples((s) => s.map((x) => (x.id === id ? { ...x, usedInStyle: used } : x)))
-    if (guide) setStale(true)
     try {
       await apiToggleSample(profile.id, id, used)
+      if (guide) setStale(true)
     } catch {
       setSamples((s) => s.map((x) => (x.id === id ? { ...x, usedInStyle: !used } : x)))
     }
@@ -87,9 +95,9 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
   async function onDelete(id: string) {
     const prev = samples
     setSamples((s) => s.filter((x) => x.id !== id))
-    if (guide) setStale(true)
     try {
       await apiDeleteSample(profile.id, id)
+      if (guide) setStale(true)
     } catch {
       setSamples(prev)
     }
@@ -131,7 +139,7 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
         <Link href="/app/voices" className="hover:text-on-surface">
           Voices
         </Link>
-        <span>›</span>
+        <span aria-hidden="true">›</span>
         <span className="text-on-surface">{profile.name}</span>
       </div>
       <h1 className="mb-5 font-headline-xl text-headline-xl">{profile.name}</h1>
@@ -143,6 +151,7 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
             <button
               key={c.id}
               type="button"
+              aria-pressed={channel === c.id}
               onClick={() => setChannel(c.id)}
               className={`rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
                 channel === c.id ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
@@ -309,16 +318,18 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
 
       {/* full guide editable panel */}
       {panelOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Full style guide" className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="guide-dialog-title" className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <button aria-label="Close" onClick={() => setPanelOpen(false)} className="absolute inset-0 bg-charcoal-black/70 backdrop-blur-sm" />
           <div className="relative flex max-h-[85vh] w-full max-w-2xl flex-col rounded-3xl border border-border-muted bg-surface p-6">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-headline-lg text-headline-lg">Style guide</h3>
+              <h3 id="guide-dialog-title" className="font-headline-lg text-headline-lg">Style guide</h3>
               <span className="font-code-label text-code-label text-on-surface-variant/60">{wordCount(guideDraft)} words</span>
             </div>
             <textarea
+              autoFocus
               value={guideDraft}
               onChange={(e) => setGuideDraft(e.target.value)}
+              aria-label="Edit style guide"
               className="mb-4 h-[55vh] w-full resize-none rounded-xl border border-border-muted bg-surface-container-lowest p-4 font-body-sm leading-relaxed text-on-surface focus:border-electric-indigo focus:outline-none"
             />
             <div className="flex justify-end gap-3">

@@ -83,22 +83,24 @@ export async function listEnabledTexts(
 
 export async function toggleSample(
   ownerKey: string,
+  voiceProfileId: string,
   id: string,
   usedInStyle: boolean,
 ): Promise<WritingSample | null> {
   await ensureSchema()
   const { rows } = await getPool().query<Row>(
-    `UPDATE writing_samples SET used_in_style = $1 WHERE owner_key = $2 AND id = $3 RETURNING *`,
-    [usedInStyle, ownerKey, id],
+    `UPDATE writing_samples SET used_in_style = $1
+     WHERE owner_key = $2 AND voice_profile_id = $3 AND id = $4 RETURNING *`,
+    [usedInStyle, ownerKey, voiceProfileId, id],
   )
   return rows[0] ? mapRow(rows[0]) : null
 }
 
-export async function deleteSample(ownerKey: string, id: string): Promise<boolean> {
+export async function deleteSample(ownerKey: string, voiceProfileId: string, id: string): Promise<boolean> {
   await ensureSchema()
   const { rowCount } = await getPool().query(
-    `DELETE FROM writing_samples WHERE owner_key = $1 AND id = $2`,
-    [ownerKey, id],
+    `DELETE FROM writing_samples WHERE owner_key = $1 AND voice_profile_id = $2 AND id = $3`,
+    [ownerKey, voiceProfileId, id],
   )
   return (rowCount ?? 0) > 0
 }

@@ -23,7 +23,7 @@ const patch = (b: unknown) =>
 beforeEach(() => {
   sessionMock.mockReset(); getProfileMock.mockReset(); setGuideMock.mockReset(); enabledMock.mockReset(); genGuideMock.mockReset()
   sessionMock.mockResolvedValue({ userId: OWNER, email: 'a@b.com' })
-  getProfileMock.mockResolvedValue({ id: 'p1', styleSummary: 'old' })
+  getProfileMock.mockResolvedValue({ id: 'p1', kind: 'own', styleSummary: 'old' })
 })
 
 describe('POST style-guide (sample → guide flow)', () => {

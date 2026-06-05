@@ -96,6 +96,26 @@ describe('generateDrafts with a captured Style Guide', () => {
   })
 })
 
+describe('voice selection never leaks the founder spec to clients', () => {
+  beforeEach(() =>
+    createMock.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }] }) }],
+    }),
+  )
+
+  it('own samples without a guide drive on the samples, NOT MY_VOICE_SPEC', async () => {
+    await generateDrafts({ samples: ['my own raw post here'] }, { input: 'x' })
+    const sys = JSON.stringify(createMock.mock.calls[0][0].system)
+    expect(sys).not.toContain('WRITE IN MY VOICE') // founder spec not imposed on a client
+    expect(sys).toContain('my own raw post here') // their samples anchor the voice
+  })
+
+  it('falls back to the built-in author spec only when there is no voice signal at all', async () => {
+    await generateDrafts({}, { input: 'x' })
+    expect(JSON.stringify(createMock.mock.calls[0][0].system)).toContain('WRITE IN MY VOICE')
+  })
+})
+
 describe('generateStyleGuide', () => {
   it('runs the universal analysis prompt over the samples and returns the guide', async () => {
     createMock.mockResolvedValue({

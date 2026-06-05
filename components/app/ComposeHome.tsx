@@ -27,13 +27,13 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
           {draft.angle ? ` · ${draft.angle}` : ''}
         </span>
         <div className="flex items-center gap-3">
-          <button onClick={() => setEditing((e) => !e)} className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant hover:text-on-surface">
-            <span className="material-symbols-outlined text-[16px]">{editing ? 'check' : 'edit'}</span>
+          <button onClick={() => setEditing((e) => !e)} aria-pressed={editing} className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant hover:text-on-surface">
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{editing ? 'check' : 'edit'}</span>
             {editing ? 'Done' : 'Edit'}
           </button>
           <button onClick={copy} className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant hover:text-on-surface">
-            <span className="material-symbols-outlined text-[16px]">content_copy</span>
-            {copied ? 'Copied' : 'Copy'}
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">content_copy</span>
+            <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
       </div>
@@ -103,6 +103,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
         <textarea
           value={idea}
           onChange={(e) => setIdea(e.target.value)}
+          aria-label="What you shipped"
           placeholder="drop a line about what you shipped…"
           className="h-32 w-full resize-none rounded-xl border border-border-muted bg-surface-container-lowest p-4 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none"
         />
@@ -113,6 +114,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
             <select
               value={voiceId}
               onChange={(e) => setVoiceId(e.target.value)}
+              aria-label="Voice"
               disabled={!hasVoice}
               className="rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none disabled:opacity-50"
             >
@@ -134,6 +136,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
             <select
               value={intensity}
               onChange={(e) => setIntensity(e.target.value as HookIntensity)}
+              aria-label="Hook intensity"
               className="rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none"
             >
               {INTENSITIES.map((n) => (
@@ -147,6 +150,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
             <select
               value={count}
               onChange={(e) => setCount(Number(e.target.value))}
+              aria-label="Number of drafts"
               className="rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none"
             >
               {[1, 2, 3, 4].map((n) => (

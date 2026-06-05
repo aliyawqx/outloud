@@ -14,6 +14,9 @@ export async function POST(_req: Request, { params }: Ctx) {
   const { id } = await params
   const profile = await getProfile(session.userId, id)
   if (!profile) return NextResponse.json({ error: 'Voice not found.' }, { status: 404 })
+  if (profile.kind !== 'own') {
+    return NextResponse.json({ error: 'Style guides are only for your own voice.' }, { status: 400 })
+  }
 
   const samples = await listEnabledTexts(session.userId, id)
   if (samples.length === 0) {
@@ -37,6 +40,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params
   const profile = await getProfile(session.userId, id)
   if (!profile) return NextResponse.json({ error: 'Voice not found.' }, { status: 404 })
+  if (profile.kind !== 'own') {
+    return NextResponse.json({ error: 'Style guides are only for your own voice.' }, { status: 400 })
+  }
 
   let body: unknown
   try {

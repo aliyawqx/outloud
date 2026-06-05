@@ -8,7 +8,7 @@ type Ctx = { params: Promise<{ id: string; sampleId: string }> }
 export async function PATCH(req: Request, { params }: Ctx) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
-  const { sampleId } = await params
+  const { id, sampleId } = await params
 
   let body: unknown
   try {
@@ -21,7 +21,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'usedInStyle must be a boolean.' }, { status: 400 })
   }
 
-  const sample = await toggleSample(session.userId, sampleId, usedInStyle)
+  const sample = await toggleSample(session.userId, id, sampleId, usedInStyle)
   if (!sample) return NextResponse.json({ error: 'Sample not found.' }, { status: 404 })
   return NextResponse.json({ sample })
 }
@@ -30,9 +30,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 export async function DELETE(_req: Request, { params }: Ctx) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
-  const { sampleId } = await params
+  const { id, sampleId } = await params
 
-  const removed = await deleteSample(session.userId, sampleId)
+  const removed = await deleteSample(session.userId, id, sampleId)
   if (!removed) return NextResponse.json({ error: 'Sample not found.' }, { status: 404 })
   return NextResponse.json({ ok: true })
 }

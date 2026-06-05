@@ -147,12 +147,6 @@ ${profile.styleNotes ? `\nNotes: ${profile.styleNotes}` : ''}
 ${samples ? `\n{voice_samples} — the writer's REAL posts (anchor the texture, match this cadence and what they'd never say, do not copy or quote):\n${samples}` : ''}`
 }
 
-function voiceAnchor(samples: string[]): string {
-  return `{voice_samples} — MY REAL POSTS (anchor the texture, do not copy or quote):\n${samples
-    .map((s, i) => `[${i + 1}] ${s}`)
-    .join('\n\n')}`
-}
-
 function buildTask(input: GenerateInput, count: number): string {
   const n = count === 1 ? '1 draft' : `${count} distinct drafts`
   const link = input.optionalLink?.trim()
@@ -259,18 +253,21 @@ function getClient(): Anthropic {
  */
 export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput): Promise<Draft[]> {
   const { hookIntensity = 'bold', subtleHumor = true, count = 1 } = opts
-  // A captured Style Guide (or a preset summary) drives the voice; only fall back
-  // to the built-in author spec when neither is present.
-  const writingAsSelf = !profile.summary?.trim() && !profile.styleGuide?.trim()
+  // Any per-writer signal (captured guide, preset summary, or raw samples) drives
+  // the voice via buildVoiceBlock. The built-in author spec (MY_VOICE_SPEC) is the
+  // founder/demo default and is used ONLY when there is no signal at all — never
+  // imposed on a client who has their own samples.
+  const hasVoiceSignal = Boolean(
+    profile.summary?.trim() || profile.styleGuide?.trim() || profile.samples?.length,
+  )
 
   const baseRules = subtleHumor ? `${SYSTEM_RULES}\n\n${SUBTLE_HUMOR_RULE}` : SYSTEM_RULES
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: baseRules }]
 
-  if (writingAsSelf) {
-    system.push({ type: 'text', text: MY_VOICE_SPEC })
-    if (profile.samples?.length) system.push({ type: 'text', text: voiceAnchor(profile.samples) })
-  } else {
+  if (hasVoiceSignal) {
     system.push({ type: 'text', text: buildVoiceBlock(profile) })
+  } else {
+    system.push({ type: 'text', text: MY_VOICE_SPEC })
   }
   system[system.length - 1].cache_control = { type: 'ephemeral' }
 
