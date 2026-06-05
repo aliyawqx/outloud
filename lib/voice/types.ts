@@ -70,9 +70,11 @@ export type WritingSample = {
   createdAt: string
 }
 
-// ── The seam for later: generation plugs in HERE and nowhere else ──────────────
+// ── The generation seam: the composer plugs in HERE ───────────────────────────
 
-/** A generated post draft. Mirrors the structure the existing composer produces. */
+export type HookIntensity = 'safe' | 'bold' | 'spicy' | 'funny'
+
+/** A generated post draft. Mirrors the structure the generation core produces. */
 export type DraftPost = {
   angle: string
   hook: string
@@ -81,12 +83,20 @@ export type DraftPost = {
   fullText: string
 }
 
-/** Input to the (future) post generator. Everything in Phase 1 feeds `voiceProfile`. */
+/** Input to the post generator. */
 export type GeneratePostInput = {
   /** The rough line about what the user shipped / wants to post about. */
   idea: string
-  /** The voice to write in — a saved, blended or own profile. */
+  /** The voice to write in — a saved own or blended profile. */
   voiceProfile: VoiceProfile
-  /** Optional extras the generator may use later (hook intensity, link, etc.). */
-  options?: Record<string, unknown>
+  /** Raw enabled writing samples (3–5) as in-context anchors. */
+  samples?: string[]
+  /** How many distinct drafts to return (1–4). */
+  count?: number
+  hookIntensity?: HookIntensity
+  /** Optional link to maybe include (lower-reach path). */
+  link?: string
+  /** Challenge day + follower count, injected by code (not computed by the model). */
+  dayNumber?: number
+  followerCount?: number
 }
