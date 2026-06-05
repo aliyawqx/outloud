@@ -28,7 +28,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ id, url })
   } catch (err) {
     if (err instanceof XNotConnectedError) return NextResponse.json({ error: err.message }, { status: 409 })
-    if (err instanceof PublishError) return NextResponse.json({ error: err.message }, { status: 502 })
+    if (err instanceof PublishError) {
+      // X's raw reason (e.g. billing/credits, rate limit) is internal — log it,
+      // show the customer a clean, generic message.
+      console.error('[x/publish] X rejected the post:', err.message)
+      return NextResponse.json({ error: "Couldn't publish to X right now. Please try again." }, { status: 502 })
+    }
     console.error('[x/publish] failed:', err)
     return NextResponse.json({ error: 'Could not publish to X. Try again.' }, { status: 500 })
   }
