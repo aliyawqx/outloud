@@ -46,9 +46,12 @@ export function toVoiceInput(profile: VoiceProfile, sampleTexts: string[] = []):
 /**
  * THE SEAM. Generate N distinct post drafts for an idea in a saved voice, using
  * the HSO post prompt + the voice's Style Guide + raw sample anchors, with
- * day/follower context injected by code.
+ * day/follower context injected by code. Returns a clarifying ask instead of
+ * drafts when the idea is unclear.
  */
-export async function generatePost(input: GeneratePostInput): Promise<DraftPost[]> {
+export async function generatePost(
+  input: GeneratePostInput,
+): Promise<{ drafts: DraftPost[]; clarify: string }> {
   const voice = toVoiceInput(input.voiceProfile, input.samples ?? [])
   const count = Math.min(4, Math.max(1, input.count ?? 1))
 

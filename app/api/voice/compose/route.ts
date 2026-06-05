@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
   try {
     const samples = await listEnabledTexts(session.userId, profile.id, 5)
-    const drafts = await generatePost({
+    const { drafts, clarify } = await generatePost({
       idea,
       voiceProfile: profile,
       samples,
@@ -55,6 +55,11 @@ export async function POST(req: Request) {
       link,
       ...(challenge ? { dayNumber: challengeDay(), followerCount: followerCount() } : {}),
     })
+
+    // Unclear idea → ask for more detail; no draft, nothing saved to history.
+    if (clarify && drafts.length === 0) {
+      return NextResponse.json({ clarify, voiceName: profile.name })
+    }
 
     // Save the session for History (best-effort — never fail the response on this).
     let historyId: string | undefined

@@ -30,7 +30,7 @@ beforeEach(() => {
   sessionMock.mockResolvedValue({ userId: OWNER, email: 'a@b.com' })
   listProfilesMock.mockResolvedValue([{ id: 'p1', name: 'My voice', isActive: true }])
   enabledMock.mockResolvedValue(['anchor sample'])
-  genMock.mockResolvedValue(drafts)
+  genMock.mockResolvedValue({ drafts, clarify: '' })
   saveMock.mockResolvedValue({ id: 'h1' })
 })
 
@@ -59,6 +59,16 @@ describe('POST /api/voice/compose', () => {
       idea: 'shipped billing',
       drafts,
     })
+  })
+
+  it('returns a clarify ask (no draft, no history save) when the idea is unclear', async () => {
+    genMock.mockResolvedValue({ drafts: [], clarify: 'tell me more about what you shipped' })
+    const res = await POST(req({ idea: 'asdf' }))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.clarify).toContain('tell me more')
+    expect(json.drafts).toBeUndefined()
+    expect(saveMock).not.toHaveBeenCalled()
   })
 
   it('still returns drafts if the history save fails', async () => {

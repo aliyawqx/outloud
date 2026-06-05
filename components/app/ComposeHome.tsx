@@ -57,12 +57,14 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
   const [intensity, setIntensity] = useState<HookIntensity>('bold')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [clarify, setClarify] = useState('')
   const [drafts, setDrafts] = useState<DraftPost[]>([])
 
   const hasVoice = voices.length > 0
 
   async function onGenerate() {
     setError('')
+    setClarify('')
     setDrafts([])
     if (!idea.trim()) {
       setError('Drop a line about what you shipped first.')
@@ -70,8 +72,12 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
     }
     setLoading(true)
     try {
-      const { drafts } = await compose({ idea, profileId: voiceId || undefined, hookIntensity: intensity })
-      setDrafts(drafts)
+      const res = await compose({ idea, profileId: voiceId || undefined, hookIntensity: intensity })
+      if (res.clarify) {
+        setClarify(res.clarify)
+      } else {
+        setDrafts(res.drafts ?? [])
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't generate posts. Try again.")
     } finally {
@@ -163,6 +169,16 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
           writing your draft in your voice…
         </div>
       )}
+      {clarify && (
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-cyber-lime/30 bg-cyber-lime/5 p-5">
+          <span aria-hidden="true" className="material-symbols-outlined text-cyber-lime">help</span>
+          <div>
+            <p className="font-body-md text-body-md text-on-surface">tell me a bit more</p>
+            <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">{clarify}</p>
+          </div>
+        </div>
+      )}
+
       {drafts.length > 0 && (
         <div className="mt-6 flex flex-col gap-4">
           {drafts.map((d, i) => (

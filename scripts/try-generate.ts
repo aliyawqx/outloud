@@ -34,7 +34,7 @@ async function main() {
     subtleHumor: true,
     count: 1,
   })
-  console.log(take[0].fullText)
+  console.log(take.drafts[0].fullText)
 
   console.log('\n════ REPLY (to a popular post, subtle humor) ════')
   const reply = await generateDrafts(profile, {
@@ -44,7 +44,7 @@ async function main() {
     subtleHumor: true,
     count: 1,
   })
-  console.log(reply[0].fullText)
+  console.log(reply.drafts[0].fullText)
   console.log()
 }
 

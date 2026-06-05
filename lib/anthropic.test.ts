@@ -35,7 +35,7 @@ describe('generateDrafts', () => {
       ],
     })
 
-    const drafts = await generateDrafts(profile, { input: 'shipped dark mode + 2x faster export' })
+    const { drafts } = await generateDrafts(profile, { input: 'shipped dark mode + 2x faster export' })
 
     expect(drafts).toHaveLength(2)
     expect(drafts[0]).toMatchObject({ angle: 'technical', hook: 'h', fullText: 'h\n\ns\n\no' })
@@ -56,13 +56,13 @@ describe('generateDrafts', () => {
     createMock.mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: '', fullText: 'shipped the thing today' }] }) }],
     })
-    const [withCount] = await generateDrafts(profile, { input: 'x', challengeDay: 5, followerCount: 340 })
+    const { drafts: [withCount] } = await generateDrafts(profile, { input: 'x', challengeDay: 5, followerCount: 340 })
     expect(withCount.fullText).toBe('Day 5/56 · 340 followers\n\nshipped the thing today')
 
     createMock.mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: '', fullText: 'body' }] }) }],
     })
-    const [noCount] = await generateDrafts(profile, { input: 'x', challengeDay: 5 })
+    const { drafts: [noCount] } = await generateDrafts(profile, { input: 'x', challengeDay: 5 })
     expect(noCount.fullText).toBe('Day 5/56\n\nbody')
   })
 
@@ -113,6 +113,35 @@ describe('voice selection never leaks the founder spec to clients', () => {
   it('falls back to the built-in author spec only when there is no voice signal at all', async () => {
     await generateDrafts({}, { input: 'x' })
     expect(JSON.stringify(createMock.mock.calls[0][0].system)).toContain('WRITE IN MY VOICE')
+  })
+})
+
+describe('generation rules', () => {
+  it('returns a clarifying ask (no drafts) when the idea is unclear', async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ clarify: 'что именно ты сделал? опиши подробнее.', drafts: [] }) }],
+    })
+    const r = await generateDrafts(profile, { input: 'asdfgh' })
+    expect(r.drafts).toHaveLength(0)
+    expect(r.clarify).toContain('подробнее')
+  })
+
+  it('strips long em/en dashes from generated text', async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'shipped it — finally', story: 's – more', offer: 'o', fullText: 'shipped it — finally\n\ns – more' }] }) }],
+    })
+    const { drafts } = await generateDrafts(profile, { input: 'x' })
+    const all = JSON.stringify(drafts)
+    expect(all).not.toMatch(/[—–―]/)
+    expect(drafts[0].hook).toBe('shipped it - finally')
+  })
+
+  it('instructs the model to keep the idea’s language', async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }] }) }],
+    })
+    await generateDrafts(profile, { input: 'запустил тёмную тему' })
+    expect(createMock.mock.calls[0][0].messages[0].content).toContain('same language as the idea')
   })
 })
 

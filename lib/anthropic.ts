@@ -55,18 +55,35 @@ export type Draft = {
   fullText: string
 }
 
+/** Either drafts, or a clarifying question when the idea was unclear (not both). */
+export type GenerateResult = { drafts: Draft[]; clarify: string }
+
+/** Hard guarantee: no long em/en dashes in generated text (use a plain hyphen). */
+function noEmDashes(s: string): string {
+  return s.replace(/[—–―]/g, '-')
+}
+function sanitizeDraft(d: Draft): Draft {
+  return {
+    angle: noEmDashes(d.angle),
+    hook: noEmDashes(d.hook),
+    story: noEmDashes(d.story),
+    offer: noEmDashes(d.offer),
+    fullText: noEmDashes(d.fullText),
+  }
+}
+
 const DraftsSchema = z.object({
-  drafts: z
-    .array(
-      z.object({
-        angle: z.string(),
-        hook: z.string(),
-        story: z.string(),
-        offer: z.string(),
-        fullText: z.string(),
-      }),
-    )
-    .min(1),
+  /** When set, the idea was unclear: a question to the user (in their language), no drafts. */
+  clarify: z.string().optional().default(''),
+  drafts: z.array(
+    z.object({
+      angle: z.string(),
+      hook: z.string(),
+      story: z.string(),
+      offer: z.string(),
+      fullText: z.string(),
+    }),
+  ),
 })
 
 const DRAFTS_FORMAT = {
@@ -75,6 +92,7 @@ const DRAFTS_FORMAT = {
     type: 'object',
     additionalProperties: false,
     properties: {
+      clarify: { type: 'string' },
       drafts: {
         type: 'array',
         items: {
@@ -91,7 +109,7 @@ const DRAFTS_FORMAT = {
         },
       },
     },
-    required: ['drafts'],
+    required: ['clarify', 'drafts'],
   },
 }
 
@@ -99,7 +117,7 @@ const DRAFTS_FORMAT = {
 const SYSTEM_RULES = POST_PROMPT
 
 // ── The author's voice (RU→EN transfer): texture, not topics (self-only) ───────
-const MY_VOICE_SPEC = `WRITE IN MY VOICE. It was learned from my Russian, diary-style posts. Transfer the STYLE and REGISTER to English build-in-public/marketing content. Never output Russian, never copy diary topics, reproduce the TEXTURE of how i write.
+const MY_VOICE_SPEC = `WRITE IN MY VOICE. Transfer the STYLE and REGISTER to build-in-public/marketing content, in the SAME language as the user's idea. Reproduce the TEXTURE of how i write, never copy diary topics.
 
 Register: casual, unfiltered, reflective. Emotional honesty sits right next to plain facts, no apology, no polish.
 
@@ -251,7 +269,7 @@ function getClient(): Anthropic {
  * - No preset summary  → write as the author (MY_VOICE_SPEC + my sample posts).
  * - Preset summary set → write in that celebrity/preset voice instead.
  */
-export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput): Promise<Draft[]> {
+export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput): Promise<GenerateResult> {
   const { hookIntensity = 'bold', subtleHumor = true, count = 1 } = opts
   // Any per-writer signal (captured guide, preset summary, or raw samples) drives
   // the voice via buildVoiceBlock. The built-in author spec (MY_VOICE_SPEC) is the
@@ -280,7 +298,12 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
     system,
     ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
     output_config: effort ? { effort: 'medium', format: DRAFTS_FORMAT } : { format: DRAFTS_FORMAT },
-    messages: [{ role: 'user', content: `${hookGuidance(hookIntensity)}\n\n${buildTask(opts, count)}` }],
+    messages: [
+      {
+        role: 'user',
+        content: `LANGUAGE: write the post in the exact same language as the idea below. Do not translate it.\n\n${hookGuidance(hookIntensity)}\n\n${buildTask(opts, count)}`,
+      },
+    ],
   })
 
   const text = msg.content.find((b) => b.type === 'text')
@@ -292,12 +315,19 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   } catch {
     throw new Error('Model returned non-JSON output')
   }
-  const drafts = DraftsSchema.parse(parsed).drafts
+  const result = DraftsSchema.parse(parsed)
 
-  // Prepend the fixed challenge-day header (deterministic, never counted toward length).
+  // Unclear idea → return the clarifying ask, no drafts.
+  const clarify = noEmDashes((result.clarify ?? '').trim())
+  if (clarify && result.drafts.length === 0) return { drafts: [], clarify }
+
   const header = dayHeader(opts.challengeDay, opts.followerCount)
-  if (!header) return drafts
-  return drafts.map((d) => ({ ...d, fullText: `${header}\n\n${d.fullText}` }))
+  const drafts = result.drafts.map((d) => {
+    const clean = sanitizeDraft(d)
+    // Prepend the fixed challenge-day header (deterministic, never counted toward length).
+    return header ? { ...clean, fullText: `${header}\n\n${clean.fullText}` } : clean
+  })
+  return { drafts, clarify: '' }
 }
 
 function dayHeader(day?: number, followers?: number): string | null {

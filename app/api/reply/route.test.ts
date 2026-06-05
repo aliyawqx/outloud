@@ -21,7 +21,7 @@ beforeEach(() => genMock.mockReset())
 
 describe('POST /api/reply', () => {
   it('returns a draft for valid input and calls generateDrafts in reply mode', async () => {
-    genMock.mockResolvedValue([draft])
+    genMock.mockResolvedValue({ drafts: [draft], clarify: '' })
     const res = await post({ samples: ['my post'], replyTo: 'a viral take', angle: 'undercut it' })
     expect(res.status).toBe(200)
     const json = await res.json()
@@ -41,14 +41,14 @@ describe('POST /api/reply', () => {
   })
 
   it('works with no voice samples (voice is optional)', async () => {
-    genMock.mockResolvedValue([draft])
+    genMock.mockResolvedValue({ drafts: [draft], clarify: '' })
     const res = await post({ replyTo: 'a viral take' })
     expect(res.status).toBe(200)
     expect(genMock.mock.calls[0][1].kind).toBe('reply')
   })
 
   it('returns 500 when generation yields no draft', async () => {
-    genMock.mockResolvedValue([])
+    genMock.mockResolvedValue({ drafts: [], clarify: '' })
     const res = await post({ samples: ['my post'], replyTo: 'a viral take' })
     expect(res.status).toBe(500)
   })

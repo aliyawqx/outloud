@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     : { samples }
 
   try {
-    const drafts = await generateDrafts(profile, {
+    const { drafts, clarify } = await generateDrafts(profile, {
       kind: 'reply',
       replyTo,
       input: angle ?? '',
@@ -33,6 +33,9 @@ export async function POST(req: NextRequest) {
       subtleHumor,
       count: 1,
     })
+    if (clarify && drafts.length === 0) {
+      return NextResponse.json({ clarify })
+    }
     const draft = drafts[0]
     if (!draft) {
       return NextResponse.json({ error: "Couldn't generate a reply. Try again." }, { status: 500 })

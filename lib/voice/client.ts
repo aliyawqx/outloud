@@ -93,7 +93,7 @@ export function compose(body: {
   count?: number
   hookIntensity?: HookIntensity
   link?: string
-}): Promise<{ drafts: DraftPost[]; voiceName: string; historyId?: string }> {
+}): Promise<{ drafts?: DraftPost[]; clarify?: string; voiceName: string; historyId?: string }> {
   return api('/api/voice/compose', { method: 'POST', body: JSON.stringify(body) })
 }
 

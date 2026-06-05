@@ -42,8 +42,8 @@ describe('generatePost', () => {
   beforeEach(() => draftsMock.mockReset())
 
   it('drives generateDrafts in ship mode with day/follower + clamped count', async () => {
-    draftsMock.mockResolvedValue([{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }])
-    const drafts = await generatePost({
+    draftsMock.mockResolvedValue({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }], clarify: '' })
+    const { drafts } = await generatePost({
       idea: 'shipped billing',
       voiceProfile: own({ styleGuide: '## Tone\nblunt' }),
       samples: ['anchor'],
