@@ -36,6 +36,10 @@ export type GenerateInput = {
   kind?: ContentKind
   /** For kind: 'reply' — the popular post being replied to. */
   replyTo?: string
+  /** Revision mode: the existing draft to edit. When set, the model applies the
+   *  change in `input` to this post and keeps the SAME voice, length and structure
+   *  (instead of regenerating from scratch, which can drift off-voice). */
+  reviseBase?: string
   hookIntensity?: HookIntensity
   /** {optional_link} — a URL to maybe include (links are a lower-reach path). */
   optionalLink?: string
@@ -159,6 +163,11 @@ function buildTask(input: GenerateInput, count: number): string {
   const linkLine = link
     ? `\n\n{optional_link} (links reduce reach, include only if it clearly strengthens the post, on its own last line): ${link}`
     : ''
+  // Revision: edit the existing post, don't regenerate. Preserve the voice and
+  // length that are already there; only fold in the requested change.
+  if (input.reviseBase?.trim()) {
+    return `Here is the current post, already written in the author's voice:\n"""\n${input.reviseBase.trim()}\n"""\n\nThe author wants this single change: ${input.input}\n\nRewrite the post applying ONLY that change. Keep the SAME voice, register, length, structure and rhythm as the current post - do NOT make it longer, do NOT switch to a generic or more formal style, do NOT add sections it doesn't already have. Return the revised post.${linkLine}`
+  }
   switch (input.kind) {
     case 'take':
       return `Write ${n}: a standalone X post in my voice (full HOOK/DEFUSE/STORY/BRIDGE/OFFER structure) about:\n\n${input.input}${linkLine}`

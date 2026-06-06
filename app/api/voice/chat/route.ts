@@ -45,6 +45,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
   }
 
+  // When iterating on an existing draft, edit THAT draft (keeps the voice and
+  // length) instead of regenerating from scratch, which can drift off-voice.
+  const lastDraft = typeof b.lastDraft === 'string' && b.lastDraft.trim() ? b.lastDraft.trim() : undefined
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? ''
+
   try {
     const intake = await runIntake(messages)
     if (intake.action === 'ask') {
@@ -52,7 +57,8 @@ export async function POST(req: Request) {
     }
     const samples = await listEnabledTexts(session.userId, profile.id, 5)
     const { drafts, clarify } = await generatePost({
-      idea: intake.brief,
+      idea: lastDraft ? lastUserMessage : intake.brief,
+      reviseBase: lastDraft,
       voiceProfile: profile,
       samples,
       count: 1,

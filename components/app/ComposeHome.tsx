@@ -125,6 +125,8 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
     setError('')
     const userTurn: Turn = { id: id(), role: 'user', text }
     const messages = toApi(userTurn)
+    // The most recent draft, if any — so a follow-up edits it in the same voice.
+    const lastDraft = [...turns].reverse().find((t): t is Extract<Turn, { draft: DraftPost }> => 'draft' in t)?.draft.fullText
     setTurns((t) => [...t, userTurn])
     setInput('')
     setLoading(true)
@@ -132,7 +134,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
       const res = await fetch('/api/voice/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, profileId: voiceId || undefined }),
+        body: JSON.stringify({ messages, profileId: voiceId || undefined, lastDraft }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 409 && data.needsVoice) {

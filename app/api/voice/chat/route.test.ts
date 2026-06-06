@@ -61,7 +61,27 @@ describe('POST /api/voice/chat', () => {
     genMock.mockResolvedValue({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'the post' }], clarify: '' })
     const res = await POST(json({ messages: [{ role: 'user', content: 'shipped billing for x' }], profileId: 'p1' }))
     expect(res.status).toBe(200)
-    expect(genMock).toHaveBeenCalledWith(expect.objectContaining({ idea: 'shipped billing on x', samples: ['a sample'] }))
+    expect(genMock).toHaveBeenCalledWith(expect.objectContaining({ idea: 'shipped billing on x', reviseBase: undefined, samples: ['a sample'] }))
     expect((await res.json()).draft.fullText).toBe('the post')
+  })
+
+  it('edits the last draft in place (keeps voice) when lastDraft is provided', async () => {
+    intakeMock.mockResolvedValue({ action: 'write', brief: 'ignored for revisions' })
+    genMock.mockResolvedValue({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'revised post' }], clarify: '' })
+    const res = await POST(json({
+      messages: [
+        { role: 'user', content: 'shipped billing' },
+        { role: 'assistant', content: 'the first draft in elon voice' },
+        { role: 'user', content: 'add that it was zero budget' },
+      ],
+      profileId: 'p1',
+      lastDraft: 'the first draft in elon voice',
+    }))
+    expect(res.status).toBe(200)
+    // Revise mode: base = the prior draft, instruction = the latest user message.
+    expect(genMock).toHaveBeenCalledWith(expect.objectContaining({
+      reviseBase: 'the first draft in elon voice',
+      idea: 'add that it was zero budget',
+    }))
   })
 })

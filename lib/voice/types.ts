@@ -110,6 +110,8 @@ export type GeneratePostInput = {
   hookIntensity?: HookIntensity
   /** Optional link to maybe include (lower-reach path). */
   link?: string
+  /** Revision mode: an existing draft to edit in place (keeps voice + length). */
+  reviseBase?: string
   /** Optional progress-counter values (generic, user-configured; off by default). */
   progressDay?: number
   progressTotal?: number
