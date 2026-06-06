@@ -78,12 +78,15 @@ describe('POST /api/voice/compose', () => {
     expect((await res.json()).drafts).toEqual(drafts)
   })
 
-  it('does NOT inject day/follower by default, but does when challenge:true', async () => {
+  it('never injects a progress counter by default; only passes user-supplied values', async () => {
     await POST(req({ idea: 'x' }))
-    expect(genMock.mock.calls[0][0].dayNumber).toBeUndefined()
+    expect(genMock.mock.calls[0][0].progressDay).toBeUndefined()
+    expect(genMock.mock.calls[0][0].followerCount).toBeUndefined()
 
     genMock.mockClear()
-    await POST(req({ idea: 'x', challenge: true }))
-    expect(typeof genMock.mock.calls[0][0].dayNumber).toBe('number')
+    await POST(req({ idea: 'x', progressDay: 5, progressTotal: 30, followerCount: 340 }))
+    expect(genMock.mock.calls[0][0].progressDay).toBe(5)
+    expect(genMock.mock.calls[0][0].progressTotal).toBe(30)
+    expect(genMock.mock.calls[0][0].followerCount).toBe(340)
   })
 })

@@ -52,18 +52,18 @@ describe('generateDrafts', () => {
     expect(args.messages[0].content).toContain('shipped dark mode + 2x faster export')
   })
 
-  it('prepends the Day N/56 header when challengeDay is set', async () => {
+  it('prepends a generic, user-configured progress header when progressDay is set', async () => {
     createMock.mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: '', fullText: 'shipped the thing today' }] }) }],
     })
-    const { drafts: [withCount] } = await generateDrafts(profile, { input: 'x', challengeDay: 5, followerCount: 340 })
-    expect(withCount.fullText).toBe('Day 5/56 · 340 followers\n\nshipped the thing today')
+    const { drafts: [withCount] } = await generateDrafts(profile, { input: 'x', progressDay: 5, progressTotal: 30, followerCount: 340 })
+    expect(withCount.fullText).toBe('Day 5/30 · 340 followers\n\nshipped the thing today')
 
     createMock.mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: '', fullText: 'body' }] }) }],
     })
-    const { drafts: [noCount] } = await generateDrafts(profile, { input: 'x', challengeDay: 5 })
-    expect(noCount.fullText).toBe('Day 5/56\n\nbody')
+    const { drafts: [noCount] } = await generateDrafts(profile, { input: 'x', progressDay: 5 })
+    expect(noCount.fullText).toBe('Day 5\n\nbody')
   })
 
   it('respects hook intensity', async () => {
@@ -96,23 +96,22 @@ describe('generateDrafts with a captured Style Guide', () => {
   })
 })
 
-describe('voice selection never leaks the founder spec to clients', () => {
+describe('voice is always per-user, with no built-in default voice', () => {
   beforeEach(() =>
     createMock.mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }] }) }],
     }),
   )
 
-  it('own samples without a guide drive on the samples, NOT MY_VOICE_SPEC', async () => {
+  it("drives the voice on the user's own samples", async () => {
     await generateDrafts({ samples: ['my own raw post here'] }, { input: 'x' })
     const sys = JSON.stringify(createMock.mock.calls[0][0].system)
-    expect(sys).not.toContain('WRITE IN MY VOICE') // founder spec not imposed on a client
     expect(sys).toContain('my own raw post here') // their samples anchor the voice
   })
 
-  it('falls back to the built-in author spec only when there is no voice signal at all', async () => {
-    await generateDrafts({}, { input: 'x' })
-    expect(JSON.stringify(createMock.mock.calls[0][0].system)).toContain('WRITE IN MY VOICE')
+  it('throws VoiceRequiredError when there is no voice signal (no default voice)', async () => {
+    await expect(generateDrafts({}, { input: 'x' })).rejects.toThrow(/voice is required/i)
+    expect(createMock).not.toHaveBeenCalled() // never calls the model without a voice
   })
 })
 

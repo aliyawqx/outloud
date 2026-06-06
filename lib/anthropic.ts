@@ -39,12 +39,23 @@ export type GenerateInput = {
   /** {optional_link} — a URL to maybe include (links are a lower-reach path). */
   optionalLink?: string
   subtleHumor?: boolean
-  /** {day_number} — challenge day, injected by code. Adds the fixed header line. */
-  challengeDay?: number
-  /** {follower_count} — current follower number for the header. */
+  /** Optional progress-counter day (generic, user-configured). Adds a header line. */
+  progressDay?: number
+  /** Optional progress-counter goal/total, e.g. "Day 5/30". */
+  progressTotal?: number
+  /** Optional follower number for the header. */
   followerCount?: number
   /** How many drafts to return. Defaults to 1. */
   count?: number
+}
+
+/** Thrown when generation is attempted without any captured voice. There is no
+ *  default voice: the caller must route the user to create a voice first. */
+export class VoiceRequiredError extends Error {
+  constructor() {
+    super('A captured voice is required to generate. Create a voice first.')
+    this.name = 'VoiceRequiredError'
+  }
 }
 
 export type Draft = {
@@ -115,30 +126,6 @@ const DRAFTS_FORMAT = {
 
 // ── Shared rules: role, anti-slop, structure, length (system[0]) ───────────────
 const SYSTEM_RULES = POST_PROMPT
-
-// ── The author's voice (RU→EN transfer): texture, not topics (self-only) ───────
-const MY_VOICE_SPEC = `WRITE IN MY VOICE. Transfer the STYLE and REGISTER to build-in-public/marketing content, in the SAME language as the user's idea. Reproduce the TEXTURE of how i write, never copy diary topics.
-
-Register: casual, unfiltered, reflective. Emotional honesty sits right next to plain facts, no apology, no polish.
-
-Sentence architecture:
-- Default to developed, flowing sentences. Let an idea unfold fully. Reflective writing, not a list of fragments.
-- Build long sentences ADDITIVELY: chain clauses with commas and join with "and", "but", "also", "so", "then". Pile thoughts side by side, not nested.
-- DO NOT use subordinate/complex clauses (no "which", "because", "although", "while", "since" as mid-sentence connectors). DO NOT use participial phrases ("having done X", "running late"). Every clause is a plain, complete statement that could stand alone, just linked by a comma or a conjunction.
-- Colon only for: (1) a detail/clarification on the word right before it; (2) a list of homogeneous items ("three things broke today: the build, the deploy, and my will to live"). Never to link two full thoughts.
-- Length follows the THOUGHT. Long when it needs room, short when it's genuinely small. Don't stretch past it, don't clip one that needs to breathe.
-- Short, cut-short sentences ALLOWED but RARE (about three max per post), for emphasis, not the default.
-- Open with the subject or action, no warm-up. State the fact, then keep going with the feeling or next event in the same breath.
-
-Punctuation: minimal, commas do the work periods could. NO em-dashes ever. Ellipses for trailing uncertainty ("works on my machine… we'll see"). Parentheticals only for quick asides "(with breaks, obviously)". Mostly lowercase. Emoji rare, emotional tone only.
-
-Vocabulary: casual contractions (rn, tbh, ngl, kinda, gonna, prob, anyway, basically). Approximations when feeling > fact ("like 2 hours", "been up 36+ hours"). Plain physical verbs (shipped, broke, fixed, survived, scrapped it). A short blunt phrase at emotional peaks ("i'm cooked", "this is a win", "absolute mess"). Concrete comparisons from body/home/daily life, never abstraction.
-
-Tone: move between flat reportage and sudden honesty with no transition. Follow the thought to its natural end before stopping. When something's bad say it's bad, when a small thing's good let it land ("this is a win i think"). Dry self-aimed humor, no setup. Hedge rarely, only "i guess" / "i think".
-
-VOICE TEXTURE EXAMPLES (these show sentence flow, not the full hook/defuse/bridge/offer structure):
-- spent six hours today on a bug, it made no sense, i added logs everywhere and rewrote the whole function twice and got nowhere, and then i finally found it, it was one typo in a variable name. one character. ngl i'm cooked.
-- shipped dark mode today, it took the whole day and i broke prod once right in the middle, classic move honestly. it works now, mostly, and we'll see how long that lasts.`
 
 const SUBTLE_HUMOR_RULE = `VOICE FLAVOR — subtle double meaning (тонкий юмор), sparingly: where it fits, one line that reads as a normal statement to a casual reader but carries a second, knowing meaning for insiders. Never explained, never flagged. At most one per post, only if it doesn't cost substance.`
 
@@ -265,28 +252,24 @@ function getClient(): Anthropic {
 }
 
 /**
- * Generate X content in a voice.
- * - No preset summary  → write as the author (MY_VOICE_SPEC + my sample posts).
- * - Preset summary set → write in that celebrity/preset voice instead.
+ * Generate X content in a per-user voice. The voice is ALWAYS captured per user:
+ * their own Style Guide/samples, or a chosen preset's summary/samples. There is
+ * NO default/built-in voice — with no voice signal this throws VoiceRequiredError
+ * and the caller routes the user to create a voice first.
  */
 export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput): Promise<GenerateResult> {
   const { hookIntensity = 'bold', subtleHumor = true, count = 1 } = opts
-  // Any per-writer signal (captured guide, preset summary, or raw samples) drives
-  // the voice via buildVoiceBlock. The built-in author spec (MY_VOICE_SPEC) is the
-  // founder/demo default and is used ONLY when there is no signal at all — never
-  // imposed on a client who has their own samples.
+  // The voice is driven entirely by the per-user signal (captured guide, preset
+  // summary, or raw samples). No signal → no voice → do not generate.
   const hasVoiceSignal = Boolean(
     profile.summary?.trim() || profile.styleGuide?.trim() || profile.samples?.length,
   )
+  if (!hasVoiceSignal) throw new VoiceRequiredError()
 
   const baseRules = subtleHumor ? `${SYSTEM_RULES}\n\n${SUBTLE_HUMOR_RULE}` : SYSTEM_RULES
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: baseRules }]
 
-  if (hasVoiceSignal) {
-    system.push({ type: 'text', text: buildVoiceBlock(profile) })
-  } else {
-    system.push({ type: 'text', text: MY_VOICE_SPEC })
-  }
+  system.push({ type: 'text', text: buildVoiceBlock(profile) })
   system[system.length - 1].cache_control = { type: 'ephemeral' }
 
   const model = getModel()
@@ -321,20 +304,20 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   const clarify = noEmDashes((result.clarify ?? '').trim())
   if (clarify && result.drafts.length === 0) return { drafts: [], clarify }
 
-  const header = dayHeader(opts.challengeDay, opts.followerCount)
+  const header = progressHeader(opts.progressDay, opts.progressTotal, opts.followerCount)
   const drafts = result.drafts.map((d) => {
     const clean = sanitizeDraft(d)
-    // Prepend the fixed challenge-day header (deterministic, never counted toward length).
+    // Prepend the optional progress-counter header (deterministic, never counted toward length).
     return header ? { ...clean, fullText: `${header}\n\n${clean.fullText}` } : clean
   })
   return { drafts, clarify: '' }
 }
 
-function dayHeader(day?: number, followers?: number): string | null {
+// Generic, optional progress-counter header. No hardcoded goal or framing — the
+// day, the goal/total, and the follower number are all supplied by the caller
+// (user-configured). Off entirely when no day is provided.
+function progressHeader(day?: number, total?: number, followers?: number): string | null {
   if (day == null) return null
-  const f = followers == null ? '' : ` followers`
-  if (day > 56) {
-    return followers == null ? `Day ${day} · challenge done` : `Day ${day} · challenge done, ${followers}${f}`
-  }
-  return followers == null ? `Day ${day}/56` : `Day ${day}/56 · ${followers}${f}`
+  const head = total != null ? `Day ${day}/${total}` : `Day ${day}`
+  return followers == null ? head : `${head} · ${followers} followers`
 }

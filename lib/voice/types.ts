@@ -106,7 +106,8 @@ export type GeneratePostInput = {
   hookIntensity?: HookIntensity
   /** Optional link to maybe include (lower-reach path). */
   link?: string
-  /** Challenge day + follower count, injected by code (not computed by the model). */
-  dayNumber?: number
+  /** Optional progress-counter values (generic, user-configured; off by default). */
+  progressDay?: number
+  progressTotal?: number
   followerCount?: number
 }

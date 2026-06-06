@@ -41,7 +41,7 @@ describe('toVoiceInput', () => {
 describe('generatePost', () => {
   beforeEach(() => draftsMock.mockReset())
 
-  it('drives generateDrafts in ship mode with day/follower + clamped count', async () => {
+  it('drives generateDrafts in ship mode with progress counter + clamped count', async () => {
     draftsMock.mockResolvedValue({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }], clarify: '' })
     const { drafts } = await generatePost({
       idea: 'shipped billing',
@@ -49,7 +49,8 @@ describe('generatePost', () => {
       samples: ['anchor'],
       count: 9, // clamps to 4
       hookIntensity: 'spicy',
-      dayNumber: 5,
+      progressDay: 5,
+      progressTotal: 30,
       followerCount: 340,
     })
     expect(drafts).toHaveLength(1)
@@ -58,7 +59,8 @@ describe('generatePost', () => {
     expect(opts.kind).toBe('ship')
     expect(opts.count).toBe(4)
     expect(opts.hookIntensity).toBe('spicy')
-    expect(opts.challengeDay).toBe(5)
+    expect(opts.progressDay).toBe(5)
+    expect(opts.progressTotal).toBe(30)
     expect(opts.followerCount).toBe(340)
   })
 })

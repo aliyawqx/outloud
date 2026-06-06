@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { compose } from '@/lib/voice/client'
 import type { DraftPost, HookIntensity } from '@/lib/voice/types'
@@ -96,6 +97,7 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
 }
 
 export function ComposeHome({ name, voices }: { name: string; voices: VoiceOption[] }) {
+  const router = useRouter()
   const active = voices.find((v) => v.isActive) ?? voices[0]
   const [idea, setIdea] = useState('')
   const [voiceId, setVoiceId] = useState(active?.id ?? '')
@@ -111,6 +113,11 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
     setError('')
     setClarify('')
     setDrafts([])
+    // No voice yet → never generate with a default voice; route to create one first.
+    if (!hasVoice) {
+      router.push('/app/voices')
+      return
+    }
     if (!idea.trim()) {
       setError('Drop a line about what you shipped first.')
       return
@@ -201,7 +208,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
             disabled={loading}
             className="ml-auto rounded-full bg-electric-indigo px-6 py-2.5 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
           >
-            {loading ? 'Writing…' : 'Start writing'}
+            {loading ? 'Writing…' : hasVoice ? 'Start writing' : 'Create a voice first'}
           </button>
         </div>
 

@@ -4,7 +4,6 @@ import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { generatePost, VoiceNotReadyError } from '@/lib/voice/generate'
 import { saveComposeSession } from '@/lib/voice/history'
-import { challengeDay, followerCount } from '@/lib/voice/challenge'
 import type { HookIntensity } from '@/lib/voice/types'
 
 const IDEA_MAX = 2000
@@ -41,8 +40,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'No voice selected. Pick or set one active first.' }, { status: 400 })
   }
 
-  // Challenge/progress framing (Day N · followers) is opt-in per request, not the default.
-  const challenge = b.challenge === true
+  // Optional progress counter (Day N · followers) is generic and user-supplied:
+  // off unless the request provides numbers. No hardcoded goal or personal data.
+  const progressDay = typeof b.progressDay === 'number' ? b.progressDay : undefined
+  const progressTotal = typeof b.progressTotal === 'number' ? b.progressTotal : undefined
+  const followerCount = typeof b.followerCount === 'number' ? b.followerCount : undefined
 
   try {
     const samples = await listEnabledTexts(session.userId, profile.id, 5)
@@ -53,7 +55,9 @@ export async function POST(req: Request) {
       count,
       hookIntensity,
       link,
-      ...(challenge ? { dayNumber: challengeDay(), followerCount: followerCount() } : {}),
+      progressDay,
+      progressTotal,
+      followerCount,
     })
 
     // Unclear idea → ask for more detail; no draft, nothing saved to history.

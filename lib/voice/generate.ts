@@ -61,7 +61,8 @@ export async function generatePost(
     count,
     hookIntensity: input.hookIntensity ?? 'bold',
     optionalLink: input.link,
-    challengeDay: input.dayNumber,
+    progressDay: input.progressDay,
+    progressTotal: input.progressTotal,
     followerCount: input.followerCount,
   })
 }
