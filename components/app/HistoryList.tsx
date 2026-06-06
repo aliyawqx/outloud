@@ -69,7 +69,6 @@ export function HistoryList({ initial }: { initial: HistoryEntry[] }) {
                     <div className="mb-2 flex items-center justify-between">
                       <span className="font-code-label text-code-label uppercase text-on-surface-variant">
                         Draft {i + 1}
-                        {d.angle ? ` · ${d.angle}` : ''}
                       </span>
                       <CopyButton text={d.fullText} />
                     </div>

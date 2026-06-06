@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
-import { saveComposeSession } from '@/lib/voice/history'
+import { appendDraft, saveComposeSession } from '@/lib/voice/history'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { runIntake, type ChatTurn } from '@/lib/anthropic'
 import { generatePost, VoiceNotReadyError } from '@/lib/voice/generate'
@@ -66,19 +66,28 @@ export async function POST(req: Request) {
     if (clarify && drafts.length === 0) {
       return NextResponse.json({ ask: clarify, voiceName: profile.name })
     }
-    // Save to History (best-effort — never fail the response on this).
+    // History (best-effort): ONE entry per chat. The first draft creates it; later
+    // drafts append to the same entry so a chat never splits into multiple rows.
+    let historyId = typeof b.historyId === 'string' && b.historyId ? b.historyId : undefined
     try {
-      await saveComposeSession({
-        ownerKey: session.userId,
-        voiceProfileId: profile.id,
-        voiceName: profile.name,
-        idea: intake.brief,
-        drafts,
-      })
+      if (historyId) {
+        await appendDraft(session.userId, historyId, drafts[0])
+      } else {
+        const firstIdea = messages.find((m) => m.role === 'user')?.content || intake.brief
+        const entry = await saveComposeSession({
+          ownerKey: session.userId,
+          voiceProfileId: profile.id,
+          voiceName: profile.name,
+          idea: firstIdea,
+          drafts,
+        })
+        historyId = entry.id
+      }
     } catch (e) {
       console.error('[voice/chat] history save failed:', e)
+      historyId = undefined
     }
-    return NextResponse.json({ draft: drafts[0], voiceName: profile.name })
+    return NextResponse.json({ draft: drafts[0], voiceName: profile.name, historyId })
   } catch (err) {
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })

@@ -48,7 +48,6 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
       <div className="mb-3 flex items-center justify-between">
         <span className="font-code-label text-code-label uppercase tracking-wide text-on-surface-variant">
           Draft {index + 1}
-          {draft.angle ? ` · ${draft.angle}` : ''}
         </span>
         <div className="flex items-center gap-3">
           <button onClick={() => setEditing((e) => !e)} aria-pressed={editing} className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant hover:text-on-surface">
@@ -106,6 +105,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [historyId, setHistoryId] = useState<string | undefined>(undefined)
 
   const started = turns.length > 0
   const counter = useState(() => ({ n: 0 }))[0]
@@ -134,7 +134,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
       const res = await fetch('/api/voice/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, profileId: voiceId || undefined, lastDraft }),
+        body: JSON.stringify({ messages, profileId: voiceId || undefined, lastDraft, historyId }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 409 && data.needsVoice) {
@@ -145,6 +145,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
         setError(data.error ?? "Couldn't write that. Try again.")
         return
       }
+      if (data.historyId) setHistoryId(data.historyId)
       if (data.ask) {
         setTurns((t) => [...t, { id: id(), role: 'assistant', text: data.ask }])
       } else if (data.draft) {

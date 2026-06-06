@@ -40,6 +40,17 @@ export async function saveComposeSession(input: {
   return mapRow(rows[0])
 }
 
+/** Append one draft to an existing chat's entry (drafts accumulate in one row,
+ *  so a single chat stays a single history entry instead of splitting). */
+export async function appendDraft(ownerKey: string, id: string, draft: DraftPost): Promise<void> {
+  await ensureSchema()
+  await getPool().query(
+    `UPDATE compose_history SET drafts = COALESCE(drafts, '[]'::jsonb) || $3::jsonb
+     WHERE owner_key = $1 AND id = $2`,
+    [ownerKey, id, JSON.stringify([draft])],
+  )
+}
+
 export async function listComposeHistory(ownerKey: string, limit = 50): Promise<HistoryEntry[]> {
   await ensureSchema()
   const { rows } = await getPool().query<Row>(

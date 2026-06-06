@@ -12,7 +12,7 @@ const { sessionMock, getProfileMock, listProfilesMock, enabledMock, intakeMock, 
 vi.mock('@/lib/auth/session', () => ({ getSession: sessionMock }))
 vi.mock('@/lib/voice/store', () => ({ getProfile: getProfileMock, listProfiles: listProfilesMock }))
 vi.mock('@/lib/voice/samples', () => ({ listEnabledTexts: enabledMock }))
-vi.mock('@/lib/voice/history', () => ({ saveComposeSession: saveMock }))
+vi.mock('@/lib/voice/history', () => ({ saveComposeSession: saveMock, appendDraft: vi.fn() }))
 vi.mock('@/lib/anthropic', () => ({ runIntake: intakeMock }))
 vi.mock('@/lib/voice/generate', () => ({
   generatePost: genMock,
