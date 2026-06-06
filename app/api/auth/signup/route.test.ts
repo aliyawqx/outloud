@@ -38,7 +38,7 @@ describe('POST /api/auth/signup', () => {
     const res = await POST(req({ email: 'A@B.com', password: 'supersecret', displayName: 'Aya' }))
     expect(res.status).toBe(201)
     const json = await res.json()
-    expect(json).toEqual({ ok: true, redirect: '/app/voices' })
+    expect(json).toEqual({ ok: true, redirect: '/app/onboarding' })
 
     expect(createUserMock).toHaveBeenCalledWith({ email: 'a@b.com', password: 'supersecret', displayName: 'Aya' })
     expect(setCookieMock).toHaveBeenCalledWith('signed.jwt')
