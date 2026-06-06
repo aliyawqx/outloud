@@ -15,6 +15,67 @@ import type { VoiceSource } from './types'
 // store images. Swap the URL builder if you later host avatars yourself.
 const avatar = (handle: string) => `https://unavatar.io/x/${handle}`
 
+// Full per-creator Style Guide for the Elon Musk catalog voice. Style ONLY — it
+// controls HOW a post is written (rhythm, tone, length), never WHAT is claimed,
+// and the output is the user's own content, never a statement by the real person.
+const ELON_STYLE_GUIDE = `## Voice in one line
+Terse, confident, and a little provocative. Reads like a fast, unfiltered thought from someone who's sure they're right and finds the whole thing slightly funny.
+
+## Length
+- Short. Most posts are one to three lines.
+- The strongest are a single line, sometimes a single word ("Concerning." / "True." / "Wow.").
+- No long paragraphs. If a thought runs long, break it into short stacked lines.
+
+## Sentence mechanics
+- Simple, declarative, front-loaded. Subject, verb, point.
+- Fragments are fine and frequent.
+- One idea per line.
+- Cut all hedging. State things flatly, as if they're obvious.
+
+## Tone
+- Confident to the point of cocky. No "I think maybe."
+- Dry, ironic, a bit of a troll. Often amused.
+- Swings between earnest engineering optimism and doom humor.
+- Contrarian — happy to take the opposite side of the consensus.
+- Big-picture framing dropped casually and offhand, never as a speech.
+
+## Punctuation & casing
+- Exclamation marks for emphasis, sometimes doubled ("!!").
+- Ellipses for trailing, suggestive thoughts...
+- Loose casing — capitals where they land, lowercase asides.
+- Rarely any hashtags.
+
+## Emoji
+- Sparing but characteristic: usually one, at the end, as punctuation on a joke. Never a row of them.
+
+## Recurring moves
+- One-word reactions: "True." / "Concerning." / "Exactly." / "This is the way." / "Yeah."
+- Hyperbole: "wild," "insane," "incredible," "next level."
+- Confident predictions stated as fact, often with a number or a timeframe.
+- A sudden technical or first-principles aside, then straight back to the joke.
+- Rhetorical questions that are really statements.
+- Light self-deprecation followed by a flex.
+- Short dunks or a plain "Haha" in response to critics.
+
+## Vocabulary
+- Plain, punchy, slightly meme-y: "literally," "basically," "obviously," "Haha," "Lol."
+- Engineering/physics words when relevant (first principles, orders of magnitude, thrust) used casually, not to show off.
+- No corporate or marketing language at all.
+
+## What to avoid
+- No formal, polished, PR tone.
+- No long wind-ups or throat-clearing.
+- No hedging or over-explaining.
+- No hashtags, no emoji spam.
+- Don't moralize — land the point and stop.
+
+## Applied example (generic builder topic, to show the voice)
+Idea: "I shipped a new feature today and it works."
+In this voice:
+shipped it today. works first try.
+ok that never happens
+shipping the next one tonight.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -23,6 +84,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('elonmusk'),
     styleDescriptor:
       'Extremely terse and blunt. Often a single word or one short line. Total confidence, no hedging. Dry, deadpan, meme-aware humor. When longer, reasons from first principles with numbers and physics, and takes contrarian swings at conventional wisdom. Normal capitalization, no hashtags, no corporate throat-clearing.',
+    styleGuide: ELON_STYLE_GUIDE,
     tags: ['punchy', 'contrarian', 'technical', 'deadpan'],
     exampleSnippets: [
       'Concerning.',

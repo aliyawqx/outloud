@@ -32,15 +32,28 @@ export function toVoiceInput(profile: VoiceProfile, sampleTexts: string[] = []):
   if (known.length === 0) throw new VoiceNotReadyError('This blend has no known creators.')
 
   const total = known.reduce((sum, r) => sum + (r.weight || 1), 0)
-  const lines = known
-    .map((r) => `(${Math.round(((r.weight || 1) / total) * 100)}%) ${r.source.displayName}: ${r.source.styleDescriptor}`)
-    .join('\n\n')
-  const summary =
-    `Write in a HYBRID style that blends these voices by the given weights. Merge their ` +
-    `tendencies into one coherent voice — do NOT impersonate any single person, do not ` +
-    `attribute or invent quotes, and never claim to BE them.\n\n${lines}`
+  const pct = (w: number) => Math.round(((w || 1) / total) * 100)
   const snippets = known.flatMap((r) => r.source.exampleSnippets).filter(Boolean)
-  return { summary, samples: snippets }
+  const blendInstruction =
+    `Write in a HYBRID style that blends these voices by the given weights. Merge their ` +
+    `tendencies into one coherent voice - do NOT impersonate any single person, do not ` +
+    `attribute or invent quotes, and never claim to BE them.`
+
+  // Creators that ship a FULL Style Guide drive generation precisely. A single
+  // creator → their guide verbatim; a blend → guides stacked by weight.
+  if (known.some((r) => r.source.styleGuide?.trim())) {
+    if (known.length === 1) {
+      return { styleGuide: known[0].source.styleGuide!.trim(), samples: snippets }
+    }
+    const guideBlocks = known
+      .map((r) => `(${pct(r.weight)}%) ${r.source.displayName}:\n${r.source.styleGuide?.trim() || r.source.styleDescriptor}`)
+      .join('\n\n---\n\n')
+    return { styleGuide: guideBlocks, summary: blendInstruction, samples: snippets }
+  }
+
+  // Fallback: short descriptors only (creators without a full guide).
+  const lines = known.map((r) => `(${pct(r.weight)}%) ${r.source.displayName}: ${r.source.styleDescriptor}`).join('\n\n')
+  return { summary: `${blendInstruction}\n\n${lines}`, samples: snippets }
 }
 
 /**

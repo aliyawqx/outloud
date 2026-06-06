@@ -36,6 +36,19 @@ describe('toVoiceInput', () => {
     expect(v.summary).toContain('HYBRID')
     expect(v.summary).toContain('Naval')
   })
+
+  it('single creator with a full Style Guide drives on that guide, not the descriptor', () => {
+    const v = toVoiceInput(insp({ sources: [{ sourceId: 'elon-musk', weight: 1 }] }))
+    expect(v.styleGuide).toContain('Terse, confident')
+    expect(v.summary).toBeUndefined() // single guide → no HYBRID blend wording
+  })
+
+  it('blend of a guided + non-guided creator stacks them by weight', () => {
+    const v = toVoiceInput(insp({ sources: [{ sourceId: 'elon-musk', weight: 3 }, { sourceId: 'naval', weight: 1 }] }))
+    expect(v.styleGuide).toContain('Elon Musk')
+    expect(v.styleGuide).toContain('Naval') // naval falls back to its descriptor inside the stack
+    expect(v.summary).toContain('HYBRID')
+  })
 })
 
 describe('generatePost', () => {

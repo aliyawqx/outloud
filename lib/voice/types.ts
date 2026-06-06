@@ -13,9 +13,13 @@ export type VoiceSource = {
   /** X handle without the leading @. */
   handle: string
   avatarUrl: string
-  /** Short, structured description of how they write — the part the future
-   *  generator actually consumes (tone, sentence length, signature moves, topics). */
+  /** Short, structured description of how they write — the fallback the generator
+   *  consumes when no full guide is set (tone, sentence length, signature moves). */
   styleDescriptor: string
+  /** Optional FULL Style Guide (markdown) for this creator. When set it drives
+   *  generation precisely (instead of the short descriptor). Style only — never a
+   *  persona to speak as, never invented quotes attributed to the real person. */
+  styleGuide?: string
   /** Free-form style tags, e.g. ['punchy', 'contrarian', 'technical']. */
   tags: string[]
   /** 1–3 SHORT, paraphrased/illustrative style references — NOT verbatim posts.
