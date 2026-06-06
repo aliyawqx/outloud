@@ -271,7 +271,8 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
       </h2>
       {samples.length === 0 ? (
         <div className="mb-8 rounded-2xl border border-dashed border-border-muted py-12 text-center font-body-sm text-body-sm text-on-surface-variant/60">
-          No samples yet. Paste text, upload a file, or add a URL to capture your voice.
+          This voice needs samples. Import from X, paste text, upload a file, or add a URL — then
+          generate the Style Guide to start writing in this voice.
         </div>
       ) : (
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
