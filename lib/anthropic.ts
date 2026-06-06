@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { POST_PROMPT } from './postPrompt'
 import { STYLE_ANALYSIS_PROMPT } from './stylePrompt'
+import { INTAKE_PROMPT } from './intakePrompt'
 
 // Default: Sonnet 4.6 (quality at low cost). Override with ANTHROPIC_MODEL —
 // e.g. 'claude-haiku-4-5' (~3x cheaper, lower nuance) or 'claude-opus-4-8' (best).
@@ -240,6 +241,63 @@ export async function generateStyleGuide(samples: string[]): Promise<StyleGuide>
   }
   const r = StyleGuideSchema.parse(parsed)
   return { guideMarkdown: r.guideMarkdown.trim(), summary: r.summary.trim() }
+}
+
+// ── Chat intake: the multi-turn "ask vs write" decision ────────────────────────
+
+export type ChatTurn = { role: 'user' | 'assistant'; content: string }
+
+export type IntakeResult =
+  | { action: 'ask'; question: string }
+  | { action: 'write'; brief: string }
+
+const IntakeSchema = z.object({
+  action: z.enum(['ask', 'write']),
+  question: z.string().optional().default(''),
+  brief: z.string().optional().default(''),
+})
+
+const INTAKE_FORMAT = {
+  type: 'json_schema' as const,
+  schema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      action: { type: 'string', enum: ['ask', 'write'] },
+      question: { type: 'string' },
+      brief: { type: 'string' },
+    },
+    required: ['action', 'question', 'brief'],
+  },
+}
+
+/**
+ * Read the conversation and decide ONE of: ask a single follow-up question, or
+ * write (returning a consolidated, facts-only brief for the post writer). The
+ * multi-turn version of the "unclear input → ask, don't guess" rule.
+ */
+export async function runIntake(messages: ChatTurn[]): Promise<IntakeResult> {
+  const model = getModel()
+  const effort = supportsEffort(model)
+  const msg = await getClient().messages.create({
+    model,
+    max_tokens: 1500,
+    system: [{ type: 'text', text: INTAKE_PROMPT, cache_control: { type: 'ephemeral' } }],
+    ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
+    output_config: effort ? { effort: 'low', format: INTAKE_FORMAT } : { format: INTAKE_FORMAT },
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+  })
+  const text = msg.content.find((b) => b.type === 'text')
+  if (!text || text.type !== 'text') throw new Error('No content returned')
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text.text)
+  } catch {
+    throw new Error('Model returned non-JSON output')
+  }
+  const r = IntakeSchema.parse(parsed)
+  if (r.action === 'ask') return { action: 'ask', question: noEmDashes(r.question.trim()) }
+  return { action: 'write', brief: r.brief.trim() }
 }
 
 let client: Anthropic | null = null

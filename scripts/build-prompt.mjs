@@ -10,6 +10,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ARTIFACTS = [
   { md: 'outloud-x-post-prompt.md', ts: 'lib/postPrompt.ts', name: 'POST_PROMPT' },
   { md: 'outloud-style-analysis-prompt.md', ts: 'lib/stylePrompt.ts', name: 'STYLE_ANALYSIS_PROMPT' },
+  { md: 'outloud-intake-prompt.md', ts: 'lib/intakePrompt.ts', name: 'INTAKE_PROMPT' },
 ]
 
 for (const a of ARTIFACTS) {
