@@ -84,30 +84,63 @@ export async function deleteAccount(userId: string): Promise<boolean> {
   return (rowCount ?? 0) > 0
 }
 
-/** A usable access token, refreshing transparently when it is expiring. */
+/**
+ * A usable access token, refreshing transparently when it is expiring.
+ *
+ * The refresh is serialized with a row lock (`SELECT ... FOR UPDATE`): X rotates
+ * the refresh token on every refresh, so concurrent requests (or two deployments
+ * on the same DB) must not refresh in parallel — otherwise the loser refreshes
+ * with an already-rotated token and the whole connection breaks. Under the lock,
+ * the first caller refreshes and the rest read the fresh token. The connection
+ * therefore stays valid until the user disconnects here or revokes access on X.
+ */
 export async function getValidAccessToken(userId: string): Promise<string> {
   await ensureSchema()
-  const { rows } = await getPool().query<Row>('SELECT * FROM x_accounts WHERE user_id = $1', [userId])
-  const r = rows[0]
-  if (!r) throw new XNotConnectedError()
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const { rows } = await client.query<Row>('SELECT * FROM x_accounts WHERE user_id = $1 FOR UPDATE', [userId])
+    const r = rows[0]
+    if (!r) {
+      await client.query('ROLLBACK')
+      throw new XNotConnectedError()
+    }
 
-  if (!isExpiring(r.expires_at, new Date())) return decryptToken(r.access_token_enc)
-  if (!r.refresh_token_enc) throw new XAuthError()
+    // Re-read under the lock: a concurrent request may have just refreshed it.
+    if (!isExpiring(r.expires_at, new Date())) {
+      await client.query('COMMIT')
+      return decryptToken(r.access_token_enc)
+    }
+    if (!r.refresh_token_enc) {
+      await client.query('ROLLBACK')
+      throw new XAuthError()
+    }
 
-  const { clientId, clientSecret } = xConfig()
-  const tok = await refreshToken({
-    refreshToken: decryptToken(r.refresh_token_enc),
-    clientId,
-    clientSecret,
-  })
-  await saveAccount({
-    userId,
-    xUserId: r.x_user_id,
-    username: r.username,
-    accessToken: tok.access_token,
-    refreshToken: tok.refresh_token ?? decryptToken(r.refresh_token_enc),
-    scope: tok.scope,
-    expiresAt: new Date(Date.now() + tok.expires_in * 1000),
-  })
-  return tok.access_token
+    const { clientId, clientSecret } = xConfig()
+    const tok = await refreshToken({
+      refreshToken: decryptToken(r.refresh_token_enc),
+      clientId,
+      clientSecret,
+    })
+    // Persist the rotated tokens within the same transaction (still holding the lock).
+    await client.query(
+      `UPDATE x_accounts
+         SET access_token_enc = $2, refresh_token_enc = $3, scope = $4, expires_at = $5, updated_at = now()
+       WHERE user_id = $1`,
+      [
+        userId,
+        encryptToken(tok.access_token),
+        encryptToken(tok.refresh_token ?? decryptToken(r.refresh_token_enc)),
+        tok.scope,
+        new Date(Date.now() + tok.expires_in * 1000),
+      ],
+    )
+    await client.query('COMMIT')
+    return tok.access_token
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
+    throw err
+  } finally {
+    client.release()
+  }
 }
