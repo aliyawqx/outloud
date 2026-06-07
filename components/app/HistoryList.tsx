@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { deleteHistory } from '@/lib/voice/client'
 import type { HistoryEntry } from '@/lib/voice/types'
@@ -75,6 +76,13 @@ export function HistoryList({ initial }: { initial: HistoryEntry[] }) {
                     <p className="whitespace-pre-wrap font-body-md leading-relaxed text-on-surface">{d.fullText}</p>
                   </div>
                 ))}
+                <Link
+                  href={`/app?session=${e.id}`}
+                  className="inline-flex w-fit items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95"
+                >
+                  <span aria-hidden="true" className="material-symbols-outlined text-[16px]">edit</span>
+                  Continue editing
+                </Link>
               </div>
             )}
           </li>

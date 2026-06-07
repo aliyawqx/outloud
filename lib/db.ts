@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS compose_history (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS compose_history_owner_idx ON compose_history (owner_key, created_at DESC);
+-- Full chat transcript (user/assistant turns + draft turns) so a session can be
+-- reopened in the composer and continued.
+ALTER TABLE compose_history ADD COLUMN IF NOT EXISTS messages JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE TABLE IF NOT EXISTS x_accounts (
   user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

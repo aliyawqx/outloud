@@ -2,13 +2,34 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
-import { appendDraft, saveComposeSession } from '@/lib/voice/history'
+import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { runIntake, type ChatTurn } from '@/lib/anthropic'
 import { generatePost, VoiceNotReadyError } from '@/lib/voice/generate'
+import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 
-const MAX_TURNS = 40
-const CONTENT_MAX = 4000
+const MAX_TURNS = 60
+const TEXT_MAX = 4000
+
+/** Validate the client's chat turns into restorable records. */
+function parseTurns(raw: unknown): ChatTurnRecord[] {
+  if (!Array.isArray(raw)) return []
+  const out: ChatTurnRecord[] = []
+  for (const t of raw) {
+    if (!t || typeof t !== 'object') continue
+    const o = t as { role?: unknown; text?: unknown; draft?: unknown }
+    const draft = o.draft as DraftPost | undefined
+    if (draft && typeof draft === 'object' && typeof draft.fullText === 'string') {
+      out.push({ role: 'assistant', draft })
+    } else if (typeof o.text === 'string') {
+      out.push({ role: o.role === 'assistant' ? 'assistant' : 'user', text: o.text.slice(0, TEXT_MAX) } as ChatTurnRecord)
+    }
+  }
+  return out.slice(-MAX_TURNS)
+}
+
+const toContent = (t: ChatTurnRecord): ChatTurn =>
+  'draft' in t ? { role: 'assistant', content: t.draft.fullText } : { role: t.role, content: t.text }
 
 // POST /api/voice/chat — one step of the composer chat. Reads the conversation,
 // then either asks ONE follow-up question or writes a draft in the user's voice.
@@ -24,17 +45,11 @@ export async function POST(req: Request) {
   }
   const b = (body ?? {}) as Record<string, unknown>
 
-  const raw = Array.isArray(b.messages) ? b.messages : []
-  const messages: ChatTurn[] = raw
-    .filter((m): m is { role: unknown; content: unknown } => Boolean(m) && typeof (m as { content?: unknown }).content === 'string')
-    .slice(-MAX_TURNS)
-    .map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: String(m.content).slice(0, CONTENT_MAX),
-    }))
-  if (!messages.some((m) => m.role === 'user' && m.content.trim())) {
+  const turns = parseTurns(b.turns)
+  if (!turns.some((t) => t.role === 'user' && 'text' in t && t.text.trim())) {
     return NextResponse.json({ error: 'Tell me what you want to post about.' }, { status: 400 })
   }
+  const messages = turns.map(toContent)
 
   // Resolve the voice (the one chosen, else the first ready one) and require it.
   const profile =
@@ -46,9 +61,9 @@ export async function POST(req: Request) {
   }
 
   // When iterating on an existing draft, edit THAT draft (keeps the voice and
-  // length) instead of regenerating from scratch, which can drift off-voice.
-  const lastDraft = typeof b.lastDraft === 'string' && b.lastDraft.trim() ? b.lastDraft.trim() : undefined
-  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? ''
+  // length) instead of regenerating, which can drift off-voice.
+  const lastDraft = [...turns].reverse().find((t): t is { role: 'assistant'; draft: DraftPost } => 'draft' in t)?.draft.fullText
+  const lastUserMessage = [...turns].reverse().find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text ?? ''
 
   try {
     const intake = await runIntake(messages)
@@ -66,20 +81,24 @@ export async function POST(req: Request) {
     if (clarify && drafts.length === 0) {
       return NextResponse.json({ ask: clarify, voiceName: profile.name })
     }
-    // History (best-effort): ONE entry per chat. The first draft creates it; later
-    // drafts append to the same entry so a chat never splits into multiple rows.
+
+    // History (best-effort): ONE entry per chat. Persist the full transcript so the
+    // session can be reopened and continued. drafts = every draft in the transcript.
+    const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', draft: drafts[0] }]
+    const allDrafts = fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : []))
     let historyId = typeof b.historyId === 'string' && b.historyId ? b.historyId : undefined
     try {
-      if (historyId) {
-        await appendDraft(session.userId, historyId, drafts[0])
+      if (historyId && (await getComposeEntry(session.userId, historyId))) {
+        await updateComposeChat(session.userId, historyId, { drafts: allDrafts, messages: fullTurns })
       } else {
-        const firstIdea = messages.find((m) => m.role === 'user')?.content || intake.brief
+        const firstIdea = turns.find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text || intake.brief
         const entry = await saveComposeSession({
           ownerKey: session.userId,
           voiceProfileId: profile.id,
           voiceName: profile.name,
           idea: firstIdea,
-          drafts,
+          drafts: allDrafts,
+          messages: fullTurns,
         })
         historyId = entry.id
       }

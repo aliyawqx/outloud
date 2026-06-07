@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import type { DraftPost } from '@/lib/voice/types'
+import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 
 type VoiceOption = { id: string; name: string; isActive: boolean }
 
@@ -97,25 +97,30 @@ type Turn =
   | { id: number; role: 'assistant'; text: string }
   | { id: number; role: 'assistant'; draft: DraftPost }
 
-export function ComposeHome({ name, voices }: { name: string; voices: VoiceOption[] }) {
+export type ComposeSession = { historyId: string; voiceId?: string; turns: ChatTurnRecord[] }
+
+export function ComposeHome({ name, voices, initialSession }: { name: string; voices: VoiceOption[]; initialSession?: ComposeSession }) {
   const router = useRouter()
   const active = voices.find((v) => v.isActive) ?? voices[0]
-  const [voiceId, setVoiceId] = useState(active?.id ?? '')
-  const [turns, setTurns] = useState<Turn[]>([])
+  const initialTurns: Turn[] = (initialSession?.turns ?? []).map(
+    (t, i) => ('draft' in t ? { id: i, role: 'assistant', draft: t.draft } : { id: i, role: t.role, text: t.text }) as Turn,
+  )
+  const [voiceId, setVoiceId] = useState(initialSession?.voiceId ?? active?.id ?? '')
+  const [turns, setTurns] = useState<Turn[]>(initialTurns)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [historyId, setHistoryId] = useState<string | undefined>(undefined)
+  const [historyId, setHistoryId] = useState<string | undefined>(initialSession?.historyId)
 
   const started = turns.length > 0
-  const counter = useState(() => ({ n: 0 }))[0]
+  const counter = useState(() => ({ n: initialTurns.length }))[0]
   const id = () => ++counter.n
 
-  // The API conversation: visible turns + the new user message, flattened to
-  // {role, content}. Draft turns carry the post text so the assistant can revise.
-  function toApi(extra: Turn): { role: 'user' | 'assistant'; content: string }[] {
-    return [...turns, extra].map((t) =>
-      'draft' in t ? { role: 'assistant' as const, content: t.draft.fullText } : { role: t.role, content: t.text },
+  // Serialize the visible turns (+ the new user message) into restorable records,
+  // which the server uses both to run the chat and to persist the transcript.
+  function toRecords(extra: Turn): ChatTurnRecord[] {
+    return [...turns, extra].map(
+      (t) => ('draft' in t ? { role: 'assistant', draft: t.draft } : { role: t.role, text: t.text }) as ChatTurnRecord,
     )
   }
 
@@ -124,9 +129,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
     if (!text || loading) return
     setError('')
     const userTurn: Turn = { id: id(), role: 'user', text }
-    const messages = toApi(userTurn)
-    // The most recent draft, if any — so a follow-up edits it in the same voice.
-    const lastDraft = [...turns].reverse().find((t): t is Extract<Turn, { draft: DraftPost }> => 'draft' in t)?.draft.fullText
+    const turnsPayload = toRecords(userTurn)
     setTurns((t) => [...t, userTurn])
     setInput('')
     setLoading(true)
@@ -134,7 +137,7 @@ export function ComposeHome({ name, voices }: { name: string; voices: VoiceOptio
       const res = await fetch('/api/voice/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, profileId: voiceId || undefined, lastDraft, historyId }),
+        body: JSON.stringify({ turns: turnsPayload, profileId: voiceId || undefined, historyId }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 409 && data.needsVoice) {

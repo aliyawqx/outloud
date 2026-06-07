@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
-import type { DraftPost, HistoryEntry } from './types'
+import type { ChatTurnRecord, DraftPost, HistoryEntry } from './types'
 
 // Persistence for compose sessions (the History panel). Owner-scoped.
 
@@ -10,6 +10,7 @@ type Row = {
   voice_name: string
   idea: string
   drafts: DraftPost[]
+  messages: ChatTurnRecord[] | null
   created_at: Date
 }
 
@@ -20,6 +21,7 @@ function mapRow(r: Row): HistoryEntry {
     voiceName: r.voice_name,
     idea: r.idea,
     drafts: r.drafts ?? [],
+    messages: r.messages ?? [],
     createdAt: r.created_at.toISOString(),
   }
 }
@@ -30,25 +32,47 @@ export async function saveComposeSession(input: {
   voiceName: string
   idea: string
   drafts: DraftPost[]
+  messages?: ChatTurnRecord[]
 }): Promise<HistoryEntry> {
   await ensureSchema()
   const { rows } = await getPool().query<Row>(
-    `INSERT INTO compose_history (id, owner_key, voice_profile_id, voice_name, idea, drafts)
-     VALUES ($1, $2, $3, $4, $5, $6::jsonb) RETURNING *`,
-    [randomUUID(), input.ownerKey, input.voiceProfileId, input.voiceName, input.idea, JSON.stringify(input.drafts)],
+    `INSERT INTO compose_history (id, owner_key, voice_profile_id, voice_name, idea, drafts, messages)
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb) RETURNING *`,
+    [
+      randomUUID(),
+      input.ownerKey,
+      input.voiceProfileId,
+      input.voiceName,
+      input.idea,
+      JSON.stringify(input.drafts),
+      JSON.stringify(input.messages ?? []),
+    ],
   )
   return mapRow(rows[0])
 }
 
-/** Append one draft to an existing chat's entry (drafts accumulate in one row,
- *  so a single chat stays a single history entry instead of splitting). */
-export async function appendDraft(ownerKey: string, id: string, draft: DraftPost): Promise<void> {
+/** Replace a chat's drafts + full transcript (a chat stays ONE history entry,
+ *  updated in place as new drafts are generated). */
+export async function updateComposeChat(
+  ownerKey: string,
+  id: string,
+  input: { drafts: DraftPost[]; messages: ChatTurnRecord[] },
+): Promise<void> {
   await ensureSchema()
   await getPool().query(
-    `UPDATE compose_history SET drafts = COALESCE(drafts, '[]'::jsonb) || $3::jsonb
-     WHERE owner_key = $1 AND id = $2`,
-    [ownerKey, id, JSON.stringify([draft])],
+    `UPDATE compose_history SET drafts = $3::jsonb, messages = $4::jsonb WHERE owner_key = $1 AND id = $2`,
+    [ownerKey, id, JSON.stringify(input.drafts), JSON.stringify(input.messages)],
   )
+}
+
+/** One entry, scoped to its owner — used to reopen a session in the composer. */
+export async function getComposeEntry(ownerKey: string, id: string): Promise<HistoryEntry | null> {
+  await ensureSchema()
+  const { rows } = await getPool().query<Row>(
+    `SELECT * FROM compose_history WHERE owner_key = $1 AND id = $2`,
+    [ownerKey, id],
+  )
+  return rows[0] ? mapRow(rows[0]) : null
 }
 
 export async function listComposeHistory(ownerKey: string, limit = 50): Promise<HistoryEntry[]> {

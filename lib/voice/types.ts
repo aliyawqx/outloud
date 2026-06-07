@@ -87,6 +87,12 @@ export type DraftPost = {
   fullText: string
 }
 
+/** One turn of the composer chat, in restorable form (persisted with history). */
+export type ChatTurnRecord =
+  | { role: 'user'; text: string }
+  | { role: 'assistant'; text: string }
+  | { role: 'assistant'; draft: DraftPost }
+
 /** A saved compose session for the History panel. */
 export type HistoryEntry = {
   id: string
@@ -94,6 +100,8 @@ export type HistoryEntry = {
   voiceName: string
   idea: string
   drafts: DraftPost[]
+  /** Full chat transcript, so the session can be reopened and continued. */
+  messages: ChatTurnRecord[]
   createdAt: string
 }
 
