@@ -12,8 +12,9 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export type { Prompt }
+export type DefaultPrompt = { command: string; title: string; text: string }
 
-export function fetchPrompts(): Promise<{ prompts: Prompt[] }> {
+export function fetchPrompts(): Promise<{ defaults: DefaultPrompt[]; custom: Prompt[] }> {
   return api('/api/prompts')
 }
 

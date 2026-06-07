@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { CommandTakenError, createPrompt, listPrompts, normalizeCommand } from '@/lib/prompts/store'
+import { SEED_PROMPTS } from '@/lib/prompts/seeds'
 
-// GET /api/prompts — the user's format-prompt library (seeded on first read).
+// GET /api/prompts — read-only built-in "Outloud" prompts + the user's own custom ones.
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
-  return NextResponse.json({ prompts: await listPrompts(session.userId) })
+  const defaults = SEED_PROMPTS.map((s) => ({ command: s.command, title: s.title, text: s.text }))
+  return NextResponse.json({ defaults, custom: await listPrompts(session.userId) })
 }
 
 // POST /api/prompts — create a custom command.

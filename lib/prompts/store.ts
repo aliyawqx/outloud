@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
-import { SEED_PROMPTS } from './seeds'
+import { SEED_PROMPTS, seedText } from './seeds'
 
-// Per-user library of FORMAT prompts (slash commands). Owner-scoped, seeded from
-// SEED_PROMPTS on first use, then fully editable by the user.
+// The built-in "Outloud" format prompts are read-only and live in code (seeds.ts).
+// This table stores ONLY the user's own custom prompts. Generation prefers a custom
+// prompt for a command, falling back to the built-in seed.
 
 export type Prompt = {
   id: string
@@ -24,29 +25,24 @@ const mapRow = (r: Row): Prompt => ({
   updatedAt: r.updated_at.toISOString(),
 })
 
+const SEED_COMMANDS = new Set(SEED_PROMPTS.map((s) => s.command))
+
 /** Normalize a slash command: lowercase, no leading "/", a-z0-9 and dashes only. */
 export function normalizeCommand(raw: string): string {
   return raw.trim().toLowerCase().replace(/^\/+/, '').replace(/[^a-z0-9-]/g, '').slice(0, 32)
 }
 
-/** Copy the seed library into a user's prompts the first time they have none. */
-export async function ensurePromptsSeeded(ownerKey: string): Promise<void> {
-  await ensureSchema()
-  const pool = getPool()
-  const { rows } = await pool.query<{ n: string }>('SELECT count(*)::text AS n FROM prompts WHERE owner_key = $1', [ownerKey])
-  if (Number(rows[0]?.n ?? '0') > 0) return
-  // Insert seeds; ON CONFLICT DO NOTHING guards against a concurrent first load.
-  for (const s of SEED_PROMPTS) {
-    await pool.query(
-      `INSERT INTO prompts (id, owner_key, command, title, text)
-       VALUES ($1, $2, $3, $4, $5) ON CONFLICT (owner_key, command) DO NOTHING`,
-      [randomUUID(), ownerKey, s.command, s.title, s.text],
-    )
+/** Thrown when a command name collides with a built-in or an existing custom one. */
+export class CommandTakenError extends Error {
+  constructor() {
+    super('That command name is taken. Pick another.')
+    this.name = 'CommandTakenError'
   }
 }
 
+/** The user's CUSTOM prompts only (built-in seeds are read-only, not stored). */
 export async function listPrompts(ownerKey: string): Promise<Prompt[]> {
-  await ensurePromptsSeeded(ownerKey)
+  await ensureSchema()
   const { rows } = await getPool().query<Row>(
     'SELECT * FROM prompts WHERE owner_key = $1 ORDER BY created_at ASC',
     [ownerKey],
@@ -54,33 +50,28 @@ export async function listPrompts(ownerKey: string): Promise<Prompt[]> {
   return rows.map(mapRow)
 }
 
-/** The FORMAT text for a command, or null if the user has no such command. */
+/** FORMAT text for a command: the user's custom prompt wins, else the built-in seed. */
 export async function getPromptText(ownerKey: string, command: string): Promise<string | null> {
-  await ensurePromptsSeeded(ownerKey)
+  await ensureSchema()
+  const cmd = normalizeCommand(command)
   const { rows } = await getPool().query<Row>(
-    'SELECT * FROM prompts WHERE owner_key = $1 AND command = $2',
-    [ownerKey, normalizeCommand(command)],
+    'SELECT text FROM prompts WHERE owner_key = $1 AND command = $2',
+    [ownerKey, cmd],
   )
-  return rows[0]?.text ?? null
-}
-
-/** Thrown when a command name collides with an existing one for this user. */
-export class CommandTakenError extends Error {
-  constructor() {
-    super('You already have a command with that name.')
-    this.name = 'CommandTakenError'
-  }
+  return rows[0]?.text ?? seedText(cmd) ?? null
 }
 
 export async function createPrompt(
   ownerKey: string,
   input: { command: string; title: string; text: string },
 ): Promise<Prompt> {
-  await ensurePromptsSeeded(ownerKey)
+  await ensureSchema()
+  const command = normalizeCommand(input.command)
+  if (SEED_COMMANDS.has(command)) throw new CommandTakenError() // built-in names are reserved
   try {
     const { rows } = await getPool().query<Row>(
       `INSERT INTO prompts (id, owner_key, command, title, text) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [randomUUID(), ownerKey, normalizeCommand(input.command), input.title.trim(), input.text.trim()],
+      [randomUUID(), ownerKey, command, input.title.trim(), input.text.trim()],
     )
     return mapRow(rows[0])
   } catch (err) {
@@ -95,6 +86,9 @@ export async function updatePrompt(
   patch: { command?: string; title?: string; text?: string },
 ): Promise<Prompt | null> {
   await ensureSchema()
+  if (patch.command !== undefined && SEED_COMMANDS.has(normalizeCommand(patch.command))) {
+    throw new CommandTakenError()
+  }
   const sets: string[] = []
   const vals: unknown[] = []
   let i = 1
