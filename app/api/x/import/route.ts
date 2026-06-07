@@ -4,7 +4,7 @@ import { getProfile } from '@/lib/voice/store'
 import { addSamples } from '@/lib/voice/samples'
 import { getAccount, getValidAccessToken } from '@/lib/x/store'
 import { fetchOriginalTweets } from '@/lib/x/client'
-import { ImportNotAvailableError, XNotConnectedError } from '@/lib/x/errors'
+import { ImportNotAvailableError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 
 const IMPORT_COUNT = 20
 
@@ -40,6 +40,8 @@ export async function POST(req: Request) {
   } catch (err) {
     if (err instanceof ImportNotAvailableError) return NextResponse.json({ error: err.message }, { status: 409 })
     if (err instanceof XNotConnectedError) return NextResponse.json({ error: err.message }, { status: 409 })
+    if (err instanceof XAuthError)
+      return NextResponse.json({ error: 'Your X connection expired. Reconnect your X account.', needsReconnect: true }, { status: 409 })
     console.error('[x/import] failed:', err)
     return NextResponse.json({ error: 'Could not import your posts. Try again.' }, { status: 500 })
   }
