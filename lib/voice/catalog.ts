@@ -76,6 +76,61 @@ shipped it today. works first try.
 ok that never happens
 shipping the next one tonight.`
 
+// Full per-creator Style Guide for the Sam Altman catalog voice. Style ONLY — it
+// controls HOW a post sounds (restraint, rhythm, tone), never WHAT is claimed, and
+// the output is the user's own content, never a statement by the real person.
+const SAM_STYLE_GUIDE = `## Voice in one line
+Calm, understated, quietly confident. Reads like a thoughtful person who doesn't need to oversell: optimistic about the future but careful about it, and warm without being mushy.
+
+## Length
+- Short and plain, usually one to three lines.
+- Can run longer for a reflective or forward-looking thought, but even then it breaks into short, simple sentences.
+- The understatement is the move. The calm is the flex.
+
+## Sentence mechanics
+- Simple, declarative, low-drama. Subject, verb, plain point.
+- Short sentences, gently strung together with "and" or "but".
+- Plain words over clever ones. No jargon, no buzzwords.
+- States strong things mildly ("i think this matters") instead of shouting them.
+
+## Tone
+- Quietly confident, never cocky. Conviction delivered softly.
+- Optimistic about technology and the future, but measured: acknowledges tradeoffs and uncertainty.
+- Warm and gracious. Comfortable with gratitude and crediting other people.
+- Earnest. Will say something sincere without hiding behind irony.
+- When pushed, can get dry and pointed, but stays composed. Never a rant.
+
+## Punctuation & casing
+- Mostly lowercase, minimal punctuation, casual even on big news.
+- Sparing exclamation marks. When used, just one, for genuine enthusiasm.
+- Simple periods and commas.
+- No hashtags.
+
+## Recurring moves
+- Launch posts: say the thing is out, say plainly that it's good, give a light personal endorsement ("i personally like it" energy), note where to get it, sometimes "more soon".
+- Future-casting: calm, almost understated predictions about where things are going, then a grounding caveat (experts still matter, some things won't change as much as people think).
+- Gratitude / credit: thanking people, often for the unglamorous work behind a result.
+- Understated confidence: "i think this is a big deal", not "THIS CHANGES EVERYTHING".
+- "we" for the team or company, "i" for personal takes and endorsements.
+- Quiet anticipation: hints that more is coming without overselling it.
+
+## Vocabulary
+- Plain and human: "good", "useful", "i think", "i personally", "matters", "a big deal".
+- Avoids superlatives and marketing words. The restraint is the signature.
+- Big-picture words (the future, progress, people) used plainly, never grandiosely.
+
+## What to avoid
+- No hype or marketing-speak.
+- No long wind-ups or mission-statement grandiosity.
+- No trolling, no cockiness, no exclamation spam.
+- Don't oversell. If anything, undersell and let it land.
+
+## Applied example (generic builder topic, to show the voice)
+Idea: "shipped a new feature today and it works well."
+In this voice:
+shipped a new thing today. i think it's actually good.
+more soon.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -99,6 +154,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('sama'),
     styleDescriptor:
       'Calm, measured, understated. Short declarative sentences, lowercase-leaning, almost no adjectives. Big claims delivered quietly, with a long-horizon optimism. Avoids hype words; lets the idea carry the weight. Rarely jokes, rarely defensive.',
+    styleGuide: SAM_STYLE_GUIDE,
     tags: ['measured', 'visionary', 'minimal', 'optimistic'],
     exampleSnippets: [
       'the next decade is going to be wild, in a good way.',
