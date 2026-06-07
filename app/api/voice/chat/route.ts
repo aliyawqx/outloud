@@ -67,15 +67,17 @@ export async function POST(req: Request) {
   const lastDraft = [...turns].reverse().find((t): t is { role: 'assistant'; draft: DraftPost } => 'draft' in t)?.draft.fullText
   const lastUserMessage = [...turns].reverse().find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text ?? ''
 
+  // Resolve the active FORMAT (slash command) up front; default to the X post.
+  // Intake needs it so it asks only for content this format needs.
+  const command = typeof b.command === 'string' && b.command ? b.command : DEFAULT_COMMAND
+  const formatText = (await getPromptText(session.userId, command)) ?? seedText(command) ?? seedText(DEFAULT_COMMAND)
+
   try {
-    const intake = await runIntake(messages)
+    const intake = await runIntake(messages, formatText ?? undefined)
     if (intake.action === 'ask') {
       return NextResponse.json({ ask: intake.question, voiceName: profile.name })
     }
     const samples = await listEnabledTexts(session.userId, profile.id, 5)
-    // Resolve the active FORMAT (slash command); default to the standard X post.
-    const command = typeof b.command === 'string' && b.command ? b.command : DEFAULT_COMMAND
-    const formatText = (await getPromptText(session.userId, command)) ?? seedText(command) ?? seedText(DEFAULT_COMMAND)
     const { drafts, clarify } = await generatePost({
       idea: lastDraft ? lastUserMessage : intake.brief,
       reviseBase: lastDraft,

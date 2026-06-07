@@ -295,13 +295,22 @@ const INTAKE_FORMAT = {
  * write (returning a consolidated, facts-only brief for the post writer). The
  * multi-turn version of the "unclear input → ask, don't guess" rule.
  */
-export async function runIntake(messages: ChatTurn[]): Promise<IntakeResult> {
+export async function runIntake(messages: ChatTurn[], format?: string): Promise<IntakeResult> {
   const model = getModel()
   const effort = supportsEffort(model)
+  const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: INTAKE_PROMPT, cache_control: { type: 'ephemeral' } }]
+  if (format?.trim()) {
+    // The output FORMAT is already chosen — intake must ask only for missing CONTENT
+    // facts this format needs, never which format/platform to use.
+    system.push({
+      type: 'text',
+      text: `The user has already chosen this OUTPUT FORMAT. Do NOT ask which format, platform, or channel to use - that is decided. Ask only for missing CONTENT facts this specific format needs, and if you already have enough, WRITE.\n\nFORMAT:\n${format.trim()}`,
+    })
+  }
   const msg = await getClient().messages.create({
     model,
     max_tokens: 1500,
-    system: [{ type: 'text', text: INTAKE_PROMPT, cache_control: { type: 'ephemeral' } }],
+    system,
     ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
     output_config: effort ? { effort: 'low', format: INTAKE_FORMAT } : { format: INTAKE_FORMAT },
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
