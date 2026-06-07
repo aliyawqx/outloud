@@ -120,7 +120,9 @@ export function PromptsManager({ defaults, initialCustom }: { defaults: DefaultP
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    // flex-col-reverse renders the two sections bottom-up: "Your prompts" first,
+    // then "Outloud prompts".
+    <div className="flex flex-col-reverse gap-8">
       {/* Built-in, read-only */}
       <section className="flex flex-col gap-3">
         <h2 className="font-code-label text-code-label uppercase tracking-widest text-on-surface-variant">Outloud prompts</h2>
