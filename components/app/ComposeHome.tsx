@@ -98,8 +98,19 @@ type Turn =
   | { id: number; role: 'assistant'; draft: DraftPost }
 
 export type ComposeSession = { historyId: string; voiceId?: string; turns: ChatTurnRecord[] }
+type CommandOption = { command: string; title: string }
 
-export function ComposeHome({ name, voices, initialSession }: { name: string; voices: VoiceOption[]; initialSession?: ComposeSession }) {
+export function ComposeHome({
+  name,
+  voices,
+  commands = [],
+  initialSession,
+}: {
+  name: string
+  voices: VoiceOption[]
+  commands?: CommandOption[]
+  initialSession?: ComposeSession
+}) {
   const router = useRouter()
   const active = voices.find((v) => v.isActive) ?? voices[0]
   const initialTurns: Turn[] = (initialSession?.turns ?? []).map(
@@ -111,6 +122,17 @@ export function ComposeHome({ name, voices, initialSession }: { name: string; vo
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [historyId, setHistoryId] = useState<string | undefined>(initialSession?.historyId)
+  const [activeCommand, setActiveCommand] = useState('')
+
+  // Slash menu: open while the input is just "/" or "/partial" (no space yet).
+  const slashMatch = input.match(/^\/([a-z0-9-]*)$/i)
+  const menuItems = slashMatch ? commands.filter((c) => c.command.startsWith(slashMatch[1].toLowerCase())) : []
+  const menuOpen = Boolean(slashMatch) && menuItems.length > 0
+
+  function pickCommand(command: string) {
+    setActiveCommand(command)
+    setInput('')
+  }
 
   const started = turns.length > 0
   const counter = useState(() => ({ n: initialTurns.length }))[0]
@@ -125,9 +147,23 @@ export function ComposeHome({ name, voices, initialSession }: { name: string; vo
   }
 
   async function send() {
-    const text = input.trim()
+    let text = input.trim()
     if (!text || loading) return
+    // Bare "/command" → just select the format, don't send yet.
+    const bare = text.match(/^\/([a-z0-9-]+)$/i)
+    if (bare && commands.some((c) => c.command === bare[1].toLowerCase())) {
+      pickCommand(bare[1].toLowerCase())
+      return
+    }
     setError('')
+    let command = activeCommand || undefined
+    // Inline "/command rest of idea" → use that command for this message.
+    const inline = text.match(/^\/([a-z0-9-]+)\s+([\s\S]+)$/i)
+    if (inline && commands.some((c) => c.command === inline[1].toLowerCase())) {
+      command = inline[1].toLowerCase()
+      setActiveCommand(command)
+      text = inline[2].trim()
+    }
     const userTurn: Turn = { id: id(), role: 'user', text }
     const turnsPayload = toRecords(userTurn)
     setTurns((t) => [...t, userTurn])
@@ -137,7 +173,7 @@ export function ComposeHome({ name, voices, initialSession }: { name: string; vo
       const res = await fetch('/api/voice/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ turns: turnsPayload, profileId: voiceId || undefined, historyId }),
+        body: JSON.stringify({ turns: turnsPayload, profileId: voiceId || undefined, historyId, command }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 409 && data.needsVoice) {
@@ -164,6 +200,10 @@ export function ComposeHome({ name, voices, initialSession }: { name: string; vo
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      if (menuOpen) {
+        pickCommand(menuItems[0].command)
+        return
+      }
       send()
     }
   }
@@ -187,25 +227,55 @@ export function ComposeHome({ name, voices, initialSession }: { name: string; vo
     </label>
   )
 
+  const activeTitle = commands.find((c) => c.command === activeCommand)?.title
   const composer = (
-    <div className="flex items-end gap-2 rounded-2xl border border-border-muted bg-surface-container-low p-3">
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={onKeyDown}
-        aria-label="Message"
-        placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?'}
-        className="h-12 max-h-40 min-h-12 flex-1 resize-none rounded-xl bg-transparent p-2 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
-      />
-      <button
-        type="button"
-        onClick={send}
-        disabled={loading || !input.trim()}
-        aria-label="Send"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-50"
-      >
-        <span aria-hidden="true" className="material-symbols-outlined text-[20px]">arrow_upward</span>
-      </button>
+    <div className="relative">
+      {/* slash command menu */}
+      {menuOpen && (
+        <div className="absolute bottom-full left-0 mb-2 w-full max-w-md overflow-hidden rounded-xl border border-border-muted bg-surface-container shadow-lg">
+          {menuItems.map((c, i) => (
+            <button
+              key={c.command}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); pickCommand(c.command) }}
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-white/[0.05] ${i === 0 ? 'bg-white/[0.03]' : ''}`}
+            >
+              <span className="font-code-label text-code-label text-electric-indigo">/{c.command}</span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant">{c.title}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-end gap-2 rounded-2xl border border-border-muted bg-surface-container-low p-3">
+        <div className="flex flex-1 flex-col gap-1.5">
+          {activeCommand && (
+            <span className="flex w-fit items-center gap-1 rounded-full bg-electric-indigo/15 px-2.5 py-1 font-code-label text-code-label text-electric-indigo">
+              /{activeCommand}{activeTitle ? ` · ${activeTitle}` : ''}
+              <button type="button" onClick={() => setActiveCommand('')} aria-label="Clear format" className="hover:text-on-surface">
+                <span aria-hidden="true" className="material-symbols-outlined text-[14px]">close</span>
+              </button>
+            </span>
+          )}
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            aria-label="Message"
+            placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?  (type / for formats)'}
+            className="h-12 max-h-40 min-h-12 w-full resize-none rounded-xl bg-transparent p-2 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={send}
+          disabled={loading || !input.trim()}
+          aria-label="Send"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-50"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">arrow_upward</span>
+        </button>
+      </div>
     </div>
   )
 

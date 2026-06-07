@@ -17,7 +17,7 @@ function navItems(voiceCount: number): NavItem[] {
   return [
     { href: '/app', label: 'New post', icon: 'edit_square' },
     { href: '/app/voices', label: 'Voices', icon: 'graphic_eq', badge: voiceCount },
-    { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks', soon: true },
+    { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks' },
     { href: '/app/knowledge', label: 'Knowledge', icon: 'menu_book', soon: true },
     { href: '/app/history', label: 'History', icon: 'history' },
   ]

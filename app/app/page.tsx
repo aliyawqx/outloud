@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { listProfiles } from '@/lib/voice/store'
 import { getComposeEntry } from '@/lib/voice/history'
+import { listPrompts } from '@/lib/prompts/store'
 import { hasReadyVoice, isVoiceReady } from '@/lib/voice/ready'
 import { ComposeHome, type ComposeSession } from '@/components/app/ComposeHome'
 
@@ -24,6 +25,8 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
   // Only ready voices can be written in.
   const readyVoices = voices.filter(isVoiceReady)
   const firstName = (profile?.displayName || session.email).split('@')[0].split(' ')[0]
+  const prompts = await listPrompts(session.userId)
+  const commands = prompts.map((p) => ({ command: p.command, title: p.title }))
 
   // Reopening a past chat from History (?session=<id>) → restore the transcript.
   const { session: sessionId } = await searchParams
@@ -43,6 +46,7 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
     <ComposeHome
       name={firstName}
       voices={readyVoices.map((v) => ({ id: v.id, name: v.name, isActive: v.isActive }))}
+      commands={commands}
       initialSession={initialSession}
     />
   )
