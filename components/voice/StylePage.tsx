@@ -9,13 +9,7 @@ import {
   saveStyleGuide,
   toggleSample as apiToggleSample,
 } from '@/lib/voice/client'
-import type { Channel, VoiceProfile, WritingSample } from '@/lib/voice/types'
-
-const CHANNELS: { id: Channel; label: string }[] = [
-  { id: 'x', label: 'X' },
-  { id: 'linkedin', label: 'LinkedIn' },
-  { id: 'telegram', label: 'Telegram' },
-]
+import type { VoiceProfile, WritingSample } from '@/lib/voice/types'
 
 const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 
@@ -25,7 +19,6 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
   const [samples, setSamples] = useState<WritingSample[]>(initialSamples)
   const [guide, setGuide] = useState(profile.styleGuide)
   const [summary, setSummary] = useState(profile.styleSummary)
-  const [channel, setChannel] = useState<Channel>(profile.channel)
 
   const [addMode, setAddMode] = useState<AddMode>(null)
   const [draft, setDraft] = useState('')
@@ -169,23 +162,8 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
       </div>
       <h1 className="mb-5 font-headline-xl text-headline-xl">{profile.name}</h1>
 
-      {/* channel + connections */}
+      {/* connections */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
-          {CHANNELS.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              aria-pressed={channel === c.id}
-              onClick={() => setChannel(c.id)}
-              className={`rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
-                channel === c.id ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
         <Link
           href="/app/profile"
           className="inline-flex items-center gap-2 rounded-full border border-border-muted px-4 py-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:border-electric-indigo hover:text-on-surface"
