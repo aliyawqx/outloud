@@ -15,6 +15,7 @@ vi.mock('@/lib/auth/session', () => ({ getSession: sessionMock }))
 vi.mock('@/lib/voice/store', () => ({ getProfile: getProfileMock, listProfiles: listProfilesMock }))
 vi.mock('@/lib/voice/samples', () => ({ listEnabledTexts: enabledMock }))
 vi.mock('@/lib/voice/history', () => ({ saveComposeSession: saveMock, updateComposeChat: updateMock, getComposeEntry: getEntryMock }))
+vi.mock('@/lib/prompts/store', () => ({ getPromptText: vi.fn(async () => 'FORMAT: a standard X post') }))
 vi.mock('@/lib/anthropic', () => ({ runIntake: intakeMock }))
 vi.mock('@/lib/voice/generate', () => ({
   generatePost: genMock,
