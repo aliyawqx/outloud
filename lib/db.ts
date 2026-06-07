@@ -75,6 +75,17 @@ CREATE INDEX IF NOT EXISTS compose_history_owner_idx ON compose_history (owner_k
 -- reopened in the composer and continued.
 ALTER TABLE compose_history ADD COLUMN IF NOT EXISTS messages JSONB NOT NULL DEFAULT '[]'::jsonb;
 
+CREATE TABLE IF NOT EXISTS prompts (
+  id          TEXT PRIMARY KEY,
+  owner_key   TEXT NOT NULL,
+  command     TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  text        TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS prompts_owner_command_idx ON prompts (owner_key, command);
+
 CREATE TABLE IF NOT EXISTS x_accounts (
   user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   x_user_id         TEXT NOT NULL,

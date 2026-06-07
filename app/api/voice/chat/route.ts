@@ -4,6 +4,8 @@ import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import { isVoiceReady } from '@/lib/voice/ready'
+import { getPromptText } from '@/lib/prompts/store'
+import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
 import { runIntake, type ChatTurn } from '@/lib/anthropic'
 import { generatePost, VoiceNotReadyError } from '@/lib/voice/generate'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
@@ -71,9 +73,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ ask: intake.question, voiceName: profile.name })
     }
     const samples = await listEnabledTexts(session.userId, profile.id, 5)
+    // Resolve the active FORMAT (slash command); default to the standard X post.
+    const command = typeof b.command === 'string' && b.command ? b.command : DEFAULT_COMMAND
+    const formatText = (await getPromptText(session.userId, command)) ?? seedText(command) ?? seedText(DEFAULT_COMMAND)
     const { drafts, clarify } = await generatePost({
       idea: lastDraft ? lastUserMessage : intake.brief,
       reviseBase: lastDraft,
+      formatText,
       voiceProfile: profile,
       samples,
       count: 1,

@@ -75,6 +75,7 @@ export async function generatePost(
     hookIntensity: input.hookIntensity ?? 'bold',
     optionalLink: input.link,
     reviseBase: input.reviseBase,
+    formatText: input.formatText,
     progressDay: input.progressDay,
     progressTotal: input.progressTotal,
     followerCount: input.followerCount,

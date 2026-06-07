@@ -120,6 +120,8 @@ export type GeneratePostInput = {
   link?: string
   /** Revision mode: an existing draft to edit in place (keeps voice + length). */
   reviseBase?: string
+  /** FORMAT prompt text (slash command) — controls output structure. */
+  formatText?: string
   /** Optional progress-counter values (generic, user-configured; off by default). */
   progressDay?: number
   progressTotal?: number

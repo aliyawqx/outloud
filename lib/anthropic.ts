@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { POST_PROMPT } from './postPrompt'
+import { BASE_PROMPT } from './basePrompt'
 import { STYLE_ANALYSIS_PROMPT } from './stylePrompt'
 import { INTAKE_PROMPT } from './intakePrompt'
 
@@ -40,6 +41,10 @@ export type GenerateInput = {
    *  change in `input` to this post and keeps the SAME voice, length and structure
    *  (instead of regenerating from scratch, which can drift off-voice). */
   reviseBase?: string
+  /** FORMAT prompt (slash command): controls the STRUCTURE of the output. When set,
+   *  generation uses the format-agnostic BASE rules + this format, instead of the
+   *  built-in HSO post prompt. The voice still governs tone. */
+  formatText?: string
   hookIntensity?: HookIntensity
   /** {optional_link} — a URL to maybe include (links are a lower-reach path). */
   optionalLink?: string
@@ -167,6 +172,11 @@ function buildTask(input: GenerateInput, count: number): string {
   // length that are already there; only fold in the requested change.
   if (input.reviseBase?.trim()) {
     return `Here is the current post, already written in the author's voice:\n"""\n${input.reviseBase.trim()}\n"""\n\nThe author wants this single change: ${input.input}\n\nRewrite the post applying ONLY that change. Keep the SAME voice, register, length, structure and rhythm as the current post - do NOT make it longer, do NOT switch to a generic or more formal style, do NOT add sections it doesn't already have. Return the revised post.${linkLine}`
+  }
+  // Format prompt (slash command): the FORMAT drives structure, the idea supplies
+  // content, the voice (in system) handles tone.
+  if (input.formatText?.trim()) {
+    return `Write ${n} in the author's voice using the FORMAT below.\n\nFORMAT:\n${input.formatText.trim()}\n\nThe user's idea (take ALL facts only from here, never invent anything not present):\n\n${input.input}${linkLine}`
   }
   switch (input.kind) {
     case 'take':
@@ -333,7 +343,11 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   )
   if (!hasVoiceSignal) throw new VoiceRequiredError()
 
-  const baseRules = subtleHumor ? `${SYSTEM_RULES}\n\n${SUBTLE_HUMOR_RULE}` : SYSTEM_RULES
+  // With a FORMAT prompt, the global rules come from the format-agnostic BASE
+  // prompt (the format itself supplies the structure). Otherwise use the built-in
+  // HSO post prompt (the legacy one-shot path).
+  const rules = opts.formatText?.trim() ? BASE_PROMPT : SYSTEM_RULES
+  const baseRules = subtleHumor ? `${rules}\n\n${SUBTLE_HUMOR_RULE}` : rules
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: baseRules }]
 
   system.push({ type: 'text', text: buildVoiceBlock(profile) })
