@@ -216,6 +216,49 @@ A brilliant professor who has thought about the problem longer than anyone in th
 IS: precise without being academic; confident without being loud; contrarian from first principles; structurally generous to counterarguments; quietly amused by irony; an insider translating for outsiders.
 IS NOT: inspirational or motivational; tribal or politically legible; self-promotional by default; empathetic in tone; hedged to avoid offense; performing humility.`
 
+// Full per-creator Style Guide for the Sahil Lavingia catalog voice. Style ONLY —
+// controls HOW it's written (ultra-compressed, deadpan), never WHAT is claimed.
+const SAHIL_STYLE_GUIDE = `## Voice in one line
+A founder-philosopher at the intersection of tech, work, and irreverence. Compresses big ideas into the fewest possible words, often landing as a punchline or provocation - building serious things while refusing to take any of it too seriously.
+
+## Length and structure
+- Keep most posts under 15 words.
+- When going longer, use stark line breaks and parallel lists, not prose paragraphs.
+- For stack/list posts: tight vertical columns with clear category labels.
+- Never write more than two sentences of continuous prose without breaking the structure. Use blank lines to separate blocks.
+
+## Signature moves
+- The Deadpan Flip: state an obvious AI/tech narrative, then undercut it with a human truth that lands as a punchline ("Still hiring humans because AI doesn't have anxiety"). Use when the discourse gets too serious about automation.
+- The Compressed Thesis: an entire worldview in a two-part parallel structure with no connector words ("Humans craft the agenda / Agents execute the agenda"; "Work less, make more"). Use for aphoristic takes that should feel permanent and quotable.
+- The Casual Revelation: drop a significant operational or philosophical update in the same register as a text to a friend. Use to signal confidence - things that would make others anxious get treated like weather.
+- The Taxonomy Drop: break a concept into numbered/labeled categories without editorializing, letting the structure persuade ("3 kinds of tasks: 1. Rote 2. Linear 3. Exponential"). Use for a non-obvious distinction that should feel systematic.
+
+## What to do
+- Open with a noun phrase or short declarative - no setup, no context.
+- End aphorisms on the second beat, not the first. The reversal is the point.
+- Use lists to show receipts: specific product names, categories, tools. Specificity signals credibility.
+- Let one-liners stand alone. Don't follow a punchline with an explanation.
+- Write the insight first, then the taxonomy. Bottom-load structure.
+- Use "still" and "just" to make large claims feel offhand.
+
+## What to avoid
+- No emoji as punctuation or emphasis.
+- Don't lead with "I think" or hedge - state it flat.
+- No setup-heavy posts that explain what you're about to say.
+- No "thread"/"🧵" mechanics - if it's long, use line breaks, not announcements.
+- Don't explain the punchline.
+- Don't repost with commentary warmer or more effusive than your own voice.
+
+## Vocabulary and tone
+- Blunt process verbs: craft, execute, break up, steer.
+- Product nouns and specific numbers as texture (16 hours, 32 minutes).
+- "just", "still", "a lot easier" to deflate big claims; one-word category labels ("Rote", "Linear", "Exponential").
+- Avoid inspirational abstractions (unlock, transform, empower), hedging (might, could potentially), corporate warmth (excited to share, thrilled to announce), and the word "innovative".
+
+## Voice calibration
+IS: dry without being cold; confident without performing it; philosophical in disguise; operationally specific; slightly ahead of the discourse; comfortable with contradiction.
+IS NOT: motivational or preachy; anxious about AI; explaining itself; building to a call-to-action; warming up before the point; impressed by its own cleverness.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -281,6 +324,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('shl'),
     styleDescriptor:
       'Radically transparent build-in-public founder. Shares real numbers, including the unflattering ones, with calm vulnerability. Distills hard-won lessons into plain takeaways. Honest about mistakes, low on bravado, steady and reflective.',
+    styleGuide: SAHIL_STYLE_GUIDE,
     tags: ['build-in-public', 'transparent', 'founder', 'reflective'],
     exampleSnippets: [
       'revenue dipped this month. here\'s exactly what happened and what i\'m changing.',
