@@ -142,11 +142,13 @@ function hookGuidance(intensity: HookIntensity): string {
 
 function buildVoiceBlock(profile: VoiceProfile): string {
   const samples = (profile.samples ?? []).map((s, i) => `[${i + 1}] ${s}`).join('\n\n')
-  return `THE VOICE TO WRITE IN
-${profile.styleGuide ? `Captured Style Guide for this writer (follow it precisely):\n${profile.styleGuide}` : ''}
+  return `THE VOICE - THIS IS THE MOST IMPORTANT PART OF THE WHOLE TASK.
+The post MUST sound like this exact writer, not like a helpful, polished, polite assistant. Commit to this voice completely and match its ATTITUDE, not a safe version of it: its edge, bluntness, sarcasm, profanity, arrogance, terseness, dryness, or warmth - exactly as the guide describes. NEVER soften, sanitize, hedge, or make it more polite, friendly, balanced, or "professional" than the guide says. If the guide says this writer is rude, blunt, cocky, or unfiltered, then BE rude, blunt, cocky, and unfiltered. Do not add reassurance, qualifiers, or niceties the writer would never use. A watered-down, generic, polite version of this voice is the single biggest failure - do not produce it. When in doubt, push the voice further, not softer.
+
+${profile.styleGuide ? `STYLE GUIDE for this writer (follow it precisely, including its edge and the things it says to avoid):\n${profile.styleGuide}` : ''}
 ${profile.summary ? `\nStyle summary:\n${profile.summary}` : ''}
 ${profile.styleNotes ? `\nNotes: ${profile.styleNotes}` : ''}
-${samples ? `\n{voice_samples} — the writer's REAL posts (anchor the texture, match this cadence and what they'd never say, do not copy or quote):\n${samples}` : ''}`
+${samples ? `\n{voice_samples} — the writer's REAL posts (match this exact cadence and attitude, and what they would never say; do not copy or quote):\n${samples}` : ''}`
 }
 
 function buildTask(input: GenerateInput, count: number): string {
@@ -163,7 +165,7 @@ function buildTask(input: GenerateInput, count: number): string {
   // Format prompt (slash command): the FORMAT drives structure, the idea supplies
   // content, the voice (in system) handles tone.
   if (input.formatText?.trim()) {
-    return `Write ${n} in the author's voice using the FORMAT below.\n\nFORMAT:\n${input.formatText.trim()}\n\nThe user's idea (take ALL facts only from here, never invent anything not present):\n\n${input.input}${linkLine}`
+    return `Write ${n} using the FORMAT below, in the EXACT voice described in the VOICE section.\n\nFORMAT:\n${input.formatText.trim()}\n\nThe user's idea (take ALL facts only from here, never invent anything not present):\n\n${input.input}${linkLine}\n\nReminder: commit fully to the writer's voice and its attitude/edge - do NOT produce a polished, polite, or generic version. The voice matters more than the format.`
   }
   // No format given (defensive fallback): just write from the idea in the voice.
   return `Write ${n} in the author's voice for this:\n\n${input.input}${linkLine}`
