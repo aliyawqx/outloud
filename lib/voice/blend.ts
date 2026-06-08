@@ -79,8 +79,7 @@ export function blendProfile(inputs: BlendInput[]): BlendResult {
     const styleSummary =
       `Writes in the style of ${s.displayName} (@${s.handle}).\n\n` +
       `${s.styleDescriptor}\n\n` +
-      `Style tags: ${mergedTags.join(', ')}.\n\n` +
-      `// TODO: enrich via model later — Phase 1 uses the source's descriptor verbatim.`
+      `Style tags: ${mergedTags.join(', ')}.`
     return { sources, mergedTags, styleSummary }
   }
 
@@ -99,8 +98,7 @@ export function blendProfile(inputs: BlendInput[]): BlendResult {
   const styleSummary =
     `A hybrid voice blending ${nameList}.\n\n` +
     `${lines}\n\n` +
-    `Merged style tags: ${mergedTags.join(', ')}.\n\n` +
-    `// TODO: enrich via model later — Phase 1 is a template merge of the source descriptors, not a model-generated blend.`
+    `Merged style tags: ${mergedTags.join(', ')}.`
 
   return { sources, mergedTags, styleSummary }
 }

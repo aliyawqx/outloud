@@ -35,14 +35,12 @@ export type GenerateInput = {
    *  change in `input` to this post and keeps the SAME voice, length and structure
    *  (instead of regenerating from scratch, which can drift off-voice). */
   reviseBase?: string
-  /** FORMAT prompt (slash command): controls the STRUCTURE of the output. When set,
-   *  generation uses the format-agnostic BASE rules + this format, instead of the
-   *  built-in HSO post prompt. The voice still governs tone. */
+  /** FORMAT prompt (slash command): controls the STRUCTURE of the output. The
+   *  format-agnostic BASE rules + this format drive structure; the voice governs tone. */
   formatText?: string
   hookIntensity?: HookIntensity
   /** {optional_link} — a URL to maybe include (links are a lower-reach path). */
   optionalLink?: string
-  subtleHumor?: boolean
   /** Optional progress-counter day (generic, user-configured). Adds a header line. */
   progressDay?: number
   /** Optional progress-counter goal/total, e.g. "Day 5/30". */
@@ -127,8 +125,6 @@ const DRAFTS_FORMAT = {
     required: ['clarify', 'drafts'],
   },
 }
-
-const SUBTLE_HUMOR_RULE = `VOICE FLAVOR — subtle double meaning (тонкий юмор), sparingly: where it fits, one line that reads as a normal statement to a casual reader but carries a second, knowing meaning for insiders. Never explained, never flagged. At most one per post, only if it doesn't cost substance.`
 
 function hookGuidance(intensity: HookIntensity): string {
   switch (intensity) {
@@ -295,7 +291,7 @@ function getClient(): Anthropic {
  * and the caller routes the user to create a voice first.
  */
 export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput): Promise<GenerateResult> {
-  const { hookIntensity = 'bold', subtleHumor = true, count = 1 } = opts
+  const { hookIntensity = 'bold', count = 1 } = opts
   // The voice is driven entirely by the per-user signal (captured guide, preset
   // summary, or raw samples). No signal → no voice → do not generate.
   const hasVoiceSignal = Boolean(
@@ -304,9 +300,8 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   if (!hasVoiceSignal) throw new VoiceRequiredError()
 
   // Global rules come from the format-agnostic BASE prompt; the structure comes
-  // from the FORMAT (slash command), the tone from the voice.
-  const baseRules = subtleHumor ? `${BASE_PROMPT}\n\n${SUBTLE_HUMOR_RULE}` : BASE_PROMPT
-  const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: baseRules }]
+  // from the FORMAT (slash command), the tone from the voice (no global humor rule).
+  const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: BASE_PROMPT }]
 
   system.push({ type: 'text', text: buildVoiceBlock(profile) })
   system[system.length - 1].cache_control = { type: 'ephemeral' }

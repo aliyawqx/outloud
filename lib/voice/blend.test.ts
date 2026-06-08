@@ -22,7 +22,7 @@ describe('blendProfile', () => {
     expect(r.sources).toEqual([{ sourceId: 'alice', weight: 1 }])
     expect(r.mergedTags).toEqual(['punchy', 'dry'])
     expect(r.styleSummary).toContain('ALICE')
-    expect(r.styleSummary).toContain('// TODO')
+    expect(r.styleSummary).not.toContain('TODO') // no internal/phase text leaks into the profile
   })
 
   it('merges and dedupes tags preserving first appearance', () => {

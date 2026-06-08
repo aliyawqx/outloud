@@ -11,7 +11,6 @@ describe('validateReplyInput', () => {
       expect(r.value.samples).toEqual(['my post one', 'my post two'])
       expect(r.value.replyTo).toBe('a popular post')
       expect(r.value.hookIntensity).toBe('bold')
-      expect(r.value.subtleHumor).toBe(true)
       expect(r.value.angle).toBeUndefined()
     }
   })
@@ -47,10 +46,5 @@ describe('validateReplyInput', () => {
 
   it('rejects an over-long replyTo', () => {
     expect(validateReplyInput({ samples: ['a'], replyTo: 'x'.repeat(25001) }).ok).toBe(false)
-  })
-
-  it('coerces subtleHumor and respects false', () => {
-    const r = validateReplyInput({ ...ok, subtleHumor: false })
-    expect(r.ok && r.value.subtleHumor).toBe(false)
   })
 })

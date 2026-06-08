@@ -32,7 +32,6 @@ async function main() {
   const take = await generateDrafts(profile, {
     formatText: seedText('post'),
     input: 'shipping fast vs shipping good, as a solo founder',
-    subtleHumor: true,
     count: 1,
   })
   console.log(take.drafts[0].fullText)
@@ -41,7 +40,6 @@ async function main() {
   const reply = await generateDrafts(profile, {
     formatText: seedText('reply'),
     input: 'The post I\'m replying to:\n"""\nthe best founders are relentlessly resourceful.\n"""\n\nMy angle: gently undercut the guru tone, from the trenches',
-    subtleHumor: true,
     count: 1,
   })
   console.log(reply.drafts[0].fullText)

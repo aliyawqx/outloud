@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: 400 })
   }
 
-  const { samples, replyTo, angle, hookIntensity, subtleHumor, styleId } = result.value
+  const { samples, replyTo, angle, hookIntensity, styleId } = result.value
 
   // A celebrity preset overrides the user's own samples; otherwise write as the user.
   const preset = styleId ? getPreset(styleId) : undefined
@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
       input: idea,
       formatText: seedText('reply'),
       hookIntensity,
-      subtleHumor,
       count: 1,
     })
     if (clarify && drafts.length === 0) {
