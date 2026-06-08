@@ -1,9 +1,11 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-const { createUserMock, setCookieMock, tokenMock } = vi.hoisted(() => ({
+const { createUserMock, setCookieMock, tokenMock, setVerifyCodeMock, sendCodeMock } = vi.hoisted(() => ({
   createUserMock: vi.fn(),
   setCookieMock: vi.fn(),
   tokenMock: vi.fn(),
+  setVerifyCodeMock: vi.fn(),
+  sendCodeMock: vi.fn(),
 }))
 vi.mock('@/lib/auth/users', () => ({
   createUser: createUserMock,
@@ -13,6 +15,8 @@ vi.mock('@/lib/auth/session', () => ({
   createSessionToken: tokenMock,
   setSessionCookie: setCookieMock,
 }))
+vi.mock('@/lib/auth/verify', () => ({ setVerifyCode: setVerifyCodeMock }))
+vi.mock('@/lib/auth/email', () => ({ sendVerificationCode: sendCodeMock }))
 
 import { POST } from '@/app/api/auth/signup/route'
 import { EmailTakenError } from '@/lib/auth/users'
@@ -29,7 +33,11 @@ beforeEach(() => {
   createUserMock.mockReset()
   setCookieMock.mockReset()
   tokenMock.mockReset()
+  setVerifyCodeMock.mockReset()
+  sendCodeMock.mockReset()
   tokenMock.mockResolvedValue('signed.jwt')
+  setVerifyCodeMock.mockResolvedValue('123456')
+  sendCodeMock.mockResolvedValue(undefined)
 })
 
 describe('POST /api/auth/signup', () => {
@@ -41,6 +49,17 @@ describe('POST /api/auth/signup', () => {
     expect(json).toEqual({ ok: true, redirect: '/app/onboarding' })
 
     expect(createUserMock).toHaveBeenCalledWith({ email: 'a@b.com', password: 'supersecret', displayName: 'Aya' })
+    expect(setCookieMock).toHaveBeenCalledWith('signed.jwt')
+    // A verification code is issued and emailed on signup.
+    expect(setVerifyCodeMock).toHaveBeenCalledWith('u1')
+    expect(sendCodeMock).toHaveBeenCalledWith('a@b.com', '123456')
+  })
+
+  it('still succeeds (201) when sending the verification code fails', async () => {
+    createUserMock.mockResolvedValue({ id: 'u1', email: 'a@b.com' })
+    sendCodeMock.mockRejectedValue(new Error('resend down'))
+    const res = await POST(req({ email: 'a@b.com', password: 'supersecret', displayName: 'Aya' }))
+    expect(res.status).toBe(201)
     expect(setCookieMock).toHaveBeenCalledWith('signed.jwt')
   })
 
