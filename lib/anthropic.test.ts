@@ -145,20 +145,20 @@ describe('generation rules', () => {
 })
 
 describe('generateStyleGuide', () => {
-  it('runs the universal analysis prompt over the samples and returns the guide', async () => {
+  it('runs the universal voice-extraction prompt and returns the markdown profile + summary', async () => {
     createMock.mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({ summary: 'dry, lowercase, additive', guideMarkdown: '## Voice summary\ndry' }) }],
+      content: [{ type: 'text', text: '## VOICE SUMMARY\ndry, lowercase, additive\n\n## TONE & ATTITUDE\nblunt' }],
     })
     const r = await generateStyleGuide(['пост на русском', 'a punchy english line'])
+    // summary is pulled from the VOICE SUMMARY section
     expect(r.summary).toBe('dry, lowercase, additive')
-    expect(r.guideMarkdown).toContain('Voice summary')
+    // the full markdown profile is kept as the guide
+    expect(r.guideMarkdown).toContain('## VOICE SUMMARY')
+    expect(r.guideMarkdown).toContain('## TONE & ATTITUDE')
 
     const args = createMock.mock.calls[0][0]
-    // universal style-analysis meta-prompt drives it
-    expect(args.system[0].text).toContain('writing-style analyst')
-    // samples are passed in the user message
-    expect(args.messages[0].content).toContain('a punchy english line')
-    expect(args.output_config.format.type).toBe('json_schema')
+    expect(args.system[0].text).toContain('voice analyst') // the universal prompt
+    expect(args.messages[0].content).toContain('a punchy english line') // samples passed in
   })
 
   it('throws when there are no samples', async () => {

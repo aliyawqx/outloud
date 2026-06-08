@@ -207,28 +207,20 @@ export async function captureVoice(samples: string[]): Promise<string> {
   return block && block.type === 'text' ? block.text.trim() : ''
 }
 
-const StyleGuideSchema = z.object({ summary: z.string(), guideMarkdown: z.string() })
-
-const STYLE_GUIDE_FORMAT = {
-  type: 'json_schema' as const,
-  schema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      summary: { type: 'string' },
-      guideMarkdown: { type: 'string' },
-    },
-    required: ['summary', 'guideMarkdown'],
-  },
-}
-
 export type StyleGuide = { guideMarkdown: string; summary: string }
 
+/** Pull the short summary out of the profile's "## VOICE SUMMARY" section (the
+ *  first paragraph), falling back to the opening of the guide. */
+function extractVoiceSummary(md: string): string {
+  const m = md.match(/##\s*VOICE SUMMARY\s*\n+([\s\S]*?)(?:\n\s*##\s|$)/i)
+  const body = (m ? m[1] : md).trim()
+  return body.split(/\n{2,}/)[0].replace(/\s+/g, ' ').trim().slice(0, 400)
+}
+
 /**
- * Analyze a writer's samples into a personalized, sectioned Style Guide, driven
- * by the universal style-analysis meta-prompt. Works for any writer/language;
- * the guide is written in English. This is the engine that produces each client's
- * personalized voice prompt.
+ * THE one universal prompt. Analyze an author's samples into a structured, reusable
+ * voice profile (markdown) the generation step consumes. Works for the user's own
+ * samples or a third-party/celebrity's public samples, in any language.
  */
 export async function generateStyleGuide(samples: string[]): Promise<StyleGuide> {
   const enabled = samples.map((s) => s.trim()).filter(Boolean)
@@ -240,26 +232,19 @@ export async function generateStyleGuide(samples: string[]): Promise<StyleGuide>
     model,
     max_tokens: 4000,
     system: [{ type: 'text', text: STYLE_ANALYSIS_PROMPT, cache_control: { type: 'ephemeral' } }],
-    ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
-    output_config: effort ? { effort: 'medium', format: STYLE_GUIDE_FORMAT } : { format: STYLE_GUIDE_FORMAT },
+    ...(effort ? { thinking: { type: 'adaptive' as const }, output_config: { effort: 'medium' as const } } : {}),
     messages: [
       {
         role: 'user',
-        content: `Writer's samples (analyze ONLY these):\n\n${enabled.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`,
+        content: `Here are the writing samples from one author. Extract the voice profile.\n\nSAMPLES:\n\n${enabled.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`,
       },
     ],
   })
 
-  const text = msg.content.find((b) => b.type === 'text')
-  if (!text || text.type !== 'text') throw new Error('No content returned')
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(text.text)
-  } catch {
-    throw new Error('Model returned non-JSON output')
-  }
-  const r = StyleGuideSchema.parse(parsed)
-  return { guideMarkdown: r.guideMarkdown.trim(), summary: r.summary.trim() }
+  const block = msg.content.find((b) => b.type === 'text')
+  const guide = block && block.type === 'text' ? block.text.trim() : ''
+  if (!guide) throw new Error('No content returned')
+  return { guideMarkdown: guide, summary: extractVoiceSummary(guide) }
 }
 
 // ── Chat intake: the multi-turn "ask vs write" decision ────────────────────────
