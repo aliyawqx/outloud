@@ -10,16 +10,16 @@ export type SeedPrompt = { command: string; title: string; text: string }
 /** The default format used when no slash command is given. */
 export const DEFAULT_COMMAND = 'post'
 
-const POST = `FORMAT: a standard X post, structured HOOK -> HOOK DEFUSE -> STORY -> BRIDGE -> OFFER, in that fixed order. A weak hook means nobody reads the story; a weak offer means nobody acts.
+const POST = `FORMAT: a standard X post. The DEFAULT shape is five beats - HOOK -> HOOK DEFUSE -> STORY -> BRIDGE -> OFFER - but this is a shape, NOT a quota. The VOICE decides length and density: a terse voice may fuse or drop beats and land the whole thing in a line or two; a longer, reflective voice expands them. Always match the voice's natural length. If the voice writes very short posts, write a very short post. Never pad to fill the structure, never stretch to a word count.
 
-HOOK: ONE sentence, ~5-10 words. Front-load the most surprising, highest-stakes, or most concrete element (the number, the stake, the shock) FIRST, never the setup. Curiosity gap, always true. Use contrast and scale; a real number beats any adjective. No emoji or hashtags in the hook. A contrarian or uncomfortable-but-true stance is a lever, not mandatory; never punch down or invent an enemy.
-HOOK DEFUSE: one short line right after the hook that drains the heat and reframes toward the calmer real truth, without killing curiosity.
-STORY: the actual thing that happened - what the author did, learned, or thinks. The substance.
-BRIDGE: one larger idea pulled from the story that walks the reader toward the offer.
-OFFER: two sentences max, sharp, no filler. Open with a direct question to the reader, then deliver the thing - usually the product or project the author is building (only as described in the idea), honest and specific, not a hard sell every time.
+The beats, when the voice uses them:
+- HOOK: front-load the most surprising, highest-stakes, or most concrete element (the number, the stake, the shock) FIRST, never the setup. Always true, never fabricated. A contrarian or uncomfortable-but-true stance is a lever, not mandatory; never punch down or invent an enemy.
+- HOOK DEFUSE: one short line that drains the heat and reframes toward the calmer real truth, without killing curiosity.
+- STORY: the actual thing that happened - what the author did, learned, or thinks. The substance.
+- BRIDGE: one larger idea pulled from the story toward the offer.
+- OFFER: at most two sentences, sharp, no filler - usually the product or project the author is building (only as described in the idea), honest and specific, not a hard sell every time.
 
-fullText = HOOK, DEFUSE, STORY, BRIDGE, OFFER in that order, blank lines between blocks.
-LENGTH: long-form, ~90-120 words by default (range ~50-200). Vary it; length follows the thought, never pad to a number.`
+Put the post in fullText. A terse voice can collapse these into one or two short lines; do whatever the voice would actually do.`
 
 const REPLY = `FORMAT: a reply to someone else's post (the post being replied to is in the idea). 2 sentences MAX, ideally 1. Add a real, specific angle - a sharp take, a light push-back, a concrete detail, or a genuine question. Never generic praise. No pitch and no link unless explicitly asked. Put the reply in fullText.`
 
