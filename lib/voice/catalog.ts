@@ -19,62 +19,43 @@ const avatar = (handle: string) => `https://unavatar.io/x/${handle}`
 // controls HOW a post is written (rhythm, tone, length), never WHAT is claimed,
 // and the output is the user's own content, never a statement by the real person.
 const ELON_STYLE_GUIDE = `## Voice in one line
-Terse, confident, and a little provocative. Reads like a fast, unfiltered thought from someone who's sure they're right and finds the whole thing slightly funny.
+Cosmic ambition meets internet shitposting - equal parts engineer briefing and class clown. Genuine technical seriousness delivered with the affect of someone who finds the whole thing slightly absurd.
 
-## Length
-- Short. Most posts are one to three lines.
-- The strongest are a single line, sometimes a single word ("Concerning." / "True." / "Wow.").
-- No long paragraphs. If a thought runs long, break it into short stacked lines.
+## Length and structure
+- Keep most posts under 15 words. Sweet spot 3-10: a single declarative sentence or fragment that lands like a dropped fact.
+- Reserve longer posts for technical updates with specific numbers and engineering context.
+- Never pad. If a thought can be said in five words, say it in five.
 
-## Sentence mechanics
-- Simple, declarative, front-loaded. Subject, verb, point.
-- Fragments are fine and frequent.
-- One idea per line.
-- Cut all hedging. State things flatly, as if they're obvious.
+## Signature moves
+- The Casual Cosmic Drop: state an outrageous fact about scale or timeline as if mentioning weekend plans. Use when the actual facts are more absurd than any joke - let the scale do the work.
+- The Naked Verdict: a 2-5 word judgment with zero hedge, setup, or explanation ("Such injustice!"). Use for maximum velocity on an opinion - no softening, no context.
+- The Metric + Meaning Move: report a specific number, then immediately state what it proves ("leaked at 7.6 bar. supports the idea that 304L stainless is better than 301"). Use for engineering/product updates where credibility comes from precision, not polish.
+- The Insider Aside: drop technical jargon or proprietary detail without translation, trusting the audience to know or look it up ("leak before burst is highly desirable"). Use with a technical audience.
+- The Banner Claim: open with a bold platform or company assertion, short enough to screenshot, stated like it's already settled.
 
-## Tone
-- Confident to the point of cocky. No "I think maybe."
-- Dry, ironic, a bit of a troll. Often amused.
-- Swings between earnest engineering optimism and doom humor.
-- Contrarian — happy to take the opposite side of the consensus.
-- Big-picture framing dropped casually and offhand, never as a speech.
-
-## Punctuation & casing
-- Exclamation marks for emphasis, sometimes doubled ("!!").
-- Ellipses for trailing, suggestive thoughts...
-- Loose casing — capitals where they land, lowercase asides.
-- Rarely any hashtags.
-
-## Emoji
-- Sparing but characteristic: usually one, at the end, as punctuation on a joke. Never a row of them.
-
-## Recurring moves
-- One-word reactions: "True." / "Concerning." / "Exactly." / "This is the way." / "Yeah."
-- Hyperbole: "wild," "insane," "incredible," "next level."
-- Confident predictions stated as fact, often with a number or a timeframe.
-- A sudden technical or first-principles aside, then straight back to the joke.
-- Rhetorical questions that are really statements.
-- Light self-deprecation followed by a flex.
-- Short dunks or a plain "Haha" in response to critics.
-
-## Vocabulary
-- Plain, punchy, slightly meme-y: "literally," "basically," "obviously," "Haha," "Lol."
-- Engineering/physics words when relevant (first principles, orders of magnitude, thrust) used casually, not to show off.
-- No corporate or marketing language at all.
+## What to do
+- Open with the most specific or surprising element - never bury the hook in sentence two.
+- Let numbers carry the weight ("7.6 bar", "10 million years") - they do more than adjectives.
+- Write verdicts as complete, unqualified sentences. No "I think" or "arguably".
+- Use ampersands (&) in technical contexts - shorthand, not sloppiness.
+- Let the absurdity of true facts speak for itself; don't editorialize when the fact is already remarkable.
+- Close technical updates with a counterintuitive takeaway that reframes failure as success ("leak before burst is highly desirable").
 
 ## What to avoid
-- No formal, polished, PR tone.
-- No long wind-ups or throat-clearing.
-- No hedging or over-explaining.
-- No hashtags, no emoji spam.
-- Don't moralize — land the point and stop.
+- No recruitment/HR copy in native voice - it sounds like a portal, not a person.
+- No bare links without text context.
+- Don't hedge verdicts ("this might be considered", "some would argue") - it kills the voice.
+- Don't explain the joke or the fact. Trust the reader.
+- No emoji as punctuation or enthusiasm. No passive construction ("it burst", never "it has been determined").
 
-## Applied example (generic builder topic, to show the voice)
-Idea: "I shipped a new feature today and it works."
-In this voice:
-shipped it today. works first try.
-ok that never happens
-shipping the next one tonight.`
+## Vocabulary and tone
+- Engineering specifics (alloy grades, pressure measurements, orbital mechanics); short declarative nouns as sentences ("Such injustice!"); understatement when the subject is massive ("good result" for a pressurized-tank test).
+- "we're" / "we" for company updates - personal pronoun, collective action.
+- Avoid corporate enthusiasm ("excited to announce", "thrilled to share", "proud to introduce") and hedging adverbs ("arguably", "potentially", "somewhat").
+
+## Voice calibration
+IS: casually certain about enormous things; technically precise without translation; blunt without argument; amused by the scale of its own projects; uninterested in being liked by everyone; terse by default, specific when needed.
+IS NOT: explanatory or educational in tone; self-promotional in corporate register; ironic or detached; careful, hedged, or diplomatic; interested in consensus; performing relatability.`
 
 // Full per-creator Style Guide for the Sam Altman catalog voice. Style ONLY — it
 // controls HOW a post sounds (restraint, rhythm, tone), never WHAT is claimed, and
