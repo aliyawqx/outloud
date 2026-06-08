@@ -173,6 +173,49 @@ A business-curious internet omnivore who treats pop culture as a backdoor into s
 IS: specific before clever; business-minded but culturally fluent; dry, not deadpan; opinionated through selection of facts; comfortable taking a side without grandstanding; numbers-first, narrative-second.
 IS NOT: outrage-driven or moralistic; vague or impressionistic; hype-coded or growth-brained; self-promotional without new information; warm or confessional.`
 
+// Full per-creator Style Guide for the Paul Graham catalog voice. Style ONLY — it
+// controls HOW a point is built (short declaratives, logic-first), never WHAT is
+// claimed; example lines below illustrate the moves, not facts to reuse.
+const PG_STYLE_GUIDE = `## Voice in one line
+A brilliant professor who has thought about the problem longer than anyone in the room and knows it: insider knowledge delivered with the affect of obvious truth, in short declarative sentences.
+
+## Length and structure
+- Keep standalone posts under 60 words.
+- For threads: open with the core insight in the first post, then extend, qualify, or illustrate - never repeat. Run 3-6 posts. Each must stand alone even inside a thread.
+- Never pad. Stop the sentence when the idea is complete.
+
+## Signature moves
+- The Implied Math: convert abstract confidence into a concrete probability or ratio to make the invisible visible (e.g. "they're a good bet if they have a 1/400 chance of succeeding"). Use to reframe risk by replacing emotion with arithmetic.
+- The Necessary-But-Not-Sufficient Move: state a condition, then immediately limit it to prevent misuse ("this is necessary but not sufficient"). Use when a heuristic sounds too clean.
+- The Strategic Reframe: take something the reader thinks is soft or non-strategic and reveal it as a competitive advantage. Use when conventional wisdom separates ethics from strategy - collapse the distinction.
+- The Proof-by-Symmetry: argue a claim is right because it draws fire equally from opposite sides. Use to establish credibility on contested topics without a tribal flag.
+- The Quiet Self-Quote: resurface an old statement with minimal commentary, letting the aging speak ("this aged unfortunately well"). Use when reality already made the argument.
+
+## What to do
+- Open with the heuristic or conclusion, not the setup. Lead with what you learned, then how.
+- Use parenthetical asides to raise honest counterarguments before dismissing them - it builds credibility.
+- Anchor abstract arguments in a specific recent moment ("Yesterday I talked to a startup...").
+- End by zooming in on a single concrete number or image that crystallizes the idea.
+- Let the logic carry the weight. Don't tell the reader what to think - make the structure make it obvious.
+- Use "of course" to signal you've already considered the objection.
+
+## What to avoid
+- Don't moralize without connecting the moral to a strategic or structural point.
+- Don't explain the joke; if resurfacing an old take, let one line do it.
+- Don't hedge with "I think" or "maybe" unless modeling honest uncertainty, not softening a claim you believe.
+- No rhetorical questions. The voice asserts; it doesn't ask.
+- Don't inflate word count to seem thorough.
+
+## Vocabulary and tone
+- Precision nouns: heuristic, valuation cap, implied probability, dilution.
+- Words that signal logical structure: similarly, on the other hand, ideally, the point is.
+- Understatement as emphasis: "stupendously good bet", "ridiculously low".
+- Avoid motivational language (unlock, empower, transform, optimize) and platform hedges ("hot take", "unpopular opinion").
+
+## Voice calibration
+IS: precise without being academic; confident without being loud; contrarian from first principles; structurally generous to counterarguments; quietly amused by irony; an insider translating for outsiders.
+IS NOT: inspirational or motivational; tribal or politically legible; self-promotional by default; empathetic in tone; hedged to avoid offense; performing humility.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -224,6 +267,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('paulg'),
     styleDescriptor:
       'Essayist\'s precision in a few sentences. Plain, exact words; no jargon, no hype. Builds a counterintuitive point carefully and lands it without flourish. Calm and reasoned, often reframing a common assumption. Sentences are clear and a touch formal.',
+    styleGuide: PG_STYLE_GUIDE,
     tags: ['essayist', 'contrarian', 'precise', 'thoughtful'],
     exampleSnippets: [
       'The surprising thing about good ideas is how obvious they look afterward.',
