@@ -1,6 +1,6 @@
 // Browser-side client for the voice API. Identity comes from the auth session
 // cookie (sent automatically on same-origin requests) — no manual owner key.
-import type { DraftPost, HookIntensity, ProfileKind, SampleSource, SourceRef, VoiceProfile, WritingSample } from './types'
+import type { ProfileKind, SampleSource, SourceRef, VoiceProfile, WritingSample } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -83,18 +83,6 @@ export function saveStyleGuide(
   body: { guideMarkdown: string; summary?: string },
 ): Promise<{ profile: VoiceProfile }> {
   return api(`/api/voice/profiles/${profileId}/style-guide`, { method: 'PATCH', body: JSON.stringify(body) })
-}
-
-// ── Compose ──────────────────────────────────────────────────────────────────
-
-export function compose(body: {
-  idea: string
-  profileId?: string
-  count?: number
-  hookIntensity?: HookIntensity
-  link?: string
-}): Promise<{ drafts?: DraftPost[]; clarify?: string; voiceName: string; historyId?: string }> {
-  return api('/api/voice/compose', { method: 'POST', body: JSON.stringify(body) })
 }
 
 export function deleteHistory(id: string): Promise<{ ok: true }> {

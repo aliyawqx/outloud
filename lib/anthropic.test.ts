@@ -10,7 +10,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 
 process.env.ANTHROPIC_API_KEY = 'test-key'
 
-import { generateDrafts, generateStyleGuide, captureVoice, type VoiceProfile } from './anthropic'
+import { generateDrafts, generateStyleGuide, type VoiceProfile } from './anthropic'
 
 const profile: VoiceProfile = {
   summary: 'lowercase, short lines, dry humor, no emoji',
@@ -35,15 +35,19 @@ describe('generateDrafts', () => {
       ],
     })
 
-    const { drafts } = await generateDrafts(profile, { input: 'shipped dark mode + 2x faster export' })
+    const { drafts } = await generateDrafts(profile, {
+      input: 'shipped dark mode + 2x faster export',
+      formatText: 'FORMAT: a standard X post (HOOK -> DEFUSE -> STORY -> BRIDGE -> OFFER).',
+    })
 
     expect(drafts).toHaveLength(2)
     expect(drafts[0]).toMatchObject({ angle: 'technical', hook: 'h', fullText: 'h\n\ns\n\no' })
 
     const args = createMock.mock.calls[0][0]
-    // HSO + anti-slop rules present
-    expect(args.system[0].text).toContain('POST STRUCTURE')
+    // Global BASE rules in system[0] (anti-slop), format-agnostic
     expect(args.system[0].text).toContain('NO AI-isms')
+    // The FORMAT (structure) is injected into the user message, not the system rules
+    expect(args.messages[0].content).toContain('HOOK -> DEFUSE -> STORY -> BRIDGE -> OFFER')
     // Voice samples injected
     expect(JSON.stringify(args.system)).toContain('stop shipping at 2am')
     // Structured output requested
@@ -163,13 +167,5 @@ describe('generateStyleGuide', () => {
 
   it('throws when there are no samples', async () => {
     await expect(generateStyleGuide([])).rejects.toThrow(/No samples/)
-  })
-})
-
-describe('captureVoice', () => {
-  it('returns the extracted fingerprint text', async () => {
-    createMock.mockResolvedValue({ content: [{ type: 'text', text: '- lowercase\n- short lines' }] })
-    const fp = await captureVoice(['a', 'b'])
-    expect(fp).toContain('lowercase')
   })
 })

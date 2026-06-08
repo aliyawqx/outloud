@@ -69,7 +69,6 @@ export async function generatePost(
   const count = Math.min(4, Math.max(1, input.count ?? 1))
 
   return generateDrafts(voice, {
-    kind: 'ship',
     input: input.idea,
     count,
     hookIntensity: input.hookIntensity ?? 'bold',

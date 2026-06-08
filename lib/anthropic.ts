@@ -1,6 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
-import { POST_PROMPT } from './postPrompt'
 import { BASE_PROMPT } from './basePrompt'
 import { STYLE_ANALYSIS_PROMPT } from './stylePrompt'
 import { INTAKE_PROMPT } from './intakePrompt'
@@ -17,8 +16,6 @@ function supportsEffort(model: string): boolean {
 
 export type HookIntensity = 'safe' | 'bold' | 'spicy' | 'funny'
 
-export type ContentKind = 'ship' | 'take' | 'reply'
-
 export type VoiceProfile = {
   /** A celebrity/preset style script. When set it drives the voice and the built-in
    *  "my voice" spec is NOT applied. Leave empty to write as the author. */
@@ -32,11 +29,8 @@ export type VoiceProfile = {
 }
 
 export type GenerateInput = {
-  /** {what_i_shipped} — raw input: what happened / what to post about (RU or EN). */
+  /** Raw input: what happened / what to post about (any language). */
   input: string
-  kind?: ContentKind
-  /** For kind: 'reply' — the popular post being replied to. */
-  replyTo?: string
   /** Revision mode: the existing draft to edit. When set, the model applies the
    *  change in `input` to this post and keeps the SAME voice, length and structure
    *  (instead of regenerating from scratch, which can drift off-voice). */
@@ -134,9 +128,6 @@ const DRAFTS_FORMAT = {
   },
 }
 
-// ── Shared rules: role, anti-slop, structure, length (system[0]) ───────────────
-const SYSTEM_RULES = POST_PROMPT
-
 const SUBTLE_HUMOR_RULE = `VOICE FLAVOR — subtle double meaning (тонкий юмор), sparingly: where it fits, one line that reads as a normal statement to a casual reader but carries a second, knowing meaning for insiders. Never explained, never flagged. At most one per post, only if it doesn't cost substance.`
 
 function hookGuidance(intensity: HookIntensity): string {
@@ -178,33 +169,8 @@ function buildTask(input: GenerateInput, count: number): string {
   if (input.formatText?.trim()) {
     return `Write ${n} in the author's voice using the FORMAT below.\n\nFORMAT:\n${input.formatText.trim()}\n\nThe user's idea (take ALL facts only from here, never invent anything not present):\n\n${input.input}${linkLine}`
   }
-  switch (input.kind) {
-    case 'take':
-      return `Write ${n}: a standalone X post in my voice (full HOOK/DEFUSE/STORY/BRIDGE/OFFER structure) about:\n\n${input.input}${linkLine}`
-    case 'reply':
-      return `A popular account posted:\n"""\n${input.replyTo ?? ''}\n"""\n\nWrite ${n}: a witty reply in my voice that adds a real angle. Never generic praise.${input.input ? `\n\nMy angle: ${input.input}` : ''}${linkLine}`
-    case 'ship':
-    default:
-      return `{what_i_shipped} — write ${n} (full HOOK/DEFUSE/STORY/BRIDGE/OFFER structure) for this:\n\n${input.input}${linkLine}`
-  }
-}
-
-/** Capture the author's voice into a reusable fingerprint summary. */
-export async function captureVoice(samples: string[]): Promise<string> {
-  const msg = await getClient().messages.create({
-    model: getModel(),
-    max_tokens: 1200,
-    system:
-      "You analyze a person's social posts and produce a tight, concrete style fingerprint another writer can imitate. Output 6–10 bullet points covering: casing, sentence/line length, punctuation tics, emoji/hashtag use, humor, recurring phrases, and what they would NEVER write. No preamble.",
-    messages: [
-      {
-        role: 'user',
-        content: `Here are the posts:\n\n${samples.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`,
-      },
-    ],
-  })
-  const block = msg.content.find((b) => b.type === 'text')
-  return block && block.type === 'text' ? block.text.trim() : ''
+  // No format given (defensive fallback): just write from the idea in the voice.
+  return `Write ${n} in the author's voice for this:\n\n${input.input}${linkLine}`
 }
 
 export type StyleGuide = { guideMarkdown: string; summary: string }
@@ -337,11 +303,9 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   )
   if (!hasVoiceSignal) throw new VoiceRequiredError()
 
-  // With a FORMAT prompt, the global rules come from the format-agnostic BASE
-  // prompt (the format itself supplies the structure). Otherwise use the built-in
-  // HSO post prompt (the legacy one-shot path).
-  const rules = opts.formatText?.trim() ? BASE_PROMPT : SYSTEM_RULES
-  const baseRules = subtleHumor ? `${rules}\n\n${SUBTLE_HUMOR_RULE}` : rules
+  // Global rules come from the format-agnostic BASE prompt; the structure comes
+  // from the FORMAT (slash command), the tone from the voice.
+  const baseRules = subtleHumor ? `${BASE_PROMPT}\n\n${SUBTLE_HUMOR_RULE}` : BASE_PROMPT
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: baseRules }]
 
   system.push({ type: 'text', text: buildVoiceBlock(profile) })

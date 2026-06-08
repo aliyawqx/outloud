@@ -29,8 +29,9 @@ describe('POST /api/reply', () => {
 
     const [profile, opts] = genMock.mock.calls[0]
     expect(profile.samples).toEqual(['my post'])
-    expect(opts.kind).toBe('reply')
-    expect(opts.replyTo).toBe('a viral take')
+    expect(opts.formatText).toContain('reply') // uses the reply FORMAT
+    expect(opts.input).toContain('a viral take') // the replied-to post is in the idea
+    expect(opts.input).toContain('undercut it') // the angle too
     expect(opts.count).toBe(1)
   })
 
@@ -44,7 +45,7 @@ describe('POST /api/reply', () => {
     genMock.mockResolvedValue({ drafts: [draft], clarify: '' })
     const res = await post({ replyTo: 'a viral take' })
     expect(res.status).toBe(200)
-    expect(genMock.mock.calls[0][1].kind).toBe('reply')
+    expect(genMock.mock.calls[0][1].formatText).toContain('reply')
   })
 
   it('returns 500 when generation yields no draft', async () => {

@@ -69,7 +69,6 @@ describe('generatePost', () => {
     expect(drafts).toHaveLength(1)
     const [voice, opts] = draftsMock.mock.calls[0]
     expect(voice.styleGuide).toContain('blunt')
-    expect(opts.kind).toBe('ship')
     expect(opts.count).toBe(4)
     expect(opts.hookIntensity).toBe('spicy')
     expect(opts.progressDay).toBe(5)

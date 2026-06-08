@@ -2,6 +2,7 @@
 // Requires ANTHROPIC_API_KEY in .env.local. NOTE: this makes 2 real API calls.
 import { readFileSync } from 'node:fs'
 import { generateDrafts, type VoiceProfile } from '../lib/anthropic'
+import { seedText } from '../lib/prompts/seeds'
 
 // Minimal .env.local loader (so we don't add a dotenv dependency).
 try {
@@ -27,9 +28,9 @@ const profile: VoiceProfile = {
 }
 
 async function main() {
-  console.log('\n════ TAKE (standalone, subtle humor) ════')
+  console.log('\n════ POST (subtle humor) ════')
   const take = await generateDrafts(profile, {
-    kind: 'take',
+    formatText: seedText('post'),
     input: 'shipping fast vs shipping good, as a solo founder',
     subtleHumor: true,
     count: 1,
@@ -38,9 +39,8 @@ async function main() {
 
   console.log('\n════ REPLY (to a popular post, subtle humor) ════')
   const reply = await generateDrafts(profile, {
-    kind: 'reply',
-    replyTo: 'the best founders are relentlessly resourceful.',
-    input: 'gently undercut the guru tone, from the trenches',
+    formatText: seedText('reply'),
+    input: 'The post I\'m replying to:\n"""\nthe best founders are relentlessly resourceful.\n"""\n\nMy angle: gently undercut the guru tone, from the trenches',
     subtleHumor: true,
     count: 1,
   })

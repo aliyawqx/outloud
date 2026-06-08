@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateReplyInput, type ReplyInput } from '@/lib/validateReply'
 import { generateDrafts, type VoiceProfile } from '@/lib/anthropic'
+import { seedText } from '@/lib/prompts/seeds'
 import { getPreset } from '@/lib/styles'
 
 export async function POST(req: NextRequest) {
@@ -24,11 +25,13 @@ export async function POST(req: NextRequest) {
     ? { summary: preset.summary, samples: preset.samples }
     : { samples }
 
+  // The reply FORMAT (structure) + the post being replied to and the angle as the idea.
+  const idea = `The post I'm replying to:\n"""\n${replyTo}\n"""${angle ? `\n\nMy angle: ${angle}` : ''}`
+
   try {
     const { drafts, clarify } = await generateDrafts(profile, {
-      kind: 'reply',
-      replyTo,
-      input: angle ?? '',
+      input: idea,
+      formatText: seedText('reply'),
       hookIntensity,
       subtleHumor,
       count: 1,
