@@ -1,5 +1,7 @@
 import { ensureSchema, getPool } from '@/lib/db'
 
+export type Incubator = 'yes' | 'no' | null
+
 export type Profile = {
   userId: string
   displayName: string
@@ -7,6 +9,10 @@ export type Profile = {
   avatarUrl: string | null
   email: string | null
   plan: string
+  /** nFactorial incubator participation: null = not asked yet. */
+  incubator: Incubator
+  /** Lifetime drafts generated (counts toward the participant cap). */
+  draftsUsed: number
   createdAt: string
   updatedAt: string
 }
@@ -18,6 +24,8 @@ type Row = {
   avatar_url: string | null
   email: string | null
   plan: string
+  incubator: string | null
+  drafts_used: number
   created_at: Date
   updated_at: Date
 }
@@ -30,9 +38,27 @@ function mapRow(r: Row): Profile {
     avatarUrl: r.avatar_url,
     email: r.email,
     plan: r.plan,
+    incubator: r.incubator === 'yes' ? 'yes' : r.incubator === 'no' ? 'no' : null,
+    draftsUsed: r.drafts_used ?? 0,
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
   }
+}
+
+/** Record the user's answer to the incubator-participation question. */
+export async function setIncubator(userId: string, value: 'yes' | 'no'): Promise<void> {
+  await ensureSchema()
+  await getPool().query('UPDATE profiles SET incubator = $1, updated_at = now() WHERE user_id = $2', [value, userId])
+}
+
+/** Atomically bump the lifetime draft counter; returns the new total. */
+export async function incrementDraftsUsed(userId: string): Promise<number> {
+  await ensureSchema()
+  const { rows } = await getPool().query<{ drafts_used: number }>(
+    'UPDATE profiles SET drafts_used = drafts_used + 1, updated_at = now() WHERE user_id = $1 RETURNING drafts_used',
+    [userId],
+  )
+  return rows[0]?.drafts_used ?? 0
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {

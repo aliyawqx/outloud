@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { sessionMock, getProfileMock, listProfilesMock, enabledMock, intakeMock, genMock, saveMock, updateMock, getEntryMock } = vi.hoisted(() => ({
+const { sessionMock, getProfileMock, listProfilesMock, enabledMock, intakeMock, genMock, saveMock, updateMock, getEntryMock, userProfileMock, incDraftsMock } = vi.hoisted(() => ({
   sessionMock: vi.fn(),
   getProfileMock: vi.fn(),
   listProfilesMock: vi.fn(),
@@ -10,11 +10,14 @@ const { sessionMock, getProfileMock, listProfilesMock, enabledMock, intakeMock, 
   saveMock: vi.fn(),
   updateMock: vi.fn(),
   getEntryMock: vi.fn(),
+  userProfileMock: vi.fn(),
+  incDraftsMock: vi.fn(),
 }))
 vi.mock('@/lib/auth/session', () => ({ getSession: sessionMock }))
 vi.mock('@/lib/voice/store', () => ({ getProfile: getProfileMock, listProfiles: listProfilesMock }))
 vi.mock('@/lib/voice/samples', () => ({ listEnabledTexts: enabledMock }))
 vi.mock('@/lib/voice/history', () => ({ saveComposeSession: saveMock, updateComposeChat: updateMock, getComposeEntry: getEntryMock }))
+vi.mock('@/lib/profile/store', () => ({ getProfile: userProfileMock, incrementDraftsUsed: incDraftsMock }))
 vi.mock('@/lib/prompts/store', () => ({ getPromptText: vi.fn(async () => 'FORMAT: a standard X post') }))
 vi.mock('@/lib/anthropic', () => ({ runIntake: intakeMock }))
 vi.mock('@/lib/voice/generate', () => ({
@@ -29,8 +32,10 @@ const json = (b: unknown) =>
   new Request('http://localhost/x', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) })
 
 beforeEach(() => {
-  sessionMock.mockReset(); getProfileMock.mockReset(); listProfilesMock.mockReset(); enabledMock.mockReset(); intakeMock.mockReset(); genMock.mockReset(); saveMock.mockReset(); updateMock.mockReset(); getEntryMock.mockReset()
+  sessionMock.mockReset(); getProfileMock.mockReset(); listProfilesMock.mockReset(); enabledMock.mockReset(); intakeMock.mockReset(); genMock.mockReset(); saveMock.mockReset(); updateMock.mockReset(); getEntryMock.mockReset(); userProfileMock.mockReset(); incDraftsMock.mockReset()
   saveMock.mockResolvedValue({ id: 'h1' })
+  userProfileMock.mockResolvedValue({ draftsUsed: 0 })
+  incDraftsMock.mockResolvedValue(1)
   sessionMock.mockResolvedValue({ userId: 'u1', email: 'a@b.com' })
   getProfileMock.mockResolvedValue(readyVoice)
   listProfilesMock.mockResolvedValue([readyVoice])
@@ -49,6 +54,25 @@ describe('POST /api/voice/chat', () => {
     expect(res.status).toBe(409)
     expect((await res.json()).needsVoice).toBe(true)
     expect(intakeMock).not.toHaveBeenCalled()
+  })
+
+  it('403 when the draft cap is reached, before any generation', async () => {
+    userProfileMock.mockResolvedValue({ draftsUsed: 5 }) // at the limit
+    const res = await POST(json({ turns: [{ role: 'user', text: 'hi' }], profileId: 'p1' }))
+    expect(res.status).toBe(403)
+    expect((await res.json()).limitReached).toBe(true)
+    expect(intakeMock).not.toHaveBeenCalled()
+  })
+
+  it('counts a produced draft toward the cap and returns draftsLeft', async () => {
+    userProfileMock.mockResolvedValue({ draftsUsed: 2 })
+    incDraftsMock.mockResolvedValue(3)
+    intakeMock.mockResolvedValue({ action: 'write', brief: 'shipped' })
+    genMock.mockResolvedValue({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'the post' }], clarify: '' })
+    const res = await POST(json({ turns: [{ role: 'user', text: 'shipped billing' }], profileId: 'p1' }))
+    expect(res.status).toBe(200)
+    expect(incDraftsMock).toHaveBeenCalledWith('u1')
+    expect((await res.json()).draftsLeft).toBe(2) // 5 - 3
   })
 
   it('returns ONE follow-up question when intake decides to ask', async () => {

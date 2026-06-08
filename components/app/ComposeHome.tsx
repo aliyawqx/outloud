@@ -104,11 +104,13 @@ export function ComposeHome({
   name,
   voices,
   commands = [],
+  draftsLeft = null,
   initialSession,
 }: {
   name: string
   voices: VoiceOption[]
   commands?: CommandOption[]
+  draftsLeft?: number | null
   initialSession?: ComposeSession
 }) {
   const router = useRouter()
@@ -123,6 +125,7 @@ export function ComposeHome({
   const [error, setError] = useState('')
   const [historyId, setHistoryId] = useState<string | undefined>(initialSession?.historyId)
   const [activeCommand, setActiveCommand] = useState('')
+  const [left, setLeft] = useState<number | null>(draftsLeft)
 
   // Slash menu: open while the input is just "/" or "/partial" (no space yet).
   const slashMatch = input.match(/^\/([a-z0-9-]*)$/i)
@@ -180,10 +183,16 @@ export function ComposeHome({
         router.push('/app/onboarding')
         return
       }
+      if (res.status === 403 && data.limitReached) {
+        setLeft(0)
+        setError(data.error ?? "You've used all your drafts.")
+        return
+      }
       if (!res.ok) {
         setError(data.error ?? "Couldn't write that. Try again.")
         return
       }
+      if (typeof data.draftsLeft === 'number') setLeft(data.draftsLeft)
       if (data.historyId) setHistoryId(data.historyId)
       if (data.ask) {
         setTurns((t) => [...t, { id: id(), role: 'assistant', text: data.ask }])
@@ -225,6 +234,12 @@ export function ComposeHome({
         ))}
       </select>
     </label>
+  )
+
+  const draftsBadge = left !== null && (
+    <span className={`font-code-label text-code-label ${left > 0 ? 'text-on-surface-variant/70' : 'text-error'}`}>
+      {left > 0 ? `${left} of 5 drafts left` : 'No drafts left'}
+    </span>
   )
 
   const activeTitle = commands.find((c) => c.command === activeCommand)?.title
@@ -289,7 +304,10 @@ export function ComposeHome({
           Type a rough idea. I’ll ask anything I need, then write it in your voice.
         </p>
         <div className="mt-6 w-full">{composer}</div>
-        {voicePicker && <div className="mt-3">{voicePicker}</div>}
+        <div className="mt-3 flex items-center gap-3">
+          {voicePicker}
+          {draftsBadge}
+        </div>
         {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
     )
@@ -298,7 +316,12 @@ export function ComposeHome({
   let draftN = 0
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-3xl flex-col">
-      {voicePicker && <div className="mb-4 flex justify-end">{voicePicker}</div>}
+      {(voicePicker || draftsBadge) && (
+        <div className="mb-4 flex items-center justify-end gap-3">
+          {draftsBadge}
+          {voicePicker}
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col gap-4 pb-4">
         {turns.map((t) => {

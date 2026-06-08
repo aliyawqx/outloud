@@ -29,6 +29,11 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Access gate: nFactorial incubator participation (null = not asked yet) + a
+-- lifetime draft cap counter for participants.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS incubator TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS drafts_used INTEGER NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS voice_profiles (
   id TEXT PRIMARY KEY,
   owner_key TEXT NOT NULL,
