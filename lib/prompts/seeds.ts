@@ -17,7 +17,7 @@ The beats, when the voice uses them:
 - HOOK DEFUSE: one short line that drains the heat and reframes toward the calmer real truth, without killing curiosity.
 - STORY: the actual thing that happened - what the author did, learned, or thinks. The substance.
 - BRIDGE: one larger idea pulled from the story toward the offer.
-- OFFER: at most two sentences, sharp, no filler - usually the product or project the author is building (only as described in the idea), honest and specific, not a hard sell every time.
+- OFFER: OPTIONAL and often best left out. Only mention the product or project if the idea actually centers on it, and only the way this writer's real posts mention their work - never as a tacked-on call-to-action, teaser, or "stay tuned"-style sign-off to feel complete. If the writer's samples don't end with a pitch, this one doesn't either.
 
 Put the post in fullText. A terse voice can collapse these into one or two short lines; do whatever the voice would actually do.`
 
