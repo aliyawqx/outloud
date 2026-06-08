@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { ProfileForm } from '@/components/app/ProfileForm'
 import { XConnection } from '@/components/app/XConnection'
+import { DeleteAccount } from '@/components/app/DeleteAccount'
 
 export const metadata = { title: 'Outloud | Profile' }
 
@@ -27,6 +28,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <div className="mt-8">
         <XConnection flash={flash} />
       </div>
+      <DeleteAccount />
     </div>
   )
 }

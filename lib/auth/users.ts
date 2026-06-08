@@ -54,3 +54,29 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
   )
   return rows[0] ? { id: rows[0].id, email: rows[0].email, passwordHash: rows[0].password_hash } : null
 }
+
+/**
+ * Permanently delete a user and ALL their data. profiles + x_accounts cascade off
+ * the users FK; the owner_key-keyed tables (voice_profiles → writing_samples,
+ * compose_history, prompts) have no FK to users, so we clear them explicitly. All
+ * in one transaction so a partial failure leaves nothing half-deleted.
+ */
+export async function deleteAccount(userId: string): Promise<void> {
+  await ensureSchema()
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    // voice_profiles deletion cascades writing_samples via their FK.
+    await client.query('DELETE FROM voice_profiles WHERE owner_key = $1', [userId])
+    await client.query('DELETE FROM compose_history WHERE owner_key = $1', [userId])
+    await client.query('DELETE FROM prompts WHERE owner_key = $1', [userId])
+    // users deletion cascades profiles + x_accounts via their FKs.
+    await client.query('DELETE FROM users WHERE id = $1', [userId])
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+}
