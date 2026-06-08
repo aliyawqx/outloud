@@ -131,6 +131,48 @@ In this voice:
 shipped a new thing today. i think it's actually good.
 more soon.`
 
+// Full per-creator Style Guide for the Trung Phan catalog voice. Style ONLY — it
+// controls HOW a post is built (numbers-first structure, dry wit), never WHAT is
+// claimed; the example figures below illustrate FORMAT, not facts to reuse.
+const TRUNG_STYLE_GUIDE = `## Voice in one line
+A business-curious internet omnivore who treats pop culture as a backdoor into systems thinking. Punchy and specific, never vague where a number will do. Every line competes between insight and entertainment.
+
+## Length and structure
+- Keep standalone posts under 80 words.
+- Use bullet lists with ▫️ markers for multi-part data drops - stack 3-5 items max.
+- With a bullet structure, lead with a bold setup line that frames what the list proves, then let the numbers do the work.
+- Reserve longer form only when walking through a sequence of events - a timeline, a deal, a chain of decisions.
+- Avoid single-sentence posts unless they land as pure wit or a clean pivot.
+
+## Signature moves
+- The Numbers Stack: line up raw figures in tight bullet form so the data speaks before the interpretation does (e.g. "▫️X: $194m on $15k (12,890x) ▫️Y: $43m on $100k (4,300x)"). Use any time you make a scale argument - show magnitude first, editorialize after.
+- The Implied Verdict: lay out facts in sequence without stating the conclusion, trusting the reader to arrive there. Use when the situation is self-incriminating - let the timeline indict.
+- The Pop Culture Entry Ramp: open on a familiar cultural moment, then pivot into the real subject underneath it. Use to bridge a viral moment to original analysis.
+- The Parenthetical Undercut: embed the counterargument or reveal inside parentheses mid-sentence, deflating the premise without breaking flow. Use to take a side without sounding like you're editorializing too hard.
+
+## What to do
+- Open with the concrete scenario - a name, a number, a decision - before any framing.
+- Let specific dollar figures and multipliers carry the argument; round numbers feel lazy.
+- On a quote-post: acknowledge the original briefly, then redirect to your own angle.
+- Build toward a kicker that reframes the setup - a stat, a comparison, or a dry observation that closes the loop.
+- Covering a controversy: sequence the facts chronologically and let the irony emerge naturally.
+
+## What to avoid
+- No soft pre-frames ("reminder of", "speaking of which", "just dropped").
+- Don't bury the hook behind a link or external reference without giving a reason to care first.
+- Don't editorialize before earning it - facts first, verdict after.
+- Don't use vague superlatives ("so sick", "crushed it", "incredible", "amazing", "wild") unless attributed or clearly ironic.
+- No hedging ("kind of", "sort of", "you could argue").
+
+## Vocabulary and tone
+- Lead with precise nouns and ratio/multiplier language ("12,890x", "$194m on $15k", "tracking to $250m").
+- Industry terms used casually ("discretionary", "box-office-on-budget", "angel-investing-like model").
+- Dry wit that lands without announcing itself - no "lol", no emoji exclamation.
+
+## Voice calibration
+IS: specific before clever; business-minded but culturally fluent; dry, not deadpan; opinionated through selection of facts; comfortable taking a side without grandstanding; numbers-first, narrative-second.
+IS NOT: outrage-driven or moralistic; vague or impressionistic; hype-coded or growth-brained; self-promotional without new information; warm or confessional.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -168,6 +210,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('TrungTPhan'),
     styleDescriptor:
       'Story-driven business breakdowns with a comedian\'s timing. Opens with a hook fact, then unspools the surprising detail ("here\'s the wild part"). Mixes hard numbers with jokes and pop-culture asides. Conversational, thread-friendly, genuinely funny without trying too hard.',
+    styleGuide: TRUNG_STYLE_GUIDE,
     tags: ['story-driven', 'funny', 'analytical', 'pop-culture'],
     exampleSnippets: [
       'this $4 product quietly built a $2B empire. here\'s the wild part.',
