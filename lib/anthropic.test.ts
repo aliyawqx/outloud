@@ -94,7 +94,7 @@ describe('generateDrafts with a captured Style Guide', () => {
       { input: 'shipped billing' },
     )
     const sys = JSON.stringify(createMock.mock.calls[0][0].system)
-    expect(sys).toContain('Captured Style Guide')
+    expect(sys).toContain('STYLE GUIDE for this writer')
     expect(sys).toContain('short additive clauses')
     expect(sys).toContain('shipped at 2am again') // raw sample anchor
   })
