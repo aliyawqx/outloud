@@ -11,9 +11,8 @@ const base: VoiceProfile = {
   styleSummary: '', styleGuide: '', channel: 'x', isActive: true, createdAt: '', updatedAt: '',
 }
 const own = (o: Partial<VoiceProfile> = {}): VoiceProfile => ({ ...base, ...o })
-// 'shadcn' is a catalog source WITHOUT a full Style Guide (descriptor-only).
 const insp = (o: Partial<VoiceProfile> = {}): VoiceProfile =>
-  ({ ...base, kind: 'inspiration', sources: [{ sourceId: 'shadcn', weight: 1 }], ...o })
+  ({ ...base, kind: 'inspiration', sources: [{ sourceId: 'naval', weight: 1 }], ...o })
 
 describe('toVoiceInput', () => {
   it('own voice with a guide → style guide + sample anchors', () => {
@@ -32,22 +31,16 @@ describe('toVoiceInput', () => {
     expect(() => toVoiceInput(own({ styleGuide: '' }), [])).toThrow(VoiceNotReadyError)
   })
 
-  it('inspiration blend → weighted descriptor summary from the catalog', () => {
-    const v = toVoiceInput(insp())
-    expect(v.summary).toContain('HYBRID')
-    expect(v.summary).toContain('shadcn')
-  })
-
-  it('single creator with a full Style Guide drives on that guide, not the descriptor', () => {
+  it('single inspiration creator drives on its full Style Guide (every catalog voice has one)', () => {
     const v = toVoiceInput(insp({ sources: [{ sourceId: 'elon-musk', weight: 1 }] }))
     expect(v.styleGuide).toContain('Terse, confident')
     expect(v.summary).toBeUndefined() // single guide → no HYBRID blend wording
   })
 
-  it('blend of a guided + non-guided creator stacks them by weight', () => {
-    const v = toVoiceInput(insp({ sources: [{ sourceId: 'elon-musk', weight: 3 }, { sourceId: 'shadcn', weight: 1 }] }))
+  it('blend of creators stacks their guides by weight under a HYBRID instruction', () => {
+    const v = toVoiceInput(insp({ sources: [{ sourceId: 'elon-musk', weight: 3 }, { sourceId: 'naval', weight: 1 }] }))
     expect(v.styleGuide).toContain('Elon Musk')
-    expect(v.styleGuide).toContain('shadcn') // shadcn (no guide) falls back to its descriptor inside the stack
+    expect(v.styleGuide).toContain('Naval')
     expect(v.summary).toContain('HYBRID')
   })
 })
