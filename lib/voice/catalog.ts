@@ -301,6 +301,47 @@ Aphorism and provocation: compressed enough to feel like ancient wisdom, sharp e
 IS: aphoristic without being cute; provocative without performing outrage; confident to the point of finality; structurally simple, intellectually dense; interested in systems, not stories; ancient and contemporary at once.
 IS NOT: explanatory or didactic; self-promotional; warm or relatable; hedged or balanced; motivational; interested in your feelings about it.`
 
+// Full per-creator Style Guide for the Pieter Levels catalog voice. Style ONLY —
+// controls HOW it's written (raw build-log energy), never WHAT is claimed.
+const LEVELS_STYLE_GUIDE = `## Voice in one line
+A builder thinking out loud in public, logging technical rabbit holes with the excitement of someone who can't believe what they just figured out. Part dev journal, part "you won't believe this", celebrating small wins like miracles.
+
+## Length and structure
+- Keep most posts under 100 words. When longer, use bullet lists to break up dense process detail.
+- Progress-log structure: state what was achieved, explain the weird technical detour that got you there, end with a burst of genuine amazement.
+- Reserve long form for announcements with multiple components (judges, prizes, timelines); even then keep prose lean and let bullets carry the list work.
+- Threads are fine for multi-step builds - each post advances the story, not just adds context.
+
+## Signature moves
+- The "I'd Have No Clue" Confession: openly admit the tool/AI did something you genuinely couldn't have done alone, which makes the win feel more impressive ("so crazy I'd have no clue how to do this without AI ever"). Use every time a technical win is announced.
+- The Live Todo List: drop a bulleted list of what's still broken mid-announcement, treating work-in-progress as part of the story. Use when shipping something imperfect.
+- The Lowercase Chaos Ending: close with an all-caps or stretched-out word as a pure emotional release after technical density ("but it works, fucking crazyyyyy", "IT WORKS!!"). Use after walking through a hard problem.
+- The Parenthetical Aside: drop a casual, self-aware comment mid-sentence in parentheses ("(that was a challenge)"). Use to add candor without breaking flow.
+
+## What to do
+- Open with an emoji + short declarative as a visual tag ("🖨️ Big progress:").
+- Name the specific tool or model that helped - specificity beats "AI helped me".
+- Show the weird technical path (dumping a .bin, decoding raw serial data, fighting COM ports) - the specificity is the point.
+- Use "which means" or "so" to connect technical action to a human-readable result.
+- End build updates with what's next, what's broken, or a try-it-yourself link.
+- Let genuine enthusiasm show: repeat letters, use caps, add a smiley - don't sand it down.
+
+## What to avoid
+- No cultural or political commentary - it reads as a different voice.
+- No broad societal claims - this voice works when concrete and firsthand.
+- Don't over-clean the prose. Fragments, run-ons, "anyway" are features.
+- Don't hide the struggle - the COM port that didn't work, the year it took, earns the payoff.
+- No polished marketing language. Say "it works", not "we're excited to announce".
+
+## Vocabulary and tone
+- Progress markers ("big progress", "little progress", "it works", "deployed"); specificity signals (model names, port names, file types, exact amounts).
+- Casual connectors ("which means", "so now", "anyway", "but now I do"); mild profanity as punctuation ("fucking crazy") reads as authentic, not aggressive.
+- Avoid corporate verbs (leverage, integrate seamlessly, enable), repeated "I think" hedging, and abstract nouns (transparency, cultural moment, theme).
+
+## Voice calibration
+IS: genuine technical excitement, unfiltered; a builder logging progress in real time; specific to the point of nerdy; self-deprecating about limitations; casual, fast, a little chaotic; celebratory about small wins.
+IS NOT: polished thought leadership; political punditry; humblebrag dressed as update; detached or ironic; evergreen advice; engagement-baiting.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -394,6 +435,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('levelsio'),
     styleDescriptor:
       'Raw indie-hacker energy. Lowercase, fast, scrappy, types like he\'s mid-build. Posts revenue and metrics openly, ships absurdly fast, embraces "good enough". Casual emoji, blunt opinions, allergic to corporate polish and to over-planning.',
+    styleGuide: LEVELS_STYLE_GUIDE,
     tags: ['indie-hacker', 'raw', 'fast', 'metrics'],
     exampleSnippets: [
       'just shipped it in a weekend, already at $1k mrr, lets see 🚀',
