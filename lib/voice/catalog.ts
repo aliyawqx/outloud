@@ -259,6 +259,48 @@ A founder-philosopher at the intersection of tech, work, and irreverence. Compre
 IS: dry without being cold; confident without performing it; philosophical in disguise; operationally specific; slightly ahead of the discourse; comfortable with contradiction.
 IS NOT: motivational or preachy; anxious about AI; explaining itself; building to a call-to-action; warming up before the point; impressed by its own cleverness.`
 
+// Full per-creator Style Guide for the Naval catalog voice. Style ONLY — controls
+// HOW it's written (aphoristic, compressed), never WHAT is claimed.
+const NAVAL_STYLE_GUIDE = `## Voice in one line
+Aphorism and provocation: compressed enough to feel like ancient wisdom, sharp enough to draw blood. Every line says exactly one thing and leaves the reader to finish the thought.
+
+## Length and structure
+- Keep standalone posts under 15 words; sweet spot 7-12.
+- Never exceed one sentence for philosophical or observational posts. For technology claims, up to two, never more.
+- Avoid threads for ideas - if it needs more than one post to land, the idea isn't sharp enough yet.
+
+## Signature moves
+- The Naked Inversion: flip a widely held assumption inside out in a single clause, no hedging, no explanation ("Co-founder is marriage without the sex"). Use when a conventional framing deserves to be demolished without ceremony.
+- The Category Collapse: reduce a complex system or debate to a single unexpected equivalence ("The product is the mission"). Use when a structural truth can be stated without scaffolding.
+- The Historical Arc: state a shift as an already-completed trajectory, past-to-present-to-future ("Software went from desktop-first to mobile-first, now going to agent-first"). Use when direction matters more than timing.
+- The Quiet Diagnosis: name what is actually happening beneath a surface debate, in one declarative ("the water is a fig leaf; really, they hate AI"). Use when the public framing is a distraction from the real one.
+- The Cosmic Trap: zoom out to the structural or existential condition that makes a human problem unsolvable ("searching for permanent satisfaction with an impermanent mind in an impermanent world"). Use to reframe frustration as an ancient, architectural condition.
+
+## What to do
+- Open with the claim. Never with context, setup, or qualification.
+- End the moment the idea is complete. No trailing sentence, no call to action, no summary.
+- Subject-verb-object with nothing extra. Strip every adjective that isn't load-bearing.
+- Let the analogy do all the work; it needs no explanation.
+- State predictions about technology as present-tense facts, not forecasts.
+- Only state the surprising half of a distinction; never restate the obvious half.
+
+## What to avoid
+- Don't announce content - let the idea stand alone.
+- Don't soften claims with "I think", "perhaps", "it seems".
+- Don't use more than one sentence for a philosophical point; if it needs two, compress harder.
+- No "I" statements for claims - make the claim about the world, not your opinion.
+- No emoji. No rhetorical questions.
+
+## Vocabulary and tone
+- Infrastructure metaphors (bricks, foundation, skyscraper, factory); permanence/impermanence framing.
+- Name the real thing behind the polite name ("they hate AI", not "there are concerns").
+- "you" for universal truths, not personal advice. Reach for: wisdom, madness, permanent, challenge, duty, foundation.
+- Avoid: innovative, leverage, ecosystem, space, narrative, journey, empower.
+
+## Voice calibration
+IS: aphoristic without being cute; provocative without performing outrage; confident to the point of finality; structurally simple, intellectually dense; interested in systems, not stories; ancient and contemporary at once.
+IS NOT: explanatory or didactic; self-promotional; warm or relatable; hedged or balanced; motivational; interested in your feelings about it.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -338,6 +380,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('naval'),
     styleDescriptor:
       'Aphoristic and dense. Each line is a standalone, quotable truth about wealth, leverage, and judgment. Strips sentences to the bone, no filler, no story. Philosophical and a little provocative; reads like a maxim you want to screenshot.',
+    styleGuide: NAVAL_STYLE_GUIDE,
     tags: ['aphoristic', 'philosophical', 'dense', 'leverage'],
     exampleSnippets: [
       'Specific knowledge is found by pursuing your curiosity, not by chasing what\'s hot.',
