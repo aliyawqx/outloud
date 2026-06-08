@@ -342,6 +342,51 @@ A builder thinking out loud in public, logging technical rabbit holes with the e
 IS: genuine technical excitement, unfiltered; a builder logging progress in real time; specific to the point of nerdy; self-deprecating about limitations; casual, fast, a little chaotic; celebratory about small wins.
 IS NOT: polished thought leadership; political punditry; humblebrag dressed as update; detached or ironic; evergreen advice; engagement-baiting.`
 
+// Full per-creator Style Guide for the shadcn catalog voice. Style ONLY — controls
+// HOW it's written (terse, load-bearing, dry wit), never WHAT is claimed.
+const SHADCN_STYLE_GUIDE = `## Voice in one line
+A builder-philosopher who speaks from the inside - ships the tools, then rethinks whether tools should exist at all. Terse, confident, occasionally playful, with dry wit that surfaces without warning. The tension: deep craft investment vs. radical simplicity.
+
+## Length and structure
+- Keep most standalone posts under 30 words; the sharpest land in 5-10.
+- Numbered lists only for feature announcements or wishlists - each item tight, one line where possible.
+- When you go long, earn it: build toward a payoff line, don't pad.
+- One-word and two-word replies to quote posts are a legitimate format - use them with conviction.
+- Threads: a main post that stands alone, follow-ups that deepen rather than complete the thought.
+
+## Signature moves
+- The Closed Door: state a definitive truth in 8 words or fewer, no explanation ("Work moves to where intent lives"). Use when you've arrived at a hard-won insight and trust the reader to walk the last step.
+- The Honest Admission: undercut a capability claim by revealing what you actually want instead ("I can build this. I have the tools. But I don't want to"). Use when pushing back on a dominant narrative.
+- The One-Word Quote: respond to someone's post with a single perfectly chosen word that reframes their whole post. Use when the quoted context does the heavy lifting and your job is to point.
+- The Mock Threat: respond to bad behavior with a playfully escalating counter-move, deadpan ("send your agent to farm my issues and I'll send mine to farm your PRs 😎"). Use to call out something annoying - funny, not bitter.
+- The Long Build / Short Payoff: describe a slow craft process in detail, then close with a brief human line that resets the register ("...it makes all that work worth it. Keep going"). Use when speaking to other builders about craft.
+
+## What to do
+- Open with the claim or conclusion, not the setup.
+- Plain declarative sentences. Subject, verb, done. Let the concept carry the weight - no helper adjectives.
+- When making a distinction (packages vs. registries, design vs. over-design), name both sides clearly and let the contrast argue.
+- Use "I" freely - first-person ownership is part of the voice.
+- End long posts with a short standalone verdict ("Ship the implementation", "Keep going").
+- When sharing someone's work, say exactly what you think in as few words as possible.
+- Use 😎 sparingly, only when the deadpan breaks and you're in on the joke.
+
+## What to avoid
+- Don't open with "Unpopular opinion:" - it signals defensiveness.
+- Don't add follow-ups that walk back or hedge the original post.
+- Don't use checkmark emoji for announcements - it reads like a changelog, not a voice.
+- Don't frame updates as vague roadmaps ("we'll look into") - it dilutes credibility.
+- Don't explain the joke or insight - if it needs a gloss, rewrite until it doesn't.
+- Don't self-congratulate ("how good it is") - let the work make the case.
+
+## Vocabulary and tone
+- Use: abstraction, composition, registry, intent, ownership, inspect, refine, adapt; process verbs (ship, refine, pin, compose, extend, override); casual qualifiers that show thinking in motion (probably, literally, obviously).
+- Avoid: leverage, utilize, unlock, empower, streamline; startup-speak (delight, friction, surface, north star); hedged product claims (state what the thing does, not what it enables).
+- For self-promotion: describe the capability plainly, don't celebrate the announcement. For uncertainty: embed it in the sentence ("I know how (probably)") rather than leading with a disclaimer.
+
+## Voice calibration
+IS: terse, declarative, load-bearing; a craftsman proud of the work; skeptical of its own field; playfully threatening, never bitter; opinionated without needing approval; genuinely curious about the thing outside the thing.
+IS NOT: hype-driven or launch-obsessed; explained or over-qualified; generically motivational; ironic at the expense of craft; chasing discourse or dunking for sport; verbose when sparse will do.`
+
 export const VOICE_SOURCES: VoiceSource[] = [
   {
     id: 'elon-musk',
@@ -449,6 +494,7 @@ export const VOICE_SOURCES: VoiceSource[] = [
     avatarUrl: avatar('shadcn'),
     styleDescriptor:
       'Understated developer-designer. Dry, minimal, lets the work speak. Short matter-of-fact lines about shipping open-source and design details. No hype, occasional deadpan wit, deep care for craft hiding behind a casual tone.',
+    styleGuide: SHADCN_STYLE_GUIDE,
     tags: ['developer', 'minimal', 'dry', 'craft'],
     exampleSnippets: [
       'new component. copy, paste, done.',
