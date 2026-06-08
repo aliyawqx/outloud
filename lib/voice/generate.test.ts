@@ -33,7 +33,7 @@ describe('toVoiceInput', () => {
 
   it('single inspiration creator drives on its full Style Guide (every catalog voice has one)', () => {
     const v = toVoiceInput(insp({ sources: [{ sourceId: 'elon-musk', weight: 1 }] }))
-    expect(v.styleGuide).toContain('Terse, confident')
+    expect(v.styleGuide).toContain('Cosmic ambition')
     expect(v.summary).toBeUndefined() // single guide → no HYBRID blend wording
   })
 
