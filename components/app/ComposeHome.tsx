@@ -311,38 +311,53 @@ export function ComposeHome({
             rows={1}
             aria-label="Message"
             placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?  (type / for formats)'}
-            className="max-h-[6rem] w-full resize-none overflow-y-auto rounded-xl bg-transparent p-2 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
+            className="max-h-[50vh] w-full resize-none overflow-y-auto rounded-xl bg-transparent p-2 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
           />
         </div>
         <button
           type="button"
           onClick={send}
           disabled={loading || !input.trim()}
-          aria-label="Send"
+          aria-label={loading ? 'Generating' : 'Send'}
+          aria-busy={loading}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-50"
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">arrow_upward</span>
+          <span
+            aria-hidden="true"
+            className={`material-symbols-outlined text-[20px] ${loading ? 'animate-spin motion-reduce:animate-none' : ''}`}
+          >
+            {loading ? 'progress_activity' : 'arrow_upward'}
+          </span>
         </button>
       </div>
     </div>
   )
 
+  const controlsRow = (modePicker || voicePicker || draftsBadge) && (
+    <div className="mb-2 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+      {draftsBadge}
+      {modePicker}
+      {voicePicker}
+    </div>
+  )
+
   if (!started) {
     return (
-      <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col items-center justify-center">
-        <h1 className="text-center font-headline-xl text-headline-xl">
-          what do you want to post about, <span className="text-electric-indigo">{name}</span>?
-        </h1>
-        <p className="mt-2 text-center font-body-md text-body-md text-on-surface-variant">
-          Type a rough idea. I’ll ask anything I need, then write it in your voice.
-        </p>
-        <div className="mt-6 w-full">{composer}</div>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-          {modePicker}
-          {voicePicker}
-          {draftsBadge}
+      <div className="mx-auto flex min-h-[80vh] max-w-2xl flex-col">
+        {/* welcome fills the space above; the composer sits at the bottom like a chat */}
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <h1 className="font-headline-xl text-headline-xl">
+            what do you want to post about, <span className="text-electric-indigo">{name}</span>?
+          </h1>
+          <p className="mt-2 font-body-md text-body-md text-on-surface-variant">
+            Type a rough idea. I’ll ask anything I need, then write it in your voice.
+          </p>
         </div>
-        {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
+        <div className="sticky bottom-0 -mx-1 bg-surface/80 px-1 pb-2 pt-1 backdrop-blur-sm">
+          {controlsRow}
+          {composer}
+          {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
+        </div>
       </div>
     )
   }
@@ -350,14 +365,6 @@ export function ComposeHome({
   let draftN = 0
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-3xl flex-col">
-      {(modePicker || voicePicker || draftsBadge) && (
-        <div className="mb-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-          {draftsBadge}
-          {modePicker}
-          {voicePicker}
-        </div>
-      )}
-
       <div className="flex flex-1 flex-col gap-4 pb-4">
         {turns.map((t) => {
           if ('draft' in t) {
@@ -377,11 +384,15 @@ export function ComposeHome({
           )
         })}
         {loading && (
-          <div className="self-start font-code-label text-code-label text-on-surface-variant/60">thinking…</div>
+          <div className="flex items-center gap-2 self-start rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-2.5 font-code-label text-code-label text-on-surface-variant">
+            <span aria-hidden="true" className="material-symbols-outlined animate-spin text-[16px] text-electric-indigo motion-reduce:animate-none">progress_activity</span>
+            writing in your voice…
+          </div>
         )}
       </div>
 
       <div className="sticky bottom-0 -mx-1 bg-surface/80 px-1 pb-2 pt-1 backdrop-blur-sm">
+        {controlsRow}
         {composer}
         {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
