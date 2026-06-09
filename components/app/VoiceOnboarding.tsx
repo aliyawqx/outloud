@@ -17,9 +17,11 @@ const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 
 export function VoiceOnboarding({
   profileId: initialProfileId,
+  authorName,
   initialSamples,
 }: {
   profileId: string | null
+  authorName: string
   initialSamples: Sample[]
 }) {
   const router = useRouter()
@@ -45,10 +47,12 @@ export function VoiceOnboarding({
       .catch(() => setXStatus({ connected: false }))
   }, [])
 
-  /** Lazily create the own-voice draft the first time a sample is added. */
+  /** Lazily create the own-voice draft the first time a sample is added. Name it
+   *  after the author: their X handle if connected, else their profile name. */
   async function ensureProfile(): Promise<string> {
     if (profileId) return profileId
-    const { profile } = await createOwnVoice('My voice')
+    const name = xStatus?.username ? `@${xStatus.username}` : authorName || 'My voice'
+    const { profile } = await createOwnVoice(name)
     setProfileId(profile.id)
     return profile.id
   }
@@ -190,7 +194,7 @@ export function VoiceOnboarding({
             </button>
           ) : (
             <a
-              href="/api/x/connect"
+              href="/api/x/connect?returnTo=/app/onboarding"
               className="rounded-full border border-border-muted px-4 py-2 font-code-label text-code-label text-on-surface transition-colors hover:border-electric-indigo"
             >
               Connect X (read-only)

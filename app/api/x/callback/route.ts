@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { xConfig } from '@/lib/x/config'
 import { exchangeCode } from '@/lib/x/oauth'
-import { openOAuthTx, X_OAUTH_COOKIE } from '@/lib/x/stateCookie'
+import { openOAuthTx, safeReturnTo, X_OAUTH_COOKIE } from '@/lib/x/stateCookie'
 import { getMe } from '@/lib/x/client'
 import { saveAccount } from '@/lib/x/store'
 
@@ -14,10 +14,11 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
-  const back = new URL('/app/profile', req.url)
 
   const txToken = (await cookies()).get(X_OAUTH_COOKIE)?.value
   const tx = await openOAuthTx(txToken)
+  // Return to wherever the connect started (onboarding vs profile); default profile.
+  const back = new URL(safeReturnTo(tx?.returnTo), req.url)
 
   if (!code || !state || !tx || tx.state !== state) {
     back.searchParams.set('x', 'error')
