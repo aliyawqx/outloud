@@ -32,7 +32,7 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
   return (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-8">
       {/* the app stays visible behind, blurred */}
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-charcoal-black/60 backdrop-blur-[2px]" />
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 backdrop-blur-[4px]" />
 
       <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col items-center gap-6 overflow-y-auto rounded-3xl border border-border-muted bg-surface px-6 py-10 text-center shadow-2xl">
         <button
