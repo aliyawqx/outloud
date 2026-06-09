@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 
 type VoiceOption = { id: string; name: string; isActive: boolean }
@@ -127,6 +127,16 @@ export function ComposeHome({
   const [activeCommand, setActiveCommand] = useState('')
   const [left, setLeft] = useState<number | null>(draftsLeft)
 
+  // Auto-grow the input with its content, up to ~3 rows (then it scrolls). The
+  // max height comes from the textarea's CSS max-h; we just track scrollHeight.
+  const taRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = taRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [input])
+
   // Slash menu: open while the input is just "/" or "/partial" (no space yet).
   const slashMatch = input.match(/^\/([a-z0-9-]*)$/i)
   const menuItems = slashMatch ? commands.filter((c) => c.command.startsWith(slashMatch[1].toLowerCase())) : []
@@ -236,6 +246,27 @@ export function ComposeHome({
     </label>
   )
 
+  // The format/mode is normally chosen via the slash menu, but it should always be
+  // switchable here too. Empty activeCommand means the default post format.
+  const defaultCommand = commands.some((c) => c.command === 'post') ? 'post' : commands[0]?.command ?? ''
+  const modePicker = commands.length > 0 && (
+    <label className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
+      Mode
+      <select
+        value={activeCommand || defaultCommand}
+        onChange={(e) => setActiveCommand(e.target.value === defaultCommand ? '' : e.target.value)}
+        aria-label="Mode"
+        className="rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none"
+      >
+        {commands.map((c) => (
+          <option key={c.command} value={c.command}>
+            {c.title}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+
   const draftsBadge = left !== null && (
     <span className={`font-code-label text-code-label ${left > 0 ? 'text-on-surface-variant/70' : 'text-error'}`}>
       {left > 0 ? `${left} of 5 drafts left` : 'No drafts left'}
@@ -273,12 +304,14 @@ export function ComposeHome({
             </span>
           )}
           <textarea
+            ref={taRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
+            rows={1}
             aria-label="Message"
             placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?  (type / for formats)'}
-            className="h-12 max-h-40 min-h-12 w-full resize-none rounded-xl bg-transparent p-2 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
+            className="max-h-[6rem] w-full resize-none overflow-y-auto rounded-xl bg-transparent p-2 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
           />
         </div>
         <button
@@ -304,7 +337,8 @@ export function ComposeHome({
           Type a rough idea. I’ll ask anything I need, then write it in your voice.
         </p>
         <div className="mt-6 w-full">{composer}</div>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          {modePicker}
           {voicePicker}
           {draftsBadge}
         </div>
@@ -316,9 +350,10 @@ export function ComposeHome({
   let draftN = 0
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-3xl flex-col">
-      {(voicePicker || draftsBadge) && (
-        <div className="mb-4 flex items-center justify-end gap-3">
+      {(modePicker || voicePicker || draftsBadge) && (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
           {draftsBadge}
+          {modePicker}
           {voicePicker}
         </div>
       )}
