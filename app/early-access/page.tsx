@@ -51,21 +51,15 @@ export default function EarlyAccessPage() {
           <div className="reveal">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-1">
               <span className="h-2 w-2 animate-pulse rounded-full bg-cyber-lime" />
-              <span className="font-code-label text-code-label uppercase tracking-widest text-cyber-lime">3 of 10 founder spots left</span>
+              <span className="font-code-label text-code-label uppercase tracking-widest text-cyber-lime">Limited early-access spots</span>
             </div>
             <h1 className="mb-4 font-headline-xl text-headline-xl leading-tight">
               Get early access to{' '}
               <span className="bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">Outloud.</span>
             </h1>
-            <p className="mb-6 max-w-md font-body-md text-body-md text-on-surface-variant">
-              Builders and creators, let in in small cohorts to keep it high-signal. The first 10 founders get our lowest founding price.
+            <p className="mb-8 max-w-md font-body-md text-body-md text-on-surface-variant">
+              Builders and creators, let in in small cohorts to keep it high-signal.
             </p>
-
-            <div className="mb-8 inline-flex items-center gap-3 rounded-2xl border border-cyber-lime/30 bg-cyber-lime/10 px-5 py-3">
-              <span className="font-code-label text-code-label text-on-surface-variant line-through">$15/mo</span>
-              <span className="font-headline-lg text-headline-lg text-cyber-lime">$1/mo</span>
-              <span className="font-code-label text-code-label text-on-surface-variant">for the first 10 founders</span>
-            </div>
 
             <ul className="space-y-3">
               {[
@@ -121,7 +115,7 @@ export default function EarlyAccessPage() {
                   <span>{loading ? 'Reserving…' : 'Reserve my spot'}</span>
                   <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                 </button>
-                <p className="text-center font-code-label text-code-label text-on-surface-variant">founders only · $1k–10k MRR welcome</p>
+                <p className="text-center font-code-label text-code-label text-on-surface-variant">builders &amp; creators · $1k–10k MRR welcome</p>
               </form>
             )}
           </section>

@@ -1,14 +1,12 @@
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 import { ScrollReveal } from '@/components/ScrollReveal'
-import { CountdownBar } from '@/components/CountdownBar'
 import { Pricing } from '@/components/Pricing'
 
 export default function Page() {
   return (
     <>
       <div className="sticky top-0 z-50">
-        <CountdownBar />
         <header className="bg-surface-glass w-full border-b border-border-muted backdrop-blur-md">
           <nav className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
           <Logo />
@@ -231,7 +229,7 @@ export default function Page() {
             <div className="relative z-10">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-1">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-cyber-lime" />
-                <span className="font-code-label text-code-label uppercase tracking-widest text-cyber-lime">3 of 10 founder spots left</span>
+                <span className="font-code-label text-code-label uppercase tracking-widest text-cyber-lime">Early access · limited spots</span>
               </div>
               <h2 className="mb-4 max-w-2xl font-headline-xl text-headline-xl">
                 Build in public.
@@ -239,12 +237,12 @@ export default function Page() {
                 Post without <span className="bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">friction.</span>
               </h2>
               <p className="mb-10 max-w-xl font-body-md text-body-md text-on-surface-variant">
-                Join the early-access waitlist. The first 10 founders get in at $1/mo and help shape Outloud before launch. No generic AI slop, just your voice, on tap.
+                Join the early-access waitlist and help shape Outloud before launch. No generic AI slop, just your voice, on tap.
               </p>
 
               <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
-                  { icon: 'lock', color: 'bg-cyber-lime/15 text-cyber-lime', t: '$1/mo founding price', d: 'for the first 10 founders' },
+                  { icon: 'lock', color: 'bg-cyber-lime/15 text-cyber-lime', t: 'early access', d: 'get in before the public launch' },
                   { icon: 'graphic_eq', color: 'bg-electric-indigo/15 text-electric-indigo', t: 'your real voice', d: 'captured from your posts, never slop' },
                   { icon: 'bolt', color: 'bg-cyber-lime/15 text-cyber-lime', t: 'shape the product', d: 'first access to every new feature' },
                 ].map((p) => (

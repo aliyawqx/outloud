@@ -36,19 +36,13 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
   return (
     <div
       className={`glass-card relative flex flex-col rounded-3xl p-8 ${
-        plan.founder
-          ? 'border-cyber-lime shadow-[0_0_40px_-12px] shadow-cyber-lime/40'
-          : plan.highlight
-            ? 'border-electric-indigo indigo-glow md:-translate-y-3'
-            : 'hover:border-border-muted'
+        plan.highlight
+          ? 'border-electric-indigo indigo-glow md:-translate-y-3'
+          : 'hover:border-border-muted'
       }`}
     >
       {plan.badge && (
-        <span
-          className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-code-label text-code-label font-bold ${
-            plan.founder ? 'bg-cyber-lime text-charcoal-black' : 'bg-electric-indigo text-white'
-          }`}
-        >
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-electric-indigo px-3 py-1 font-code-label text-code-label font-bold text-white">
           {plan.badge}
         </span>
       )}
@@ -75,11 +69,9 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
       <Link
         href={`/early-access?plan=${plan.id}`}
         className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
-          plan.founder
-            ? 'bg-cyber-lime text-charcoal-black hover:brightness-110'
-            : plan.highlight
-              ? 'indigo-glow bg-electric-indigo text-white'
-              : 'border border-border-muted text-on-surface hover:border-electric-indigo'
+          plan.highlight
+            ? 'indigo-glow bg-electric-indigo text-white'
+            : 'border border-border-muted text-on-surface hover:border-electric-indigo'
         }`}
       >
         {plan.cta}
@@ -106,7 +98,7 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
         <Toggle mode={mode} setMode={setMode} />
       </div>
 
-      <div className="reveal mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-3" style={{ transitionDelay: '100ms' }}>
+      <div className="reveal mx-auto grid max-w-3xl grid-cols-1 gap-8 md:grid-cols-2" style={{ transitionDelay: '100ms' }}>
         {PLANS.map((p) => (
           <PlanCard key={p.id} plan={p} mode={mode} />
         ))}

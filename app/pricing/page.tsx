@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
-import { CountdownBar } from '@/components/CountdownBar'
 import { Pricing } from '@/components/Pricing'
 import { ScrollReveal } from '@/components/ScrollReveal'
 
@@ -9,8 +8,6 @@ export const metadata = { title: 'Outloud | Pricing' }
 export default function PricingPage() {
   return (
     <>
-      <CountdownBar sticky />
-
       <header className="border-b border-border-muted">
         <div className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
           <Link href="/">
