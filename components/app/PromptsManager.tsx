@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createPrompt, deletePrompt, updatePrompt, type DefaultPrompt, type Prompt } from '@/lib/prompts/client'
+import { Spinner } from '@/components/Spinner'
 
 const field =
   'w-full rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-2 font-body-sm text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none'
@@ -79,9 +80,9 @@ function CustomCard({ prompt, onChange, onRemove }: { prompt: Prompt; onChange: 
           type="button"
           onClick={save}
           disabled={saving || !dirty}
-          className="rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all active:scale-95 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all active:scale-95 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? <><Spinner size={14} /> Saving…</> : 'Save'}
         </button>
         {saved && <span className="font-code-label text-code-label text-cyber-lime">Saved.</span>}
         <button
@@ -161,9 +162,9 @@ export function PromptsManager({ defaults, initialCustom }: { defaults: DefaultP
                 type="button"
                 onClick={add}
                 disabled={busy || !command.trim() || !title.trim() || !text.trim()}
-                className="rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
               >
-                {busy ? 'Adding…' : 'Add command'}
+                {busy ? <><Spinner size={16} /> Adding…</> : 'Add command'}
               </button>
             </div>
           </div>

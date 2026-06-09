@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 
 type Mode = 'signup' | 'login'
 
@@ -96,9 +97,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 rounded-full bg-electric-indigo py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+        className="mt-2 flex items-center justify-center gap-2 rounded-full bg-electric-indigo py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
       >
-        {loading ? 'One sec…' : isSignup ? 'Create account' : 'Log in'}
+        {loading ? <><Spinner size={18} /> One sec…</> : isSignup ? 'Create account' : 'Log in'}
       </button>
 
       <p className="text-center font-body-sm text-body-sm text-on-surface-variant">

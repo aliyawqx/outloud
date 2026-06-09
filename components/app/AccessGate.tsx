@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 import { Unavailable } from './Unavailable'
 
 // The post-login access question: are you an nFactorial incubator participant?
@@ -10,10 +11,12 @@ export function AccessGate() {
   const router = useRouter()
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState<'yes' | 'no' | null>(null)
   const [error, setError] = useState('')
 
   async function choose(value: 'yes' | 'no') {
     setError('')
+    setPending(value)
     setBusy(true)
     try {
       const res = await fetch('/api/access', {
@@ -53,16 +56,18 @@ export function AccessGate() {
             type="button"
             onClick={() => choose('yes')}
             disabled={busy}
-            className="rounded-full bg-electric-indigo px-7 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-7 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
           >
+            {busy && pending === 'yes' && <Spinner size={18} />}
             Yes, I am
           </button>
           <button
             type="button"
             onClick={() => choose('no')}
             disabled={busy}
-            className="rounded-full border border-border-muted px-7 py-3 font-bold text-on-surface transition-all hover:border-electric-indigo active:scale-95 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-border-muted px-7 py-3 font-bold text-on-surface transition-all hover:border-electric-indigo active:scale-95 disabled:opacity-60"
           >
+            {busy && pending === 'no' && <Spinner size={18} />}
             No
           </button>
         </div>

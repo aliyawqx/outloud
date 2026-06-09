@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 import { ScrollReveal } from '@/components/ScrollReveal'
+import { Spinner } from '@/components/Spinner'
 
 export default function EarlyAccessPage() {
   const [handle, setHandle] = useState('')
@@ -112,8 +113,9 @@ export default function EarlyAccessPage() {
                 {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}
                 <button type="submit" disabled={loading}
                   className="group flex w-full items-center justify-center gap-2 rounded-full bg-electric-indigo py-4 font-headline-lg-mobile text-headline-lg-mobile text-white transition-all hover:shadow-[0_0_20px_rgba(176,107,255,0.3)] active:scale-[0.98] disabled:opacity-60">
+                  {loading && <Spinner size={20} />}
                   <span>{loading ? 'Reserving…' : 'Reserve my spot'}</span>
-                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                  {!loading && <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>}
                 </button>
                 <p className="text-center font-code-label text-code-label text-on-surface-variant">builders &amp; creators · $1k–10k MRR welcome</p>
               </form>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 import {
   addSample,
   deleteSample as apiDeleteSample,
@@ -207,7 +208,7 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
             disabled={importing}
             className="inline-flex items-center gap-1.5 rounded-full border border-border-muted px-3 py-1 font-code-label text-code-label text-on-surface transition-colors hover:border-electric-indigo disabled:opacity-60"
           >
-            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">download</span>
+            {importing ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">download</span>}
             {importing ? 'Importing…' : 'Import from X'}
           </button>
         </div>
@@ -234,9 +235,9 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
                 type="button"
                 onClick={() => submitAdd(addMode)}
                 disabled={adding || !draft.trim()}
-                className="rounded-full bg-electric-indigo px-5 py-1.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-1.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
               >
-                {adding ? 'Adding…' : 'Add'}
+                {adding ? <><Spinner size={16} /> Adding…</> : 'Add'}
               </button>
             </div>
           </div>
@@ -302,9 +303,9 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
                 type="button"
                 onClick={onGenerate}
                 disabled={genBusy || enabledCount === 0}
-                className="rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
               >
-                {genBusy ? 'Analyzing…' : 'Regenerate'}
+                {genBusy ? <><Spinner size={16} /> Analyzing…</> : 'Regenerate'}
               </button>
             </div>
           </>
@@ -318,9 +319,9 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
               type="button"
               onClick={onGenerate}
               disabled={genBusy || enabledCount === 0}
-              className="rounded-full bg-electric-indigo px-6 py-2.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-6 py-2.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
             >
-              {genBusy ? 'Analyzing…' : 'Generate Style Guide'}
+              {genBusy ? <><Spinner size={16} /> Analyzing…</> : 'Generate Style Guide'}
             </button>
           </div>
         )}
@@ -350,9 +351,9 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
                 type="button"
                 onClick={onSaveGuide}
                 disabled={savingGuide || !guideDraft.trim()}
-                className="rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
               >
-                {savingGuide ? 'Saving…' : 'Save'}
+                {savingGuide ? <><Spinner size={16} /> Saving…</> : 'Save'}
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 
 type Initial = { displayName: string; handle: string; avatarUrl: string; plan: string }
 
@@ -79,9 +80,9 @@ export function ProfileForm({ initial }: { initial: Initial }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-electric-indigo px-6 py-2.5 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+          className="flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-2.5 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
         >
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? <><Spinner size={16} /> Saving…</> : 'Save changes'}
         </button>
         <button
           type="button"

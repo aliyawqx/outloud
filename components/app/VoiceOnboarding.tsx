@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 import { addSample, createOwnVoice, deleteSample, generateStyleGuide } from '@/lib/voice/client'
 import type { SampleSource } from '@/lib/voice/types'
 
@@ -188,8 +189,9 @@ export function VoiceOnboarding({
               type="button"
               onClick={importFromX}
               disabled={busy}
-              className="rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container disabled:opacity-60"
             >
+              {busy && <Spinner size={14} />}
               Import from @{xStatus.username}
             </button>
           ) : (
@@ -245,9 +247,9 @@ export function VoiceOnboarding({
             type="button"
             onClick={onAdd}
             disabled={busy || !draft.trim()}
-            className="rounded-full bg-electric-indigo px-5 py-1.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-1.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
           >
-            {busy ? 'Adding…' : 'Add'}
+            {busy ? <><Spinner size={16} /> Adding…</> : 'Add'}
           </button>
 
           {/* upload + drag&drop */}
@@ -296,9 +298,9 @@ export function VoiceOnboarding({
         type="button"
         onClick={onContinue}
         disabled={!enough || continuing}
-        className="w-full rounded-full bg-cyber-lime px-6 py-3 font-bold text-charcoal-black transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-full bg-cyber-lime px-6 py-3 font-bold text-charcoal-black transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {continuing ? 'Building your voice…' : enough ? 'Continue' : 'Add more to continue'}
+        {continuing ? <><Spinner size={18} /> Building your voice…</> : enough ? 'Continue' : 'Add more to continue'}
       </button>
 
       {/* celebrity path → existing voice library */}

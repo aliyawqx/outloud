@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 
 // Danger zone: permanently delete the account. Two-step + typed confirmation,
 // because it's irreversible and wipes voices, history, prompts and X connection.
@@ -73,9 +74,9 @@ export function DeleteAccount() {
               type="button"
               onClick={remove}
               disabled={!canDelete}
-              className="rounded-full bg-error px-5 py-2.5 font-bold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 font-bold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
             >
-              {busy ? 'Deleting…' : 'Permanently delete'}
+              {busy ? <><Spinner size={16} /> Deleting…</> : 'Permanently delete'}
             </button>
             <button
               type="button"

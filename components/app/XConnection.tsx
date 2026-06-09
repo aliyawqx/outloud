@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Spinner } from '@/components/Spinner'
 
 type Status = { connected: boolean; username?: string; scope?: string }
 
@@ -47,8 +48,9 @@ export function XConnection({ flash }: { flash?: 'connected' | 'error' }) {
           type="button"
           onClick={disconnect}
           disabled={busy}
-          className="self-start rounded-full border border-border-muted px-5 py-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 self-start rounded-full border border-border-muted px-5 py-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error disabled:opacity-60"
         >
+          {busy && <Spinner size={14} />}
           {busy ? 'Disconnecting…' : 'Disconnect'}
         </button>
       ) : (

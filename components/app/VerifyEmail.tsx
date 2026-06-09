@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 import { SignOutButton } from './SignOutButton'
 
 // Post-signup gate: the user must enter the 6-digit code emailed to them before
@@ -84,9 +85,9 @@ export function VerifyEmail({ email }: { email: string }) {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full rounded-full bg-electric-indigo px-7 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-electric-indigo px-7 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
           >
-            {busy ? 'Verifying…' : 'Verify'}
+            {busy ? <><Spinner size={18} /> Verifying…</> : 'Verify'}
           </button>
         </form>
         {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { STYLE_PRESETS } from '@/lib/styles'
+import { Spinner } from '@/components/Spinner'
 
 const VOICE_KEY = 'outloud.voiceSamples'
 type Intensity = 'safe' | 'bold' | 'spicy' | 'funny'
@@ -136,8 +137,8 @@ export function ReplyComposer() {
 
             {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}
 
-            <button onClick={onGenerate} disabled={loading} className="w-full rounded-full bg-electric-indigo py-4 font-bold text-white shadow-lg shadow-electric-indigo/20 transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60">
-              {loading ? 'Generating…' : 'Generate Reply'}
+            <button onClick={onGenerate} disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-full bg-electric-indigo py-4 font-bold text-white shadow-lg shadow-electric-indigo/20 transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60">
+              {loading ? <><Spinner size={18} /> Generating…</> : 'Generate Reply'}
             </button>
           </div>
         </div>
@@ -164,8 +165,8 @@ export function ReplyComposer() {
               </div>
             </div>
           ) : (
-            <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border-muted font-code-label text-code-label text-on-surface-variant/50">
-              {loading ? 'thinking…' : 'your reply appears here'}
+            <div className="flex h-48 items-center justify-center gap-2 rounded-xl border border-dashed border-border-muted font-code-label text-code-label text-on-surface-variant/50">
+              {loading ? <><Spinner size={16} /> thinking…</> : 'your reply appears here'}
             </div>
           )}
         </div>

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { Spinner } from '@/components/Spinner'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 
 type VoiceOption = { id: string; name: string; isActive: boolean }
@@ -77,7 +78,7 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
           disabled={publishing || !text.trim()}
           className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">send</span>
+          {publishing ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">send</span>}
           {publishing ? 'Publishing…' : 'Publish to X'}
         </button>
         <span className="font-code-label text-code-label text-on-surface-variant/60">{text.length} chars</span>
@@ -379,7 +380,7 @@ export function ComposeHome({
         })}
         {loading && (
           <div className="flex items-center gap-2 self-start rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-2.5 font-code-label text-code-label text-on-surface-variant">
-            <span aria-hidden="true" className="material-symbols-outlined animate-spin text-[16px] text-electric-indigo motion-reduce:animate-none">progress_activity</span>
+            <Spinner size={16} className="text-electric-indigo" />
             writing in your voice…
           </div>
         )}

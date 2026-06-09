@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { blendProfile } from '@/lib/voice/blend'
+import { Spinner } from '@/components/Spinner'
 import { getSource } from '@/lib/voice/catalog'
 
 export function BlendPreview({
@@ -137,9 +138,9 @@ export function BlendPreview({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="rounded-full bg-electric-indigo py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+            className="flex items-center justify-center gap-2 rounded-full bg-electric-indigo py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
           >
-            {saving ? 'Saving…' : 'Save & set active'}
+            {saving ? <><Spinner size={18} /> Saving…</> : 'Save & set active'}
           </button>
 
           {/* guardrail */}
