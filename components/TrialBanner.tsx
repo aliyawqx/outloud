@@ -5,7 +5,7 @@ import Link from 'next/link'
 export function TrialBanner({ sticky = false }: { sticky?: boolean }) {
   return (
     <div
-      className={`${sticky ? 'sticky top-0' : ''} z-[60] w-full bg-gradient-to-r from-electric-indigo to-secondary text-white shadow-lg shadow-electric-indigo/25`}
+      className={`${sticky ? 'sticky top-0' : ''} z-[60] w-full bg-gradient-to-r from-[#dc2626] to-[#db2777] text-white shadow-lg shadow-[#dc2626]/25`}
     >
       <div className="mx-auto flex max-w-container-max flex-wrap items-center justify-center gap-x-3 gap-y-2 px-margin-mobile py-2.5 text-center md:px-margin-desktop">
         <span aria-hidden="true" className="material-symbols-outlined text-[18px]">bolt</span>
@@ -14,7 +14,7 @@ export function TrialBanner({ sticky = false }: { sticky?: boolean }) {
         </span>
         <Link
           href="/signup"
-          className="rounded-full bg-white px-4 py-1 font-code-label text-code-label font-bold text-electric-indigo transition-transform hover:scale-105 active:scale-95"
+          className="rounded-full bg-white px-4 py-1 font-code-label text-code-label font-bold text-[#dc2626] transition-transform hover:scale-105 active:scale-95"
         >
           Start free
         </Link>

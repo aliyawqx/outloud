@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
-import { PRO_CHECKOUT_URL, PRO_PRICE, STARTER_CHECKOUT_URL, STARTER_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
+import { PLANS, PRO_CHECKOUT_URL, PRO_PRICE, STARTER_CHECKOUT_URL, STARTER_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 
 function goToCheckout(url: string) {
@@ -11,38 +11,85 @@ function goToCheckout(url: string) {
   else window.location.href = url
 }
 
-// Offered when a trial user runs out of drafts: Pro is the default upsell, with
-// the cheaper Starter as a secondary option. Checkout is a hosted Merchant of
-// Record link (opens in a new tab); the internal fallback navigates in place.
+const PRO_PLAN = PLANS.find((p) => p.id === 'pro')
+const STARTER_PLAN = PLANS.find((p) => p.id === 'starter')
+
+// Full-screen subscribe wall, shown when a trial user runs out of drafts. Pro is
+// the default; a small switcher drops to the cheaper Starter. Checkout is a hosted
+// Merchant of Record link (opens in a new tab); internal fallback navigates here.
 function UpgradeModal({ onClose }: { onClose: () => void }) {
+  const [plan, setPlan] = useState<'pro' | 'starter'>('pro')
+  const isPro = plan === 'pro'
+  const price = isPro ? PRO_PRICE : STARTER_PRICE
+  const url = isPro ? PRO_CHECKOUT_URL : STARTER_CHECKOUT_URL
+  const features = (isPro ? PRO_PLAN : STARTER_PLAN)?.features ?? []
+
+  const pill = (active: boolean) =>
+    `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
+      active ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
+    }`
+
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-charcoal-black/70 backdrop-blur-sm" />
-      <div className="relative flex w-full max-w-md flex-col gap-4 rounded-3xl border border-border-muted bg-surface p-7 text-center">
-        <h2 className="font-headline-lg text-headline-lg">You’ve used all {TRIAL_DRAFTS} free drafts</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant">
-          Keep posting in your voice. Pro gives you unlimited posts and everything in Starter.
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] overflow-y-auto bg-surface/95 backdrop-blur-md">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-white/10 hover:text-on-surface"
+      >
+        <span aria-hidden="true" className="material-symbols-outlined">close</span>
+      </button>
+
+      <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
+        <span className="rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-1 font-code-label text-code-label uppercase tracking-widest text-cyber-lime">
+          You’ve used all {TRIAL_DRAFTS} free drafts
+        </span>
+        <h2 className="font-headline-xl text-headline-xl">Do you want to subscribe?</h2>
+        <p className="max-w-md font-body-md text-body-md text-on-surface-variant">
+          Keep writing posts in your own voice. Pick a plan and pick up right where you left off.
         </p>
-        <button
-          type="button"
-          onClick={() => goToCheckout(PRO_CHECKOUT_URL)}
-          className="mt-1 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95"
-        >
-          Upgrade to Pro · ${PRO_PRICE}/mo
-        </button>
-        <button
-          type="button"
-          onClick={() => goToCheckout(STARTER_CHECKOUT_URL)}
-          className="rounded-full border border-border-muted px-6 py-2.5 font-bold text-on-surface transition-all hover:border-electric-indigo active:scale-95"
-        >
-          Or get Starter · ${STARTER_PRICE}/mo
-        </button>
+
+        {/* plan switcher — Pro is the default, switch down to Starter */}
+        <div className="inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
+          <button type="button" className={pill(isPro)} onClick={() => setPlan('pro')}>
+            Pro · ${PRO_PRICE}/mo
+          </button>
+          <button type="button" className={pill(!isPro)} onClick={() => setPlan('starter')}>
+            Starter · ${STARTER_PRICE}/mo
+          </button>
+        </div>
+
+        <div className="w-full max-w-sm rounded-3xl border border-electric-indigo bg-surface-container-low p-7 text-left indigo-glow">
+          <div className="mb-1 flex items-end gap-1">
+            <span className="font-headline-xl text-headline-xl leading-none">${price}</span>
+            <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo</span>
+          </div>
+          <p className="mb-5 font-code-label text-code-label text-on-surface-variant">
+            {isPro ? 'Pro — everything, unlimited' : 'Starter — for solo builders'}
+          </p>
+          <ul className="mb-6 space-y-2.5">
+            {features.map((f) => (
+              <li key={f} className="flex items-start gap-2.5 font-body-sm text-body-sm text-on-surface">
+                <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => goToCheckout(url)}
+            className="indigo-glow w-full rounded-full bg-electric-indigo px-6 py-3.5 text-lg font-bold text-white transition-all hover:bg-primary-container active:scale-95"
+          >
+            Subscribe · ${price}/mo
+          </button>
+        </div>
+
         <button
           type="button"
           onClick={onClose}
           className="font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
         >
-          Not now
+          Maybe later
         </button>
       </div>
     </div>
