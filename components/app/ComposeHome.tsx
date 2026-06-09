@@ -3,7 +3,43 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
+import { PRO_CHECKOUT_URL, PRO_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
+
+// Offered when a trial user runs out of drafts: upgrade to Pro via the hosted
+// checkout (Merchant of Record). An external link opens in a new tab; the
+// internal fallback (/pricing) navigates in place.
+function UpgradeModal({ onClose }: { onClose: () => void }) {
+  function goToCheckout() {
+    if (/^https?:\/\//.test(PRO_CHECKOUT_URL)) window.open(PRO_CHECKOUT_URL, '_blank', 'noopener')
+    else window.location.href = PRO_CHECKOUT_URL
+  }
+  return (
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-charcoal-black/70 backdrop-blur-sm" />
+      <div className="relative flex w-full max-w-md flex-col gap-4 rounded-3xl border border-border-muted bg-surface p-7 text-center">
+        <h2 className="font-headline-lg text-headline-lg">You’ve used all {TRIAL_DRAFTS} free drafts</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant">
+          Upgrade to Pro for unlimited posts in your voice and everything in Starter.
+        </p>
+        <button
+          type="button"
+          onClick={goToCheckout}
+          className="mt-1 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95"
+        >
+          Upgrade to Pro · ${PRO_PRICE}/mo
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
+        >
+          Not now
+        </button>
+      </div>
+    </div>
+  )
+}
 
 type VoiceOption = { id: string; name: string; isActive: boolean }
 
@@ -127,6 +163,7 @@ export function ComposeHome({
   const [historyId, setHistoryId] = useState<string | undefined>(initialSession?.historyId)
   const [activeCommand, setActiveCommand] = useState('')
   const [left, setLeft] = useState<number | null>(draftsLeft)
+  const [showUpgrade, setShowUpgrade] = useState(false)
 
   // Auto-grow the input with its content, up to ~3 rows (then it scrolls). The
   // max height comes from the textarea's CSS max-h; we just track scrollHeight.
@@ -196,7 +233,7 @@ export function ComposeHome({
       }
       if (res.status === 403 && data.limitReached) {
         setLeft(0)
-        setError(data.error ?? "You've used all your drafts.")
+        setShowUpgrade(true) // offer the Pro upgrade instead of a dead-end error
         return
       }
       if (!res.ok) {
@@ -268,11 +305,21 @@ export function ComposeHome({
     </label>
   )
 
-  const draftsBadge = left !== null && (
-    <span className={`font-code-label text-code-label ${left > 0 ? 'text-on-surface-variant/70' : 'text-error'}`}>
-      {left > 0 ? `${left} of 5 drafts left` : 'No drafts left'}
-    </span>
-  )
+  const draftsBadge =
+    left !== null &&
+    (left > 0 ? (
+      <span className="font-code-label text-code-label text-on-surface-variant/70">
+        {left} of {TRIAL_DRAFTS} drafts left
+      </span>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setShowUpgrade(true)}
+        className="font-code-label text-code-label text-error underline-offset-2 transition-colors hover:underline"
+      >
+        No drafts left · Upgrade
+      </button>
+    ))
 
   const activeTitle = commands.find((c) => c.command === activeCommand)?.title
   const composer = (
@@ -353,6 +400,7 @@ export function ComposeHome({
           {composer}
           {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
         </div>
+        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
       </div>
     )
   }
@@ -391,6 +439,7 @@ export function ComposeHome({
         {composer}
         {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
     </div>
   )
 }

@@ -31,7 +31,9 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
   const price = annual ? plan.annual.perMo : plan.monthly.perMo
   const sub = annual ? plan.annual.sub : plan.monthly.sub
 
-  const saveLine = annual ? plan.annual.save : plan.annual.save ? `${plan.annual.save} with annual` : ''
+  const saveLine = plan.trial ? '' : annual ? plan.annual.save : plan.annual.save ? `${plan.annual.save} with annual` : ''
+  const href = plan.href ?? '/signup'
+  const external = /^https?:\/\//.test(href)
 
   return (
     <div
@@ -51,8 +53,14 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
       <p className="mt-2 mb-6 font-body-sm text-body-sm text-on-surface-variant">{plan.tagline}</p>
 
       <div className="mb-1 flex items-end gap-1">
-        <span className="font-headline-xl text-headline-xl leading-none">${price}</span>
-        <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo</span>
+        {plan.trial ? (
+          <span className="font-headline-xl text-headline-xl leading-none">Free</span>
+        ) : (
+          <>
+            <span className="font-headline-xl text-headline-xl leading-none">${price}</span>
+            <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo</span>
+          </>
+        )}
       </div>
       <div className="font-body-sm text-body-sm text-on-surface-variant">{sub}</div>
       <div className="mt-1 min-h-[1.25rem] font-code-label text-code-label text-secondary">{saveLine}</div>
@@ -66,22 +74,42 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
         ))}
       </ul>
 
-      <Link
-        href={`/early-access?plan=${plan.id}`}
-        className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
-          plan.highlight
-            ? 'indigo-glow bg-electric-indigo text-white'
-            : 'border border-border-muted text-on-surface hover:border-electric-indigo'
-        }`}
-      >
-        {plan.cta}
-      </Link>
+      {external ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
+            plan.highlight
+              ? 'indigo-glow bg-electric-indigo text-white'
+              : 'border border-border-muted text-on-surface hover:border-electric-indigo'
+          }`}
+        >
+          {plan.cta}
+        </a>
+      ) : (
+        <Link
+          href={href}
+          className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
+            plan.highlight
+              ? 'indigo-glow bg-electric-indigo text-white'
+              : 'border border-border-muted text-on-surface hover:border-electric-indigo'
+          }`}
+        >
+          {plan.cta}
+        </Link>
+      )}
     </div>
   )
 }
 
 export function Pricing({ condensed = false }: { condensed?: boolean }) {
   const [mode, setMode] = useState<BillingMode>('annual')
+
+  // The full pricing page shows the free-trial column (with its draft count); the
+  // condensed home version hides it so the landing page never advertises the cap.
+  const plans = condensed ? PLANS.filter((p) => !p.trial) : PLANS
+  const cols = plans.length >= 3 ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'
 
   return (
     <section id="pricing" className="mx-auto max-w-container-max px-margin-mobile py-20 md:px-margin-desktop">
@@ -98,8 +126,8 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
         <Toggle mode={mode} setMode={setMode} />
       </div>
 
-      <div className="reveal mx-auto grid max-w-3xl grid-cols-1 gap-8 md:grid-cols-2" style={{ transitionDelay: '100ms' }}>
-        {PLANS.map((p) => (
+      <div className={`reveal mx-auto grid grid-cols-1 gap-8 ${cols}`} style={{ transitionDelay: '100ms' }}>
+        {plans.map((p) => (
           <PlanCard key={p.id} plan={p} mode={mode} />
         ))}
       </div>

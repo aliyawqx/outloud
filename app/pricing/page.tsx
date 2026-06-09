@@ -2,12 +2,15 @@ import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 import { Pricing } from '@/components/Pricing'
 import { ScrollReveal } from '@/components/ScrollReveal'
+import { TrialBanner } from '@/components/TrialBanner'
 
 export const metadata = { title: 'Outloud | Pricing' }
 
 export default function PricingPage() {
   return (
     <>
+      <TrialBanner sticky />
+
       <header className="border-b border-border-muted">
         <div className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
           <Link href="/">

@@ -2,10 +2,12 @@ import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 import { ScrollReveal } from '@/components/ScrollReveal'
 import { Pricing } from '@/components/Pricing'
+import { TrialBanner } from '@/components/TrialBanner'
 
 export default function Page() {
   return (
     <>
+      <TrialBanner />
       <div className="sticky top-0 z-50">
         <header className="bg-surface-glass w-full border-b border-border-muted backdrop-blur-md">
           <nav className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
