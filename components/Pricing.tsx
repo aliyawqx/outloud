@@ -106,9 +106,8 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
 export function Pricing({ condensed = false }: { condensed?: boolean }) {
   const [mode, setMode] = useState<BillingMode>('annual')
 
-  // The full pricing page shows the free-trial column (with its draft count); the
-  // condensed home version hides it so the landing page never advertises the cap.
-  const plans = condensed ? PLANS.filter((p) => !p.trial) : PLANS
+  // Show every plan (free trial first) on both the home and the full pricing page.
+  const plans = PLANS
   const cols = plans.length >= 3 ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'
 
   return (

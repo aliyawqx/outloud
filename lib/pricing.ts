@@ -26,10 +26,13 @@ export const PRICING_NOTE = 'Pricing is for launch and may change.'
 export const TRIAL_DRAFTS = 5
 
 // Hosted checkout via a Merchant of Record (Lemon Squeezy / Paddle). Paste the
-// real Pro payment link into NEXT_PUBLIC_PRO_CHECKOUT_URL; until then the CTA and
-// the upgrade modal fall back to the pricing page.
+// real payment links into the NEXT_PUBLIC_*_CHECKOUT_URL envs; until then the
+// CTAs and the upgrade modal fall back to the pricing page. Pro is the default
+// upsell; Starter is the cheaper alternative.
 export const PRO_PRICE = 15
 export const PRO_CHECKOUT_URL = process.env.NEXT_PUBLIC_PRO_CHECKOUT_URL || '/pricing'
+export const STARTER_PRICE = 5
+export const STARTER_CHECKOUT_URL = process.env.NEXT_PUBLIC_STARTER_CHECKOUT_URL || '/pricing'
 
 export const PLANS: Plan[] = [
   {
@@ -64,8 +67,8 @@ export const PLANS: Plan[] = [
       'X Reply engine - coming soon',
       '1 connected account per platform',
     ],
-    cta: 'Start free',
-    href: '/signup',
+    cta: 'Get Starter',
+    href: STARTER_CHECKOUT_URL,
   },
   {
     id: 'pro',
