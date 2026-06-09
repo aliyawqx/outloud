@@ -31,6 +31,17 @@ describe('postTweet', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ detail: 'Text too long.' }), { status: 403 })))
     await expect(postTweet('tok', 'x')).rejects.toThrow('Text too long.')
   })
+
+  it('throws PostTooLongError when a non-premium account is rejected for an over-limit post', async () => {
+    const long = 'a'.repeat(300)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ detail: 'not permitted' }), { status: 403 })))
+    await expect(postTweet('tok', long)).rejects.toMatchObject({ name: 'PostTooLongError', limit: 280 })
+  })
+
+  it('does NOT treat an under-limit failure as too-long', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ detail: 'rate limit' }), { status: 429 })))
+    await expect(postTweet('tok', 'short post')).rejects.toMatchObject({ name: 'PublishError' })
+  })
 })
 
 describe('fetchOriginalTweets', () => {

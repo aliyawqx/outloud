@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getAccount, getValidAccessToken } from '@/lib/x/store'
 import { postTweet } from '@/lib/x/client'
-import { PublishError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
+import { PostTooLongError, PublishError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 
 const TEXT_MAX = 25000 // X long-post ceiling; account tier enforces the real limit.
 
@@ -30,6 +30,16 @@ export async function POST(req: Request) {
     if (err instanceof XNotConnectedError) return NextResponse.json({ error: err.message }, { status: 409 })
     if (err instanceof XAuthError)
       return NextResponse.json({ error: 'Your X connection expired. Reconnect your X account.', needsReconnect: true }, { status: 409 })
+    if (err instanceof PostTooLongError) {
+      return NextResponse.json(
+        {
+          error: `You don't have X Premium, so X only lets you publish posts up to ${err.limit} characters. This one is ${text.length}. Shorten it to ${err.limit} or fewer, or upgrade your X account.`,
+          tooLong: true,
+          limit: err.limit,
+        },
+        { status: 422 },
+      )
+    }
     if (err instanceof PublishError) {
       // X's raw reason (e.g. billing/credits, rate limit) is internal — log it,
       // show the customer a clean, generic message.

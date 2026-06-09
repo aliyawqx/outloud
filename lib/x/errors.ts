@@ -29,3 +29,12 @@ export class PublishError extends Error {
     this.name = 'PublishError'
   }
 }
+
+// Non-premium X accounts can't post longer than the free character limit. This
+// is a policy limit, not a transient failure, so it gets its own clear message.
+export class PostTooLongError extends Error {
+  constructor(public readonly limit: number) {
+    super(`Post exceeds the ${limit}-character limit for non-premium X accounts.`)
+    this.name = 'PostTooLongError'
+  }
+}

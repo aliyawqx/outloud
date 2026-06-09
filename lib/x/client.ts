@@ -1,6 +1,10 @@
-import { ImportNotAvailableError, PublishError, XAuthError } from './errors'
+import { ImportNotAvailableError, PostTooLongError, PublishError, XAuthError } from './errors'
 
 const API = 'https://api.x.com/2'
+
+// Characters a non-premium X account is allowed to post. Longer posts require
+// X Premium; the API rejects them for free accounts.
+export const X_FREE_POST_LIMIT = 280
 
 type Json = Record<string, unknown> | null
 
@@ -23,7 +27,16 @@ export async function postTweet(accessToken: string, text: string): Promise<{ id
     body: JSON.stringify({ text }),
   })
   const data = (await readJson(res)) as { data?: { id?: string }; detail?: string; title?: string } | null
-  if (!res.ok || !data?.data?.id) throw new PublishError(data?.detail || data?.title || 'Could not publish to X.')
+  if (!res.ok || !data?.data?.id) {
+    const reason = data?.detail || data?.title || ''
+    // Non-premium accounts get rejected for over-limit posts. X phrases this a few
+    // ways; also treat any failure on text over the free limit as this case.
+    const tooLong =
+      text.length > X_FREE_POST_LIMIT &&
+      (res.status === 403 || res.status === 400 || /280|character|too long|not permitted|premium/i.test(reason))
+    if (tooLong) throw new PostTooLongError(X_FREE_POST_LIMIT)
+    throw new PublishError(reason || 'Could not publish to X.')
+  }
   return { id: data.data.id }
 }
 
