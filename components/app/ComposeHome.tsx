@@ -318,16 +318,10 @@ export function ComposeHome({
           type="button"
           onClick={send}
           disabled={loading || !input.trim()}
-          aria-label={loading ? 'Generating' : 'Send'}
-          aria-busy={loading}
+          aria-label="Send"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-50"
         >
-          <span
-            aria-hidden="true"
-            className={`material-symbols-outlined text-[20px] ${loading ? 'animate-spin motion-reduce:animate-none' : ''}`}
-          >
-            {loading ? 'progress_activity' : 'arrow_upward'}
-          </span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">arrow_upward</span>
         </button>
       </div>
     </div>
