@@ -30,17 +30,20 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
     }`
 
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] overflow-y-auto bg-surface/95 backdrop-blur-md">
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-white/10 hover:text-on-surface"
-      >
-        <span aria-hidden="true" className="material-symbols-outlined">close</span>
-      </button>
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-8">
+      {/* the app stays visible behind, blurred */}
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-charcoal-black/60 backdrop-blur-md" />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
+      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col items-center gap-6 overflow-y-auto rounded-3xl border border-border-muted bg-surface px-6 py-10 text-center shadow-2xl">
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-white/10 hover:text-on-surface"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined">close</span>
+        </button>
+
         <span className="rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-1 font-code-label text-code-label uppercase tracking-widest text-cyber-lime">
           You’ve used all {TRIAL_DRAFTS} free drafts
         </span>
