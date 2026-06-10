@@ -5,6 +5,7 @@ import { listEnabledTexts } from '@/lib/voice/samples'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import { getProfile as getUserProfile, incrementDraftsUsed } from '@/lib/profile/store'
 import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
+import { isPaidPlan } from '@/lib/billing/plans'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { getPromptText } from '@/lib/prompts/store'
 import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
@@ -64,16 +65,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
   }
 
-  // Draft cap: incubator participants get DRAFT_LIMIT lifetime drafts; staff unlimited.
-  const capped = !isStaff(session.email)
-  if (capped) {
-    const up = await getUserProfile(session.userId)
-    if ((up?.draftsUsed ?? 0) >= DRAFT_LIMIT) {
-      return NextResponse.json(
-        { error: `You've used all ${DRAFT_LIMIT} of your drafts.`, limitReached: true, draftsLeft: 0 },
-        { status: 403 },
-      )
-    }
+  // Draft cap: trial participants get DRAFT_LIMIT lifetime drafts; staff and PAID
+  // plans are uncapped.
+  const up = await getUserProfile(session.userId)
+  const capped = !isStaff(session.email) && !isPaidPlan(up?.plan)
+  if (capped && (up?.draftsUsed ?? 0) >= DRAFT_LIMIT) {
+    return NextResponse.json(
+      { error: `You've used all ${DRAFT_LIMIT} of your drafts.`, limitReached: true, draftsLeft: 0 },
+      { status: 403 },
+    )
   }
 
   // When iterating on an existing draft, edit THAT draft (keeps the voice and

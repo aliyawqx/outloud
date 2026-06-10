@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getProfile as getUserProfile, incrementDraftsUsed } from '@/lib/profile/store'
 import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
+import { isPaidPlan } from '@/lib/billing/plans'
 import { generateReplyVariants } from '@/lib/reply/generate'
 import { VoiceNotReadyError } from '@/lib/voice/generate'
 
@@ -32,13 +33,11 @@ export async function POST(req: Request) {
   const angleType = typeof b.angleType === 'string' ? b.angleType : undefined
   const profileId = typeof b.profileId === 'string' ? b.profileId : undefined
 
-  // Same draft cap as posts: trial participants share one pool; staff unlimited.
-  const capped = !isStaff(session.email)
-  if (capped) {
-    const up = await getUserProfile(session.userId)
-    if ((up?.draftsUsed ?? 0) >= DRAFT_LIMIT) {
-      return NextResponse.json({ error: `You've used all ${DRAFT_LIMIT} of your drafts.`, limitReached: true, draftsLeft: 0 }, { status: 403 })
-    }
+  // Same draft cap as posts: trial pool; staff and paid plans are uncapped.
+  const up = await getUserProfile(session.userId)
+  const capped = !isStaff(session.email) && !isPaidPlan(up?.plan)
+  if (capped && (up?.draftsUsed ?? 0) >= DRAFT_LIMIT) {
+    return NextResponse.json({ error: `You've used all ${DRAFT_LIMIT} of your drafts.`, limitReached: true, draftsLeft: 0 }, { status: 403 })
   }
 
   try {

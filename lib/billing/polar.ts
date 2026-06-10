@@ -1,0 +1,84 @@
+// Thin Polar (Merchant of Record) client. Kept tiny + swappable: the rest of the
+// app talks to createCheckout / getCheckout / cancelSubscription, never to Polar
+// directly. All calls use the org access token (a secret).
+
+const PROD = 'https://api.polar.sh'
+const SANDBOX = 'https://sandbox-api.polar.sh'
+
+function apiBase(): string {
+  return process.env.POLAR_SERVER === 'sandbox' ? SANDBOX : PROD
+}
+function token(): string {
+  const t = process.env.POLAR_ACCESS_TOKEN
+  if (!t) throw new Error('POLAR_ACCESS_TOKEN is not set')
+  return t
+}
+async function polar(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${apiBase()}${path}`, {
+    ...init,
+    headers: { authorization: `Bearer ${token()}`, 'content-type': 'application/json', ...(init?.headers ?? {}) },
+  })
+}
+
+/** Create a hosted checkout session for one product; returns the URL to redirect
+ *  the user to. metadata (our userId/plan) flows through to the order/subscription. */
+export async function createCheckout(opts: {
+  productId: string
+  successUrl: string
+  customerEmail?: string
+  metadata?: Record<string, string>
+}): Promise<{ url: string; id: string }> {
+  const res = await polar('/v1/checkouts/', {
+    method: 'POST',
+    body: JSON.stringify({
+      products: [opts.productId],
+      success_url: opts.successUrl,
+      ...(opts.customerEmail ? { customer_email: opts.customerEmail } : {}),
+      ...(opts.metadata ? { metadata: opts.metadata } : {}),
+    }),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Polar checkout create failed: ${res.status} ${body.slice(0, 300)}`)
+  }
+  const d = (await res.json()) as { id: string; url: string }
+  return { url: d.url, id: d.id }
+}
+
+export type CheckoutInfo = {
+  status: string
+  paid: boolean
+  metadata: Record<string, unknown>
+  customerEmail?: string
+  productId?: string
+}
+
+/** Read a checkout (used by the success redirect to confirm payment + find the
+ *  user from metadata). */
+export async function getCheckout(id: string): Promise<CheckoutInfo | null> {
+  const res = await polar(`/v1/checkouts/${id}`)
+  if (!res.ok) return null
+  const d = (await res.json()) as {
+    status?: string
+    metadata?: Record<string, unknown>
+    customer_email?: string
+    product_id?: string
+  }
+  const status = d.status ?? ''
+  return {
+    status,
+    paid: status === 'confirmed' || status === 'succeeded',
+    metadata: d.metadata ?? {},
+    customerEmail: d.customer_email,
+    productId: d.product_id,
+  }
+}
+
+/** Cancel a subscription at period end (used by the in-app "Cancel" button). */
+export async function cancelSubscription(subscriptionId: string): Promise<boolean> {
+  const res = await polar(`/v1/subscriptions/${subscriptionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ cancel_at_period_end: true }),
+  })
+  return res.ok
+}

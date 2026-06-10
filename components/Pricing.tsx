@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { PLANS, ANNUAL_BADGE, PRICING_NOTE, type BillingMode, type Plan } from '@/lib/pricing'
+import { startCheckout } from '@/lib/billing/client'
+import { Spinner } from '@/components/Spinner'
 
 function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
   const pill = (active: boolean) =>
@@ -32,8 +34,13 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
   const sub = annual ? plan.annual.sub : plan.monthly.sub
 
   const saveLine = plan.trial ? '' : annual ? plan.annual.save : plan.annual.save ? `${plan.annual.save} with annual` : ''
-  const href = plan.href ?? '/signup'
-  const external = /^https?:\/\//.test(href)
+  const paidPlan = plan.id === 'pro' || plan.id === 'starter'
+  const [busy, setBusy] = useState(false)
+  const ctaClass = `rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
+    plan.highlight
+      ? 'indigo-glow bg-electric-indigo text-white'
+      : 'border border-border-muted text-on-surface hover:border-electric-indigo'
+  }`
 
   return (
     <div
@@ -74,28 +81,20 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
         ))}
       </ul>
 
-      {external ? (
-        <a
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
-            plan.highlight
-              ? 'indigo-glow bg-electric-indigo text-white'
-              : 'border border-border-muted text-on-surface hover:border-electric-indigo'
-          }`}
+      {paidPlan ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true)
+            startCheckout(plan.id as 'pro' | 'starter').catch(() => setBusy(false))
+          }}
+          className={`flex items-center justify-center gap-2 disabled:opacity-60 ${ctaClass}`}
         >
-          {plan.cta}
-        </a>
+          {busy ? <><Spinner size={18} /> Starting…</> : plan.cta}
+        </button>
       ) : (
-        <Link
-          href={href}
-          className={`rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
-            plan.highlight
-              ? 'indigo-glow bg-electric-indigo text-white'
-              : 'border border-border-muted text-on-surface hover:border-electric-indigo'
-          }`}
-        >
+        <Link href={plan.href ?? '/signup'} className={ctaClass}>
           {plan.cta}
         </Link>
       )}

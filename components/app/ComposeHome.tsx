@@ -3,13 +3,9 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
-import { PLANS, PRO_CHECKOUT_URL, PRO_PRICE, STARTER_CHECKOUT_URL, STARTER_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
+import { PLANS, PRO_PRICE, STARTER_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
+import { startCheckout } from '@/lib/billing/client'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
-
-function goToCheckout(url: string) {
-  if (/^https?:\/\//.test(url)) window.open(url, '_blank', 'noopener')
-  else window.location.href = url
-}
 
 const PRO_PLAN = PLANS.find((p) => p.id === 'pro')
 const STARTER_PLAN = PLANS.find((p) => p.id === 'starter')
@@ -19,10 +15,19 @@ const STARTER_PLAN = PLANS.find((p) => p.id === 'starter')
 // Merchant of Record link (opens in a new tab); internal fallback navigates here.
 function UpgradeModal({ onClose }: { onClose: () => void }) {
   const [plan, setPlan] = useState<'pro' | 'starter'>('pro')
+  const [busy, setBusy] = useState(false)
   const isPro = plan === 'pro'
   const price = isPro ? PRO_PRICE : STARTER_PRICE
-  const url = isPro ? PRO_CHECKOUT_URL : STARTER_CHECKOUT_URL
   const features = (isPro ? PRO_PLAN : STARTER_PLAN)?.features ?? []
+
+  async function subscribe() {
+    setBusy(true)
+    try {
+      await startCheckout(plan)
+    } catch {
+      setBusy(false)
+    }
+  }
 
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
@@ -80,10 +85,11 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
           </ul>
           <button
             type="button"
-            onClick={() => goToCheckout(url)}
-            className="indigo-glow w-full rounded-full bg-electric-indigo px-6 py-3.5 text-lg font-bold text-white transition-all hover:bg-primary-container active:scale-95"
+            onClick={subscribe}
+            disabled={busy}
+            className="indigo-glow flex w-full items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-3.5 text-lg font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
           >
-            Subscribe · ${price}/mo
+            {busy ? <><Spinner size={20} /> Starting…</> : `Subscribe · $${price}/mo`}
           </button>
         </div>
 

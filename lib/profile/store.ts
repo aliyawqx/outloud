@@ -51,6 +51,12 @@ export async function setIncubator(userId: string, value: 'yes' | 'no'): Promise
   await getPool().query('UPDATE profiles SET incubator = $1, updated_at = now() WHERE user_id = $2', [value, userId])
 }
 
+/** Set the user's plan (e.g. after a Polar payment). Paid plans skip the cap. */
+export async function setPlan(userId: string, plan: string): Promise<void> {
+  await ensureSchema()
+  await getPool().query('UPDATE profiles SET plan = $1, updated_at = now() WHERE user_id = $2', [plan, userId])
+}
+
 /** Atomically bump the lifetime draft counter; returns the new total. */
 export async function incrementDraftsUsed(userId: string): Promise<number> {
   await ensureSchema()

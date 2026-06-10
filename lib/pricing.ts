@@ -25,14 +25,10 @@ export const PRICING_NOTE = 'Pricing is for launch and may change.'
 // Everyone starts on a 3-day free trial capped at this many drafts.
 export const TRIAL_DRAFTS = 5
 
-// Hosted checkout via a Merchant of Record (Lemon Squeezy / Paddle). Paste the
-// real payment links into the NEXT_PUBLIC_*_CHECKOUT_URL envs; until then the
-// CTAs and the upgrade modal fall back to the pricing page. Pro is the default
-// upsell; Starter is the cheaper alternative.
+// Prices shown in the UI. Checkout itself goes through Polar via
+// /api/billing/checkout (see lib/billing). Pro is the default upsell.
 export const PRO_PRICE = 15
-export const PRO_CHECKOUT_URL = process.env.NEXT_PUBLIC_PRO_CHECKOUT_URL || '/pricing'
 export const STARTER_PRICE = 5
-export const STARTER_CHECKOUT_URL = process.env.NEXT_PUBLIC_STARTER_CHECKOUT_URL || '/pricing'
 
 export const PLANS: Plan[] = [
   {
@@ -68,7 +64,6 @@ export const PLANS: Plan[] = [
       '1 connected account per platform',
     ],
     cta: 'Get Starter',
-    href: STARTER_CHECKOUT_URL,
   },
   {
     id: 'pro',
@@ -87,6 +82,5 @@ export const PLANS: Plan[] = [
       'Priority generation',
     ],
     cta: 'Upgrade to Pro',
-    href: PRO_CHECKOUT_URL,
   },
 ]
