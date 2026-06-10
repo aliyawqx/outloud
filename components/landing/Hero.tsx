@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ComposerMockup } from './ComposerMockup'
-import { CyclingHeadline, Parallax } from './motion'
+import { CountUp, CyclingHeadline, Parallax } from './motion'
 import { CurvedArrow, Sparkle } from './Doodles'
 
 const PHRASES = ['posts in your own voice.', 'build-in-public gold.', 'scroll-stopping hooks.']
@@ -53,11 +53,11 @@ export function Hero() {
             <CurvedArrow className="pointer-events-none absolute -right-2 -top-24 hidden text-cyber-lime/70 lg:block" />
           </div>
 
-          {/* proof card — qualitative, no invented metrics */}
+          {/* proof card — the founder's real reply-driven reach (count-up) */}
           <div className="reveal mt-10 flex max-w-sm items-center gap-4 rounded-3xl border border-border-muted bg-surface-container-low p-5" style={{ transitionDelay: '320ms' }}>
             <div className="leading-none">
-              <span className="font-headline-xl text-headline-xl text-cyber-lime">3</span>
-              <span className="ml-1 font-body-md text-body-md text-on-surface-variant">days free</span>
+              <CountUp to={22} suffix="k" className="font-headline-xl text-headline-xl text-cyber-lime" />
+              <span className="ml-1 font-body-md text-body-md text-on-surface-variant">views</span>
             </div>
             <div className="h-10 w-px bg-border-muted" />
             <div className="flex-1">
@@ -66,7 +66,7 @@ export function Hero() {
                   <span key={i} className={`h-7 w-7 rounded-full ring-2 ring-surface-container-low ${c}`} />
                 ))}
               </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">Start free, no card needed. Built for builders.</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">the founder’s own reach — mostly from replies in his voice.</p>
             </div>
           </div>
         </div>

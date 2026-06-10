@@ -7,24 +7,24 @@ const FEATURES = [
     ring: 'border-electric-indigo/40 bg-electric-indigo/10',
     title: 'Posts in your captured voice',
     accent: 'voice',
-    desc: 'Every draft sounds like you wrote it — your cadence, your phrasing, your edge. Not a polished, generic AI tone.',
+    desc: 'Turn what you ship into posts that sound like you wrote them — your cadence, your edge, never a generic AI tone.',
   },
   {
-    icon: 'graphic_eq',
+    icon: 'travel_explore',
     color: 'text-cyber-lime',
     ring: 'border-cyber-lime/40 bg-cyber-lime/10',
-    title: 'A voice built from your real writing',
-    accent: 'real',
-    desc: 'Paste a few of your posts and Outloud learns how you actually sound, then keeps every draft on-voice.',
+    title: 'Replies that grow you',
+    accent: 'grow',
+    desc: 'Outloud finds posts in your niche, drafts a reply in your voice, and you post it in a click. The engine behind those 22k views.',
     elevated: true,
   },
   {
-    icon: 'bolt',
+    icon: 'graphic_eq',
     color: 'text-electric-indigo',
     ring: 'border-electric-indigo/40 bg-electric-indigo/10',
-    title: 'Idea → finished post in seconds',
-    accent: 'seconds',
-    desc: 'Drop a commit, a changelog, or a half-thought. Get a ready hook and post you can publish to X in one click.',
+    title: 'A voice built from your real writing',
+    accent: 'real',
+    desc: 'Paste a few of your posts and Outloud learns how you actually sound, then keeps every draft on-voice.',
   },
 ]
 
@@ -79,11 +79,6 @@ export function FeaturesDark() {
               <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">{f.desc}</p>
             </div>
           ))}
-        </div>
-
-        <div className="reveal mt-10 flex items-center gap-2 font-code-label text-code-label text-on-surface-variant/70">
-          <span className="material-symbols-outlined text-[16px] text-electric-indigo">reply</span>
-          Reply engine — <span className="text-cyber-lime">coming soon</span>
         </div>
       </div>
     </section>

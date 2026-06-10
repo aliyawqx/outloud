@@ -1,42 +1,31 @@
 import Link from 'next/link'
 import { ComposerMockup } from './ComposerMockup'
+import { ReplyFinderMockup } from './ReplyFinderMockup'
 import { Sparkle } from './Doodles'
 
 export function Highlights() {
   return (
     <section className="mx-auto max-w-container-max px-margin-mobile py-20 md:px-margin-desktop">
       <div className="reveal mx-auto mb-12 max-w-2xl text-center">
-        <h2 className="mb-3 font-headline-lg text-headline-lg">From a rough line to a post that sounds like you.</h2>
+        <h2 className="mb-3 font-headline-lg text-headline-lg">Two loops, one voice: grow with replies, ship with posts.</h2>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Outloud learns your voice from your own writing, then drafts in it. No blank page, no generic AI tone.
+          Outloud finds posts worth replying to in your niche and turns what you ship into posts — all in your own captured voice.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* card 1: voice capture */}
-        <div className="reveal glass-card group rounded-3xl p-6 transition-all hover:-translate-y-1 hover:border-secondary/40">
+        {/* card 1: reply finder (grow) */}
+        <div className="reveal glass-card group rounded-3xl p-6 transition-all hover:-translate-y-1 hover:border-cyber-lime/40">
           <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary/20">
-              <span className="material-symbols-outlined text-secondary">graphic_eq</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyber-lime/20">
+              <span className="material-symbols-outlined text-cyber-lime">travel_explore</span>
             </span>
-            <h3 className="font-headline-sm text-headline-sm">Voice capture</h3>
+            <h3 className="font-headline-sm text-headline-sm">Reply finder</h3>
           </div>
-          <div className="rounded-2xl border border-border-muted bg-surface-container-low p-4">
-            <p className="mb-3 font-code-label text-code-label text-on-surface-variant">your past posts →</p>
-            <div className="mb-4 flex h-16 items-center justify-center gap-1.5">
-              {[10, 22, 34, 18, 28, 40, 24, 14, 30, 20, 36, 12].map((h, i) => (
-                <span key={i} className="w-1.5 rounded-full bg-secondary/80" style={{ height: h }} />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {['lowercase', 'dry humor', 'short lines', 'numbers-honest'].map((t) => (
-                <span key={t} className="rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 font-code-label text-[11px] text-secondary">{t}</span>
-              ))}
-            </div>
-          </div>
+          <ReplyFinderMockup />
         </div>
 
-        {/* card 2: idea -> post */}
+        {/* card 2: idea -> post (ship) */}
         <div className="reveal glass-card group rounded-3xl p-6 transition-all hover:-translate-y-1 hover:border-electric-indigo/40" style={{ transitionDelay: '100ms' }}>
           <div className="mb-4 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-electric-indigo/20">

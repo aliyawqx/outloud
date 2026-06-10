@@ -44,10 +44,10 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
 
   return (
     <div
-      className={`glass-card relative flex flex-col rounded-3xl p-8 ${
+      className={`glass-card relative flex flex-col rounded-3xl p-8 transition-all hover:-translate-y-1.5 hover:shadow-2xl ${
         plan.highlight
           ? 'border-electric-indigo indigo-glow'
-          : 'hover:border-border-muted'
+          : 'hover:border-electric-indigo/40'
       }`}
     >
       {plan.badge && (
