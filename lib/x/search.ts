@@ -1,9 +1,12 @@
 import { SearchUnavailableError, XAuthError } from './errors'
 
 const API = 'https://api.x.com/2'
-const WINDOW_HOURS = 12
-// Bias high: this is meant to surface big posts, not every post on the topic.
-const MIN_REACH_SCORE = 120
+const WINDOW_HOURS = 24
+// Hard engagement gate: we comment on posts that ALREADY have real traction, not
+// fresh-but-tiny ones. A 10-like post is out even from a 5k-follower account.
+const MIN_LIKES = 1000
+// Big accounts are the target audience; 100k+ followers gets a strong step up.
+const BIG_ACCOUNT_FOLLOWERS = 100_000
 const CACHE_TTL_MS = 5 * 60 * 1000 // re-opening a topic shouldn't re-bill for 5 min
 
 export type CandidatePost = {
@@ -36,12 +39,15 @@ export function computeReachScore(p: {
   quotes: number
   ageHours?: number
 }): number {
-  const engagement = p.likes + p.replies + p.reposts + p.quotes
-  // Followers on a log scale (a 1M-follower account shouldn't drown out engagement).
-  const followerWeight = Math.log10(Math.max(0, p.followers) + 10) * 40
+  // Engagement-led: likes carry it, reposts/quotes count for more (they spread it).
+  const engagement = p.likes + p.reposts * 2 + p.quotes * 2 + p.replies
+  // Big-account preference: a strong step at 100k+ followers, modest below.
+  const followers = Math.max(0, p.followers)
+  const followerBonus =
+    followers >= BIG_ACCOUNT_FOLLOWERS ? 4000 + Math.log10(followers) * 300 : Math.log10(followers + 10) * 60
   // Small freshness bonus: engagement that piled up fast is "climbing".
-  const velocity = p.ageHours && p.ageHours > 0 ? Math.min(engagement / p.ageHours, engagement) * 0.5 : 0
-  return Math.round(engagement + followerWeight + velocity)
+  const velocity = p.ageHours && p.ageHours > 0 ? Math.min(engagement / p.ageHours, engagement) * 0.4 : 0
+  return Math.round(engagement + followerBonus + velocity)
 }
 
 type SearchResponse = {
@@ -129,8 +135,9 @@ export async function searchPosts(
         reachScore: computeReachScore({ followers, likes, replies, reposts, quotes, ageHours }),
       }
     })
-    // Cheap pre-filter: clear the reach floor, then rank reach desc, newest tiebreak.
-    .filter((p) => p.reachScore >= MIN_REACH_SCORE)
+    // Cheap pre-filter: require real engagement (kills tiny fresh posts), then rank
+    // by reach desc — big accounts / high-engagement first — newest as a tiebreak.
+    .filter((p) => p.likes >= MIN_LIKES)
     .sort((a, b) => b.reachScore - a.reachScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   cache.set(key, { at: now, posts })
