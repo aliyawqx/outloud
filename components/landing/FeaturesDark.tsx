@@ -65,10 +65,10 @@ export function FeaturesDark() {
           {FEATURES.map((f, i) => (
             <div
               key={f.title}
-              className={`reveal rounded-3xl p-7 transition-all hover:-translate-y-1 ${
+              className={`reveal rounded-3xl p-7 transition-all hover:-translate-y-2 ${
                 f.elevated
                   ? 'border border-white/10 bg-surface-container-high shadow-2xl md:-translate-y-6 md:hover:-translate-y-8'
-                  : 'border border-border-muted bg-white/[0.02] md:mt-4'
+                  : 'border border-border-muted bg-white/[0.02] md:mt-4 md:hover:-translate-y-2'
               }`}
               style={{ transitionDelay: `${i * 110}ms` }}
             >
