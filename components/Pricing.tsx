@@ -44,9 +44,9 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
 
   return (
     <div
-      className={`glass-card relative flex flex-col rounded-3xl p-8 transition-all hover:-translate-y-1.5 hover:shadow-2xl ${
+      className={`glass-card indigo-glow relative flex flex-col rounded-3xl p-8 transition-all hover:-translate-y-1.5 ${
         plan.highlight
-          ? 'border-electric-indigo indigo-glow'
+          ? 'border-electric-indigo'
           : 'hover:border-electric-indigo/40'
       }`}
     >
