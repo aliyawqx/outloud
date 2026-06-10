@@ -345,7 +345,7 @@ export function ReplyStudio({
             </div>
           </label>
           <p className="font-code-label text-code-label text-on-surface-variant/60">
-            Recent posts from the last 12h, ranked by reach (followers + engagement). X doesn’t expose view counts.
+            Recent posts from the last 12h, ranked by reach (followers + engagement).
           </p>
           {searchError && <p className="font-body-sm text-body-sm text-error">{searchError}</p>}
 
