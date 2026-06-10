@@ -248,6 +248,11 @@ export async function runIntake(messages: ChatTurn[], format?: string): Promise<
   const model = getModel()
   const effort = supportsEffort(model)
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: INTAKE_PROMPT, cache_control: { type: 'ephemeral' } }]
+  // Hard language lock: the clarifying question must be in the user's own language.
+  system.push({
+    type: 'text',
+    text: 'LANGUAGE: detect the language the user is writing in and write the "question" in that EXACT language. If the user writes in Russian, ask in Russian; Kazakh → Kazakh, etc. Never reply in English unless the user wrote in English.',
+  })
   if (format?.trim()) {
     // The output FORMAT is already chosen — intake must ask only for missing CONTENT
     // facts this format needs, never which format/platform to use.
