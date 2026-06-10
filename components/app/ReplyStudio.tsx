@@ -32,28 +32,25 @@ const verdictBadge: Record<Verdict, string> = {
   skip: 'border-error/30 bg-error/10 text-error',
 }
 
-// One generated reply variant: editable, with a web-intent "Reply on X" button.
+// One generated reply variant. Editable in place (some people like the idea but
+// want to reword) — the same edit pattern as the New Post drafts. The tweetId is
+// fixed, so editing the text never changes WHICH post the reply goes to.
 function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: string }) {
   const [text, setText] = useState(initialText)
+  const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   return (
     <div className="rounded-2xl border border-border-muted bg-surface-container-low p-4">
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={2}
-        className="w-full resize-none rounded-lg bg-transparent font-body-md leading-relaxed text-on-surface focus:outline-none"
-      />
-      <div className="mt-2 flex items-center gap-3">
-        <a
-          href={replyIntentUrl(tweetId, text)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95"
+      <div className="mb-2 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setEditing((e) => !e)}
+          aria-pressed={editing}
+          className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant hover:text-on-surface"
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">reply</span>
-          Reply on X
-        </a>
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{editing ? 'check' : 'edit'}</span>
+          {editing ? 'Done' : 'Edit'}
+        </button>
         <button
           type="button"
           onClick={async () => {
@@ -66,6 +63,30 @@ function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: s
           <span aria-hidden="true" className="material-symbols-outlined text-[16px]">content_copy</span>
           {copied ? 'Copied' : 'Copy'}
         </button>
+      </div>
+
+      {editing ? (
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          autoFocus
+          rows={3}
+          className="w-full resize-none rounded-xl border border-border-muted bg-surface-container-lowest p-3 font-body-md leading-relaxed text-on-surface focus:border-electric-indigo focus:outline-none"
+        />
+      ) : (
+        <p className="whitespace-pre-wrap font-body-md leading-relaxed text-on-surface">{text}</p>
+      )}
+
+      <div className="mt-3 flex items-center gap-3">
+        <a
+          href={replyIntentUrl(tweetId, text)}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">reply</span>
+          Reply on X
+        </a>
         <span className="ml-auto font-code-label text-code-label text-on-surface-variant/60">{text.length} chars</span>
       </div>
     </div>
@@ -236,6 +257,23 @@ export function ReplyStudio({
   const shown = results?.filter((r) => (showSkipped ? true : r.verdict !== 'skip')) ?? []
   const skippedCount = results?.filter((r) => r.verdict === 'skip').length ?? 0
 
+  // The generated replies, rendered inline right under whichever post is the
+  // target (so they never appear off-screen at the bottom of a long feed).
+  const variantsBlock = target && (
+    <div className="mt-4 flex flex-col gap-3 border-t border-border-muted pt-4">
+      <h3 className="font-code-label text-code-label uppercase text-on-surface-variant">Replies in your voice</h3>
+      {generating && (
+        <div className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
+          <Spinner size={16} className="text-electric-indigo" /> writing in your voice…
+        </div>
+      )}
+      {genError && <p className="font-body-sm text-body-sm text-error">{genError}</p>}
+      {variants.map((v, i) => (
+        <VariantCard key={i} tweetId={target.id} initialText={v} />
+      ))}
+    </div>
+  )
+
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-1 font-headline-xl text-headline-xl">New reply</h1>
@@ -307,6 +345,7 @@ export function ReplyStudio({
               >
                 {generating ? <><Spinner size={16} /> Writing…</> : 'Generate replies'}
               </button>
+              {target?.id === fetched.id && variantsBlock}
             </div>
           )}
         </div>
@@ -367,7 +406,11 @@ export function ReplyStudio({
                 <span>↺ {r.post.reposts}</span>
                 <span>💬 {r.post.replies}</span>
               </div>
-              {r.reason && <p className="mb-3 font-code-label text-code-label text-on-surface-variant/80">“{r.reason}”</p>}
+              {(r.reason || r.verdict === 'skip') && (
+                <p className="mb-3 font-code-label text-code-label text-on-surface-variant/80">
+                  {r.verdict === 'skip' ? `Skipped: ${r.reason || 'not worth the slot'}` : `“${r.reason}”`}
+                </p>
+              )}
               {r.verdict !== 'skip' && (
                 <button
                   type="button"
@@ -378,6 +421,7 @@ export function ReplyStudio({
                   {generating && target?.id === r.post.id ? <><Spinner size={14} /> Writing…</> : 'Write reply'}
                 </button>
               )}
+              {target?.id === r.post.id && variantsBlock}
             </div>
           ))}
 
@@ -393,15 +437,6 @@ export function ReplyStudio({
         </div>
       )}
 
-      {/* ── Generated variants (shared) ────────────────────────────── */}
-      {(genError || variants.length > 0 || (generating && target)) && (
-        <div className="mt-8 flex flex-col gap-3">
-          <h2 className="font-code-label text-code-label uppercase text-on-surface-variant">Replies in your voice</h2>
-          {generating && <div className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant"><Spinner size={16} className="text-electric-indigo" /> writing in your voice…</div>}
-          {genError && <p className="font-body-sm text-body-sm text-error">{genError}</p>}
-          {target && variants.map((v, i) => <VariantCard key={i} tweetId={target.id} initialText={v} />)}
-        </div>
-      )}
     </div>
   )
 }
