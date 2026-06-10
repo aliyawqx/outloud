@@ -23,6 +23,30 @@ export class ImportNotAvailableError extends Error {
   }
 }
 
+// The pasted link wasn't a recognizable X/Twitter post URL.
+export class InvalidPostUrlError extends Error {
+  constructor() {
+    super("That doesn't look like an X post link. Paste a link like https://x.com/user/status/123.")
+    this.name = 'InvalidPostUrlError'
+  }
+}
+
+// The post couldn't be read: deleted, protected, or otherwise unavailable.
+export class PostUnavailableError extends Error {
+  constructor(message = "Couldn't read that post. It may be deleted or from a protected account.") {
+    super(message)
+    this.name = 'PostUnavailableError'
+  }
+}
+
+// Topic search needs paid X API access (Basic+); the free/over-limit tier 4xxs.
+export class SearchUnavailableError extends Error {
+  constructor(message = "Post discovery isn't available right now. Try pasting a post link instead.") {
+    super(message)
+    this.name = 'SearchUnavailableError'
+  }
+}
+
 export class PublishError extends Error {
   constructor(message = 'Could not publish to X. Try again.') {
     super(message)

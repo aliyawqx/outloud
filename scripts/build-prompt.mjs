@@ -11,6 +11,7 @@ const ARTIFACTS = [
   { md: 'outloud-base-rules.md', ts: 'lib/basePrompt.ts', name: 'BASE_PROMPT' },
   { md: 'outloud-style-analysis-prompt.md', ts: 'lib/stylePrompt.ts', name: 'STYLE_ANALYSIS_PROMPT' },
   { md: 'outloud-intake-prompt.md', ts: 'lib/intakePrompt.ts', name: 'INTAKE_PROMPT' },
+  { md: 'outloud-reply-judge-prompt.md', ts: 'lib/replyJudgePrompt.ts', name: 'REPLY_JUDGE_PROMPT' },
 ]
 
 for (const a of ARTIFACTS) {

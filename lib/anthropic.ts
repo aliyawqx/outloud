@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { BASE_PROMPT } from './basePrompt'
 import { STYLE_ANALYSIS_PROMPT } from './stylePrompt'
 import { INTAKE_PROMPT } from './intakePrompt'
+import { REPLY_JUDGE_PROMPT } from './replyJudgePrompt'
 
 // Default: Sonnet 4.6 (quality at low cost). Override with ANTHROPIC_MODEL —
 // e.g. 'claude-haiku-4-5' (~3x cheaper, lower nuance) or 'claude-opus-4-8' (best).
@@ -280,6 +281,117 @@ export async function runIntake(messages: ChatTurn[], format?: string): Promise<
   const r = IntakeSchema.parse(parsed)
   if (r.action === 'ask') return { action: 'ask', question: noEmDashes(r.question.trim()) }
   return { action: 'write', brief: r.brief.trim() }
+}
+
+// ── Reply-worthiness judgment (New Reply, "discover by topic") ──────────────────
+
+export type AngleType = 'sharp take' | 'genuine question' | 'relatable reaction' | 'none'
+export type ReplyVerdict = {
+  index: number
+  verdict: 'reply' | 'maybe' | 'skip'
+  reason: string
+  suggestedAngle: string
+  angleType: AngleType
+  confidence: number
+}
+
+/** One candidate post + its metrics, as fed to the judge. */
+export type JudgePost = {
+  text: string
+  authorHandle: string
+  followers: number
+  ageHours: number
+  likes: number
+  replies: number
+  reposts: number
+  quotes: number
+}
+
+const VerdictSchema = z.object({
+  verdicts: z.array(
+    z.object({
+      index: z.number(),
+      verdict: z.enum(['reply', 'maybe', 'skip']),
+      reason: z.string().optional().default(''),
+      suggestedAngle: z.string().optional().default(''),
+      angleType: z.enum(['sharp take', 'genuine question', 'relatable reaction', 'none']).optional().default('none'),
+      confidence: z.number().optional().default(0),
+    }),
+  ),
+})
+
+const VERDICT_FORMAT = {
+  type: 'json_schema' as const,
+  schema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      verdicts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            index: { type: 'number' },
+            verdict: { type: 'string', enum: ['reply', 'maybe', 'skip'] },
+            reason: { type: 'string' },
+            suggestedAngle: { type: 'string' },
+            angleType: { type: 'string', enum: ['sharp take', 'genuine question', 'relatable reaction', 'none'] },
+            confidence: { type: 'number' },
+          },
+          required: ['index', 'verdict', 'reason', 'suggestedAngle', 'angleType', 'confidence'],
+        },
+      },
+    },
+    required: ['verdicts'],
+  },
+}
+
+/**
+ * Judge a BATCH of candidate posts: reply / maybe / skip, with the angle to take.
+ * Runs AFTER the cheap reach/freshness pre-filter so we only spend a call on posts
+ * that already clear the bar. Returns one verdict per input index (missing ones
+ * default to a low-confidence skip, so the caller never crashes on a short reply).
+ */
+export async function judgeReplies(
+  posts: JudgePost[],
+  ctx: { topic: string; voiceSummary: string },
+): Promise<ReplyVerdict[]> {
+  if (posts.length === 0) return []
+  const model = getModel()
+  const effort = supportsEffort(model)
+
+  const list = posts
+    .map(
+      (p, i) =>
+        `[${i}]\nPOST: ${p.text}\nAUTHOR: @${p.authorHandle} (${p.followers} followers)\nAGE: ${p.ageHours}h ago\nENGAGEMENT: ${p.likes} likes, ${p.replies} replies, ${p.reposts} reposts, ${p.quotes} quotes`,
+    )
+    .join('\n\n')
+  const content = `USER_TOPIC: ${ctx.topic}\nUSER_VOICE: ${ctx.voiceSummary || 'no summary available'}\n\nJudge each post below. Return one verdict object per index, preserving the index.\n\n${list}`
+
+  const msg = await getClient().messages.create({
+    model,
+    max_tokens: 4000,
+    system: [{ type: 'text', text: REPLY_JUDGE_PROMPT, cache_control: { type: 'ephemeral' } }],
+    ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
+    output_config: effort ? { effort: 'low', format: VERDICT_FORMAT } : { format: VERDICT_FORMAT },
+    messages: [{ role: 'user', content }],
+  })
+  const text = msg.content.find((b) => b.type === 'text')
+  if (!text || text.type !== 'text') throw new Error('No content returned')
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text.text)
+  } catch {
+    throw new Error('Model returned non-JSON output')
+  }
+  const byIndex = new Map(VerdictSchema.parse(parsed).verdicts.map((v) => [v.index, v]))
+  // Re-key to the input order; any post the model dropped becomes a safe skip.
+  return posts.map((_, i) => {
+    const v = byIndex.get(i)
+    if (!v) return { index: i, verdict: 'skip' as const, reason: '', suggestedAngle: '', angleType: 'none' as const, confidence: 0 }
+    return { ...v, reason: noEmDashes(v.reason), suggestedAngle: noEmDashes(v.suggestedAngle) }
+  })
 }
 
 let client: Anthropic | null = null

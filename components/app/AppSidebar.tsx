@@ -16,6 +16,7 @@ type NavItem = { href: string; label: string; icon: string; badge?: number; soon
 function navItems(voiceCount: number): NavItem[] {
   return [
     { href: '/app', label: 'New post', icon: 'edit_square' },
+    { href: '/app/reply', label: 'New reply', icon: 'reply' },
     { href: '/app/voices', label: 'Voices', icon: 'graphic_eq', badge: voiceCount },
     { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks' },
     { href: '/app/knowledge', label: 'Knowledge', icon: 'menu_book', soon: true },
