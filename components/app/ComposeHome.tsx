@@ -323,7 +323,7 @@ export function ComposeHome({
     }
   }
 
-  const voicePicker = voices.length > 1 && (
+  const voicePicker = voices.length > 0 && (
     <label className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
       Voice
       <select
