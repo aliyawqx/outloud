@@ -20,7 +20,7 @@ export default function Page() {
             <Link className="text-on-surface-variant transition-colors hover:text-primary" href="/login">Log in</Link>
           </div>
           <div className="flex items-center gap-4">
-            <Link className="indigo-glow rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform hover:scale-95" href="/early-access">Early Access</Link>
+            <Link className="indigo-glow rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform hover:scale-95" href="/signup">Get started</Link>
           </div>
           </nav>
         </header>
@@ -45,7 +45,7 @@ export default function Page() {
             Stop the generic AI slop. Outloud captures your technical nuance and personality, transforming code updates and build-in-public logs into high-signal engagement.
           </p>
           <div className="reveal flex flex-col justify-center gap-4 md:flex-row" style={{ transitionDelay: '240ms' }}>
-            <Link href="/early-access" className="indigo-glow rounded-full bg-electric-indigo px-8 py-4 text-lg font-bold text-white transition-all active:scale-95">Join Early Access</Link>
+            <Link href="/signup" className="indigo-glow rounded-full bg-electric-indigo px-8 py-4 text-lg font-bold text-white transition-all active:scale-95">Let’s get started</Link>
             <a href="#features" className="rounded-full border border-border-muted px-8 py-4 text-lg font-bold text-on-surface transition-all hover:border-white">See Features</a>
           </div>
 
