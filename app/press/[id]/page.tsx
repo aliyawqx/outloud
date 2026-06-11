@@ -178,9 +178,9 @@ function Frame3() {
               Generic AI
             </span>
             <TweetCard
-              name="Founder"
-              handle="@you"
-              avatar="F"
+              name="Aliya"
+              handle="@aliya_zhanabay"
+              avatar="A"
               avatarBg="#3a3a42"
               border="rgba(255,255,255,0.08)"
               body="🚀 Excited to share that we just shipped dark mode! Huge thanks to our amazing team for making it happen. Stay tuned for more exciting updates! 🙌 #buildinpublic #saas"
@@ -196,9 +196,9 @@ function Frame3() {
               You, on Outloud
             </span>
             <TweetCard
-              name="Founder"
-              handle="@you"
-              avatar="F"
+              name="Aliya"
+              handle="@aliya_zhanabay"
+              avatar="A"
               avatarBg={INDIGO}
               border={`${INDIGO}66`}
               tone="your voice"
@@ -237,9 +237,9 @@ function Frame4() {
           </span>
           <div className="flex-1">
             <TweetCard
-              name="You"
-              handle="@you · now"
-              avatar="Y"
+              name="Aliya"
+              handle="@aliya_zhanabay · now"
+              avatar="A"
               avatarBg={INDIGO}
               border={`${INDIGO}66`}
               tone="drafted in your voice"
@@ -316,19 +316,18 @@ function Frame6() {
         </div>
         <div className="flex flex-1 flex-col gap-5">
           <TweetCard
-            name="You"
-            handle="@you · 3d"
-            avatar="Y"
+            name="Aliya"
+            handle="@aliya_zhanabay · 3d"
+            avatar="A"
             avatarBg={INDIGO}
             border={`${INDIGO}66`}
             tone="written with Outloud"
             toneColor={LIME}
             body="cut onboarding from 5 steps to 2 → activation 38% to 61% in a week. that's it. that's the post."
-            views="22,000 views"
           />
           <div className="flex gap-4">
             {[
-              { k: 'views on one reply', v: '22K' },
+              { k: 'total views, build in public', v: '22K' },
               { k: 'written in your voice', v: '100%' },
               { k: 'generic AI slop', v: '0' },
             ].map((s) => (
