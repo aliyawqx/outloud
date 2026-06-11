@@ -33,14 +33,14 @@ export function AppShot() {
           ))}
         </nav>
         <div className="mt-auto flex items-center gap-2 rounded-xl border-t border-border-muted px-2 pt-3">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-electric-indigo/20 font-code-label text-[11px] text-electric-indigo">W</span>
-          <span className="font-body-sm text-body-sm text-on-surface-variant">wqx</span>
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-electric-indigo/20 font-code-label text-[11px] text-electric-indigo">E</span>
+          <span className="font-body-sm text-body-sm text-on-surface-variant">Elen</span>
         </div>
       </aside>
 
       {/* compose area */}
       <div className="flex min-w-0 flex-1 flex-col p-5 md:p-8">
-        <h3 className="mb-1 font-headline-lg text-headline-lg">what do you want to post about, wqx?</h3>
+        <h3 className="mb-1 font-headline-lg text-headline-lg">what do you want to post about, Elen?</h3>
         <p className="mb-6 font-body-sm text-body-sm text-on-surface-variant">Type a rough idea. I’ll write it in your voice.</p>
 
         <div className="flex flex-1 flex-col justify-end gap-4">
@@ -50,7 +50,7 @@ export function AppShot() {
 
           <div className="rounded-2xl border border-electric-indigo/30 bg-surface-container-low p-4">
             <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-electric-indigo/30 font-code-label text-[11px] text-electric-indigo">W</span>
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-electric-indigo/30 font-code-label text-[11px] text-electric-indigo">E</span>
               <span className="font-code-label text-code-label text-on-surface-variant">in your voice</span>
               <span className="ml-auto flex items-center gap-1 font-code-label text-[11px] text-cyber-lime"><span className="h-1.5 w-1.5 rounded-full bg-cyber-lime" /> ready</span>
             </div>
@@ -67,7 +67,7 @@ export function AppShot() {
 
           <div className="flex items-center gap-3 rounded-2xl border border-border-muted bg-surface-container-low p-3">
             <span className="flex items-center gap-2 rounded-lg border border-border-muted px-3 py-1.5 font-code-label text-code-label text-on-surface-variant">Mode · X post</span>
-            <span className="flex items-center gap-2 rounded-lg border border-border-muted px-3 py-1.5 font-code-label text-code-label text-on-surface-variant">Voice · wqx</span>
+            <span className="flex items-center gap-2 rounded-lg border border-border-muted px-3 py-1.5 font-code-label text-code-label text-on-surface-variant">Voice · Elen</span>
             <span className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-electric-indigo text-white"><span className="material-symbols-outlined text-[18px]">arrow_upward</span></span>
           </div>
         </div>
