@@ -9,9 +9,12 @@ import { isPaidPlan } from '@/lib/billing/plans'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { getPromptText } from '@/lib/prompts/store'
 import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
-import { runIntake, type ChatTurn } from '@/lib/anthropic'
+import { runIntake, ModelBusyError, type ChatTurn } from '@/lib/anthropic'
 import { generatePost, VoiceNotReadyError } from '@/lib/voice/generate'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
+
+// Generation can take longer than the 10s default; allow up to 60s (Hobby max).
+export const maxDuration = 60
 
 const MAX_TURNS = 60
 const TEXT_MAX = 4000
@@ -138,6 +141,9 @@ export async function POST(req: Request) {
   } catch (err) {
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
+    }
+    if (err instanceof ModelBusyError) {
+      return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
     }
     console.error('[voice/chat] failed:', err)
     return NextResponse.json({ error: "Couldn't write that. Try again." }, { status: 500 })

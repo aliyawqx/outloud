@@ -4,8 +4,10 @@ import { getValidAccessToken } from '@/lib/x/store'
 import { searchPosts } from '@/lib/x/search'
 import { listProfiles } from '@/lib/voice/store'
 import { isVoiceReady } from '@/lib/voice/ready'
-import { judgeReplies } from '@/lib/anthropic'
+import { judgeReplies, ModelBusyError } from '@/lib/anthropic'
 import { SearchUnavailableError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
+
+export const maxDuration = 60
 
 // Cap the LLM judgment to the top candidates so a search never balloons cost.
 const JUDGE_CAP = 18
@@ -68,6 +70,7 @@ export async function POST(req: Request) {
   } catch (err) {
     if (err instanceof SearchUnavailableError) return NextResponse.json({ error: err.message, searchUnavailable: true }, { status: 409 })
     if (err instanceof XAuthError) return NextResponse.json({ error: 'Your X connection expired. Reconnect your X account.', needsReconnect: true }, { status: 409 })
+    if (err instanceof ModelBusyError) return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
     console.error('[reply/search] failed:', err)
     return NextResponse.json({ error: "Couldn't search right now. Try again." }, { status: 502 })
   }

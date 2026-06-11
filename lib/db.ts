@@ -143,6 +143,12 @@ export function getPool(): Pool {
     pool = new Pool({
       connectionString: cleanDbUrl(raw),
       ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+      // Serverless tuning: many instances each keep a SMALL pool behind Neon's
+      // PgBouncer, so cap connections low and recycle idle ones fast. Fail a stuck
+      // connection attempt in 10s instead of hanging the whole request.
+      max: Number(process.env.PG_POOL_MAX || 5),
+      idleTimeoutMillis: Number(process.env.PG_IDLE_MS || 10_000),
+      connectionTimeoutMillis: Number(process.env.PG_CONN_TIMEOUT_MS || 10_000),
     })
   }
   return pool
@@ -150,18 +156,36 @@ export function getPool(): Pool {
 
 let schemaReady: Promise<void> | null = null
 
+// A fixed key for the Postgres advisory lock that serializes schema sync.
+const SCHEMA_LOCK_KEY = 0x0_017_10ad
+
+/**
+ * Sync the schema, at most once per instance. Set DB_SKIP_SCHEMA=1 once the schema
+ * is applied in prod to take this off the hot path entirely (no DDL on cold start).
+ * When it does run, a session-level advisory lock serializes it so a burst of cold
+ * starts can't fire dozens of concurrent ALTERs that contend on table locks.
+ */
 export function ensureSchema(): Promise<void> {
+  if (process.env.DB_SKIP_SCHEMA === '1') return Promise.resolve()
   if (!schemaReady) {
-    schemaReady = getPool()
-      .query(SCHEMA_SQL)
-      .then(() => undefined)
-      .catch((err) => {
-        // Reset so a later request can retry after a transient failure.
-        schemaReady = null
-        throw err
-      })
+    schemaReady = syncSchema().catch((err) => {
+      // Reset so a later request can retry after a transient failure.
+      schemaReady = null
+      throw err
+    })
   }
   return schemaReady
+}
+
+async function syncSchema(): Promise<void> {
+  const client = await getPool().connect()
+  try {
+    await client.query('SELECT pg_advisory_lock($1)', [SCHEMA_LOCK_KEY])
+    await client.query(SCHEMA_SQL)
+  } finally {
+    await client.query('SELECT pg_advisory_unlock($1)', [SCHEMA_LOCK_KEY]).catch(() => {})
+    client.release()
+  }
 }
 
 export type UpsertInput = {

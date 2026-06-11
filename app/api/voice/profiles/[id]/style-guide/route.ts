@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getProfile, setStyleGuide } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
-import { generateStyleGuide } from '@/lib/anthropic'
+import { generateStyleGuide, ModelBusyError } from '@/lib/anthropic'
+
+export const maxDuration = 60
 
 type Ctx = { params: Promise<{ id: string }> }
 const GUIDE_MAX = 20_000
@@ -28,6 +30,9 @@ export async function POST(_req: Request, { params }: Ctx) {
     const updated = await setStyleGuide(session.userId, id, guide)
     return NextResponse.json({ profile: updated })
   } catch (err) {
+    if (err instanceof ModelBusyError) {
+      return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
+    }
     console.error('[style-guide] generate failed:', err)
     return NextResponse.json({ error: 'Could not generate the Style Guide. Try again.' }, { status: 500 })
   }

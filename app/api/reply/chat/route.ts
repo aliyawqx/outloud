@@ -4,8 +4,11 @@ import { getProfile as getUserProfile, incrementDraftsUsed } from '@/lib/profile
 import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
 import { isPaidPlan } from '@/lib/billing/plans'
 import { generateReplyChat } from '@/lib/reply/generate'
+import { ModelBusyError } from '@/lib/anthropic'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import type { ChatTurnRecord, DraftPost, ReplyTarget } from '@/lib/voice/types'
+
+export const maxDuration = 60
 
 const MAX_TURNS = 60
 const TEXT_MAX = 4000
@@ -121,6 +124,9 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ draft: result.draft, voiceName: result.voiceName, historyId, draftsLeft })
   } catch (err) {
+    if (err instanceof ModelBusyError) {
+      return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
+    }
     console.error('[reply/chat] failed:', err)
     return NextResponse.json({ error: "Couldn't write a reply. Try again." }, { status: 500 })
   }

@@ -61,6 +61,16 @@ export class VoiceRequiredError extends Error {
   }
 }
 
+/** The model is rate-limited (429) or overloaded (529) after retries. Routes map
+ *  this to a friendly "high demand, try again" instead of a hard error — important
+ *  when many users generate at once on a low API tier. */
+export class ModelBusyError extends Error {
+  constructor() {
+    super('The writer is busy right now. Wait a few seconds and try again.')
+    this.name = 'ModelBusyError'
+  }
+}
+
 export type Draft = {
   angle: string
   hook: string
@@ -193,7 +203,7 @@ export async function generateStyleGuide(samples: string[]): Promise<StyleGuide>
 
   const model = getModel()
   const effort = supportsEffort(model)
-  const msg = await getClient().messages.create({
+  const msg = await createMessage({
     model,
     max_tokens: 4000,
     system: [{ type: 'text', text: STYLE_ANALYSIS_PROMPT, cache_control: { type: 'ephemeral' } }],
@@ -262,7 +272,7 @@ export async function runIntake(messages: ChatTurn[], format?: string): Promise<
       text: `The user has already chosen this OUTPUT FORMAT. Do NOT ask which format, platform, or channel to use - that is decided. Ask only for missing CONTENT facts this specific format needs, and if you already have enough, WRITE.\n\nFORMAT:\n${format.trim()}`,
     })
   }
-  const msg = await getClient().messages.create({
+  const msg = await createMessage({
     model,
     max_tokens: 1500,
     system,
@@ -369,7 +379,7 @@ export async function judgeReplies(
     .join('\n\n')
   const content = `USER_TOPIC: ${ctx.topic}\nUSER_VOICE: ${ctx.voiceSummary || 'no summary available'}\n\nJudge each post below. Return one verdict object per index, preserving the index.\n\n${list}`
 
-  const msg = await getClient().messages.create({
+  const msg = await createMessage({
     model,
     max_tokens: 4000,
     system: [{ type: 'text', text: REPLY_JUDGE_PROMPT, cache_control: { type: 'ephemeral' } }],
@@ -398,9 +408,52 @@ let client: Anthropic | null = null
 function getClient(): Anthropic {
   if (!client) {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set')
-    client = new Anthropic()
+    // maxRetries: the SDK retries 429/529 with exponential backoff. Bump above the
+    // default (2) so short bursts of concurrent generations ride out rate limits.
+    client = new Anthropic({ maxRetries: Number(process.env.ANTHROPIC_MAX_RETRIES || 4) })
   }
   return client
+}
+
+// Concurrency limiter: cap how many model calls we have in flight per serverless
+// instance so a spike of users doesn't fire 100 requests at the API at once (which
+// just trips rate limits). Excess calls queue and run as slots free up.
+const MAX_INFLIGHT = Number(process.env.ANTHROPIC_MAX_CONCURRENCY || 8)
+function createLimiter(max: number) {
+  let active = 0
+  const queue: Array<() => void> = []
+  const release = () => {
+    active--
+    queue.shift()?.()
+  }
+  return function run<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const start = () => {
+        active++
+        fn().then(resolve, reject).finally(release)
+      }
+      if (active < max) start()
+      else queue.push(start)
+    })
+  }
+}
+const limit = createLimiter(MAX_INFLIGHT)
+
+/** Single seam for every model call: applies the concurrency limit (SDK handles
+ *  retry/backoff), and maps an exhausted 429/529 to ModelBusyError so routes can
+ *  return a friendly "try again" instead of a 500. */
+function createMessage(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
+  return limit(async () => {
+    const c = getClient()
+    try {
+      return await c.messages.create(params)
+    } catch (err) {
+      if (err instanceof Anthropic.APIError && (err.status === 429 || err.status === 529)) {
+        throw new ModelBusyError()
+      }
+      throw err
+    }
+  })
 }
 
 /**
@@ -428,7 +481,7 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   const model = getModel()
   const effort = supportsEffort(model)
 
-  const msg = await getClient().messages.create({
+  const msg = await createMessage({
     model,
     max_tokens: 8000,
     system,

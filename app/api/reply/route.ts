@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateReplyInput, type ReplyInput } from '@/lib/validateReply'
-import { generateDrafts, type VoiceProfile } from '@/lib/anthropic'
+import { generateDrafts, ModelBusyError, type VoiceProfile } from '@/lib/anthropic'
 import { seedText } from '@/lib/prompts/seeds'
 import { getPreset } from '@/lib/styles'
+
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   let body: unknown
@@ -43,7 +45,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Couldn't generate a reply. Try again." }, { status: 500 })
     }
     return NextResponse.json({ draft })
-  } catch {
+  } catch (err) {
+    if (err instanceof ModelBusyError) {
+      return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
+    }
     return NextResponse.json({ error: "Couldn't generate a reply. Try again." }, { status: 500 })
   }
 }

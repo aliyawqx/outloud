@@ -5,6 +5,9 @@ import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
 import { isPaidPlan } from '@/lib/billing/plans'
 import { generateReplyVariants } from '@/lib/reply/generate'
 import { VoiceNotReadyError } from '@/lib/voice/generate'
+import { ModelBusyError } from '@/lib/anthropic'
+
+export const maxDuration = 60
 
 const TEXT_MAX = 4000
 
@@ -59,6 +62,9 @@ export async function POST(req: Request) {
   } catch (err) {
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
+    }
+    if (err instanceof ModelBusyError) {
+      return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
     }
     console.error('[reply/generate] failed:', err)
     return NextResponse.json({ error: "Couldn't write a reply. Try again." }, { status: 500 })
