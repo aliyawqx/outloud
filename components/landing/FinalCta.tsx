@@ -16,7 +16,7 @@ export function FinalCta() {
             .
           </h2>
           <p className="mt-5 max-w-md font-body-md text-body-md text-on-surface-variant">
-            Three days free. Capture your voice, turn your next ship into a post, and never sound like generic AI again.
+            Seven days free. Capture your voice, turn your next ship into a post, and never sound like generic AI again.
           </p>
           <Link
             href="/signup"

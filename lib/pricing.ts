@@ -7,7 +7,7 @@ export type Plan = {
   name: string
   tagline: string
   highlight?: boolean
-  /** Free trial tier: rendered as "Free / 3 days" and ignores the billing toggle. */
+  /** Free trial tier: rendered as "Free / 7 days" and ignores the billing toggle. */
   trial?: boolean
   badge?: string
   monthly: { perMo: number; sub: string }
@@ -18,11 +18,11 @@ export type Plan = {
   href?: string
 }
 
-export const ANNUAL_BADGE = '3 days free'
+export const ANNUAL_BADGE = '7 days free'
 
 export const PRICING_NOTE = 'Pricing is for launch and may change.'
 
-// Everyone starts on a 3-day free trial capped at this many drafts.
+// Everyone starts on a 7-day free trial capped at this many drafts.
 export const TRIAL_DRAFTS = 5
 
 // Prices shown in the UI. Checkout itself goes through Polar via
@@ -36,11 +36,11 @@ export const PLANS: Plan[] = [
     name: 'Free trial',
     tagline: 'try Outloud in your own voice',
     trial: true,
-    badge: '3 days free',
-    monthly: { perMo: 0, sub: '3 days free' },
-    annual: { perMo: 0, sub: '3 days free', save: '' },
+    badge: '7 days free',
+    monthly: { perMo: 0, sub: '7 days free' },
+    annual: { perMo: 0, sub: '7 days free', save: '' },
     features: [
-      '3 days free, no card needed',
+      '7 days free, no card needed',
       `${TRIAL_DRAFTS} drafts to start`,
       'Posts in your voice across X, LinkedIn & Telegram',
       'Voice capture from your existing posts',
@@ -72,7 +72,7 @@ export const PLANS: Plan[] = [
     highlight: true,
     badge: 'Most popular',
     monthly: { perMo: 30, sub: 'billed monthly' },
-    annual: { perMo: 25, sub: 'billed annually · $300/year', save: 'save 17%' },
+    annual: { perMo: 20, sub: 'billed annually · $240/year', save: 'save 33%' },
     features: [
       'Everything in Starter',
       'Unlimited posts',
