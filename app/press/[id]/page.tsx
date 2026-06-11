@@ -362,6 +362,8 @@ export default async function PressFrame({ params }: { params: Promise<{ id: str
   const Frame = FRAMES[id] || Frame1
   return (
     <div className="flex min-h-screen items-start justify-start" style={{ background: '#000' }}>
+      {/* hide Next dev indicator so exported PNGs are clean */}
+      <style>{`nextjs-portal{display:none!important}`}</style>
       <Frame />
     </div>
   )

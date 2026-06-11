@@ -10,7 +10,7 @@ export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden bg-charcoal-black">
       {/* static lamp light, sitting above the headline */}
-      <LampGlow className="-top-[7rem] h-[32rem]" />
+      <LampGlow className="-top-[13rem] h-[32rem]" />
 
       <div className="relative z-10">
         {/* mascot, peeking from the bottom-left of the 3D card */}
