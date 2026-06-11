@@ -12,6 +12,14 @@ export function Hero() {
       {/* static lamp light, sitting above the headline */}
       <LampGlow className="top-[0.5rem] h-[32rem]" />
 
+      {/* mascot, floating by the lamp */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/mascot.svg"
+        alt=""
+        className="float-y pointer-events-none absolute left-[7%] top-[6rem] z-20 hidden h-24 w-24 drop-shadow-[0_10px_30px_rgba(155,108,248,0.45)] lg:block xl:left-[12%]"
+      />
+
       <div className="relative z-10">
         <ContainerScroll
           titleComponent={
