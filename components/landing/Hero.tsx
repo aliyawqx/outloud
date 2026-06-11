@@ -18,7 +18,7 @@ export function Hero() {
         <img
           src="/mascot.svg"
           alt=""
-          className="float-y pointer-events-none absolute bottom-[4rem] left-[10%] z-30 hidden h-40 w-40 drop-shadow-[0_12px_34px_rgba(155,108,248,0.5)] lg:block xl:left-[14%] xl:h-48 xl:w-48"
+          className="float-y pointer-events-none absolute bottom-[0.5rem] left-[10%] z-30 hidden h-40 w-40 drop-shadow-[0_12px_34px_rgba(155,108,248,0.5)] lg:block xl:left-[14%] xl:h-48 xl:w-48"
         />
         <ContainerScroll
           titleComponent={

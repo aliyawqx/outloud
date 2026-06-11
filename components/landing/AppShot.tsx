@@ -15,7 +15,7 @@ export function AppShot() {
       <aside className="hidden w-52 shrink-0 flex-col border-r border-border-muted p-4 sm:flex">
         <div className="mb-6 flex items-center gap-2 px-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mascot.svg" alt="" className="h-7 w-7" />
+          <img src="/mascot.svg" alt="" className="h-10 w-10" />
           <span className="font-headline-sm text-headline-sm font-bold">Outloud</span>
         </div>
         <nav className="flex flex-col gap-1">

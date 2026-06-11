@@ -19,7 +19,7 @@ export function SiteNav() {
       <header className="w-full border-b border-border-muted bg-surface-glass backdrop-blur-md">
         <nav className="mx-auto flex h-20 w-full max-w-container-max items-center justify-between px-margin-mobile md:px-margin-desktop">
           <Link href="#top">
-            <Logo iconClass="h-12 w-12" />
+            <Logo iconClass="h-14 w-14" />
           </Link>
           <div className="hidden items-center gap-8 md:flex">
             {NAV.map((n) => (
