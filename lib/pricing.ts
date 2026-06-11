@@ -27,8 +27,8 @@ export const TRIAL_DRAFTS = 5
 
 // Prices shown in the UI. Checkout itself goes through Polar via
 // /api/billing/checkout (see lib/billing). Pro is the default upsell.
-export const PRO_PRICE = 15
-export const STARTER_PRICE = 5
+export const PRO_PRICE = 30
+export const STARTER_PRICE = 15
 
 export const PLANS: Plan[] = [
   {
@@ -54,8 +54,8 @@ export const PLANS: Plan[] = [
     id: 'starter',
     name: 'Starter',
     tagline: 'for solo builders posting in their own voice',
-    monthly: { perMo: 5, sub: 'billed monthly' },
-    annual: { perMo: 4.17, sub: 'billed annually · $50/year', save: 'save $10/year' },
+    monthly: { perMo: 15, sub: 'billed monthly' },
+    annual: { perMo: 10, sub: 'billed annually · $120/year', save: 'save 33%' },
     features: [
       'Posts in your voice across X, LinkedIn & Telegram',
       'Voice capture from your existing posts',
@@ -71,8 +71,8 @@ export const PLANS: Plan[] = [
     tagline: 'for founders & creators going all-in on growth',
     highlight: true,
     badge: 'Most popular',
-    monthly: { perMo: 15, sub: 'billed monthly' },
-    annual: { perMo: 12.5, sub: 'billed annually · $150/year', save: 'save $30/year' },
+    monthly: { perMo: 30, sub: 'billed monthly' },
+    annual: { perMo: 25, sub: 'billed annually · $300/year', save: 'save 17%' },
     features: [
       'Everything in Starter',
       'Unlimited posts',
