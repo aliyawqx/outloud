@@ -2,9 +2,13 @@ import { SearchUnavailableError, XAuthError } from './errors'
 
 const API = 'https://api.x.com/2'
 const WINDOW_HOURS = 24
-// Hard engagement gate: we comment on posts that ALREADY have real traction, not
+// Engagement gate: we prefer posts that ALREADY have real traction, not
 // fresh-but-tiny ones. A 10-like post is out even from a 5k-follower account.
 const MIN_LIKES = 1000
+// When nothing in the window clears the ideal bar (niche topics, quiet day), we
+// relax to this floor instead of returning an empty feed — still real traction,
+// just smaller. reachScore ranking + the judge keep quality up.
+const FALLBACK_MIN_LIKES = 100
 // Big accounts are the target audience; 100k+ followers gets a strong step up.
 const BIG_ACCOUNT_FOLLOWERS = 100_000
 const CACHE_TTL_MS = 5 * 60 * 1000 // re-opening a topic shouldn't re-bill for 5 min
@@ -86,8 +90,11 @@ export async function searchPosts(
   const startTime = new Date(now - WINDOW_HOURS * 3600 * 1000).toISOString()
   const url = new URL(`${API}/tweets/search/recent`)
   url.searchParams.set('query', `${q} lang:en -is:retweet -is:reply -is:quote`)
-  url.searchParams.set('max_results', String(Math.min(100, Math.max(10, opts.max ?? 50))))
+  url.searchParams.set('max_results', String(Math.min(100, Math.max(10, opts.max ?? 100))))
   url.searchParams.set('start_time', startTime)
+  // Most-engaged matches in the window, NOT just the newest — newest posts haven't
+  // accumulated likes yet, so recency sort + a like floor returns almost nothing.
+  url.searchParams.set('sort_order', 'relevancy')
   url.searchParams.set('tweet.fields', 'public_metrics,created_at,author_id')
   url.searchParams.set('expansions', 'author_id')
   url.searchParams.set('user.fields', 'public_metrics,name,username')
@@ -107,7 +114,7 @@ export async function searchPosts(
   const tweets = data?.data ?? []
   const users = new Map((data?.includes?.users ?? []).map((u) => [u.id, u]))
 
-  const posts: CandidatePost[] = tweets
+  const mapped: CandidatePost[] = tweets
     .map((t) => {
       const u = users.get(t.author_id)
       const m = t.public_metrics ?? {}
@@ -135,10 +142,14 @@ export async function searchPosts(
         reachScore: computeReachScore({ followers, likes, replies, reposts, quotes, ageHours }),
       }
     })
-    // Cheap pre-filter: require real engagement (kills tiny fresh posts), then rank
-    // by reach desc — big accounts / high-engagement first — newest as a tiebreak.
-    .filter((p) => p.likes >= MIN_LIKES)
-    .sort((a, b) => b.reachScore - a.reachScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  // Prefer posts that clear the ideal bar; if none do, relax to the fallback floor
+  // so the feed shows the best available instead of a dead end. Rank by reach desc
+  // (big accounts / high-engagement first), newest as a tiebreak.
+  const byReach = (a: CandidatePost, b: CandidatePost) =>
+    b.reachScore - a.reachScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const strong = mapped.filter((p) => p.likes >= MIN_LIKES)
+  const posts = (strong.length > 0 ? strong : mapped.filter((p) => p.likes >= FALLBACK_MIN_LIKES)).sort(byReach)
 
   cache.set(key, { at: now, posts })
   return posts
