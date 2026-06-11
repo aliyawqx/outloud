@@ -12,15 +12,14 @@ export function Hero() {
       {/* static lamp light, sitting above the headline */}
       <LampGlow className="top-[0.5rem] h-[32rem]" />
 
-      {/* mascot, floating by the lamp */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/mascot.svg"
-        alt=""
-        className="float-y pointer-events-none absolute left-[7%] top-[6rem] z-20 hidden h-24 w-24 drop-shadow-[0_10px_30px_rgba(155,108,248,0.45)] lg:block xl:left-[12%]"
-      />
-
       <div className="relative z-10">
+        {/* mascot, peeking from the bottom-left of the 3D card */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/mascot.svg"
+          alt=""
+          className="float-y pointer-events-none absolute bottom-[4rem] left-[10%] z-30 hidden h-40 w-40 drop-shadow-[0_12px_34px_rgba(155,108,248,0.5)] lg:block xl:left-[14%] xl:h-48 xl:w-48"
+        />
         <ContainerScroll
           titleComponent={
             <div className="flex flex-col items-center gap-5 pt-20 pb-24 md:pt-28 md:pb-32">
