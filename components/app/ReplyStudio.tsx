@@ -14,7 +14,7 @@ type Candidate = {
 type Verdict = 'reply' | 'maybe' | 'skip'
 type JudgedResult = { post: Candidate; verdict: Verdict; reason: string; suggestedAngle: string; angleType: string; confidence: number }
 // The post we're generating a reply for, plus any angle the judge suggested.
-type Target = { id: string; text: string; authorHandle: string; angle?: string; angleType?: string }
+type Target = { id: string; text: string; authorHandle: string; url?: string; angle?: string; angleType?: string }
 
 const TOPICS_KEY = 'outloud.reply.topics'
 const field =
@@ -143,6 +143,134 @@ function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: s
   )
 }
 
+// A chat to write + iteratively refine a reply to ONE post, mirroring the New Post
+// composer. Auto-writes the first reply on open, then each message revises the
+// current draft (shorter, sharper, different angle…). Every draft is postable, and
+// the whole session is saved to History tied to the post being replied to.
+type RTurn =
+  | { id: number; role: 'user'; text: string }
+  | { id: number; role: 'assistant'; text: string }
+  | { id: number; role: 'assistant'; draft: { fullText: string } }
+
+function ReplyChat({
+  target,
+  voiceId,
+  onDraftsLeft,
+  onLimit,
+  onNeedVoice,
+}: {
+  target: Target
+  voiceId: string
+  onDraftsLeft: (n: number) => void
+  onLimit: () => void
+  onNeedVoice: () => void
+}) {
+  const [turns, setTurns] = useState<RTurn[]>([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [historyId, setHistoryId] = useState<string | undefined>(undefined)
+  const counter = useState(() => ({ n: 0 }))[0]
+  const nextId = () => ++counter.n
+
+  async function run(history: RTurn[]) {
+    setLoading(true)
+    setError('')
+    const payloadTurns = history.map((t) => ('draft' in t ? { role: 'assistant', draft: t.draft } : { role: t.role, text: t.text }))
+    try {
+      const res = await fetch('/api/reply/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target: { tweetId: target.id, url: target.url, authorHandle: target.authorHandle, text: target.text, angle: target.angle, angleType: target.angleType },
+          turns: payloadTurns,
+          profileId: voiceId || undefined,
+          historyId,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 409 && data.needsVoice) { onNeedVoice(); return }
+      if (res.status === 403 && data.limitReached) { onLimit(); setError(data.error ?? "You've used all your drafts."); return }
+      if (!res.ok) { setError(data.error ?? "Couldn't write a reply."); return }
+      if (typeof data.draftsLeft === 'number') onDraftsLeft(data.draftsLeft)
+      if (data.historyId) setHistoryId(data.historyId)
+      if (data.ask) setTurns((t) => [...t, { id: nextId(), role: 'assistant', text: data.ask }])
+      else if (data.draft) setTurns((t) => [...t, { id: nextId(), role: 'assistant', draft: data.draft }])
+    } catch {
+      setError('Network error. Try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Auto-write the first reply when the chat opens (one mount per target via key).
+  useEffect(() => {
+    run([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function send() {
+    const text = input.trim()
+    if (!text || loading) return
+    const next: RTurn[] = [...turns, { id: nextId(), role: 'user', text }]
+    setTurns(next)
+    setInput('')
+    run(next)
+  }
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t border-border-muted pt-4">
+      <h3 className="font-code-label text-code-label uppercase text-on-surface-variant">Reply in your voice</h3>
+      {turns.map((t) =>
+        'draft' in t ? (
+          <VariantCard key={t.id} tweetId={target.id} initialText={t.draft.fullText} />
+        ) : t.role === 'user' ? (
+          <div key={t.id} className="self-end max-w-[85%] rounded-2xl rounded-br-md bg-electric-indigo/15 px-4 py-2.5">
+            <p className="whitespace-pre-wrap font-body-md text-on-surface">{t.text}</p>
+          </div>
+        ) : (
+          <div key={t.id} className="self-start max-w-[85%] rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-2.5">
+            <p className="whitespace-pre-wrap font-body-md text-on-surface">{t.text}</p>
+          </div>
+        ),
+      )}
+      {loading && (
+        <div className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
+          <Spinner size={16} className="text-electric-indigo" /> writing in your voice…
+        </div>
+      )}
+      {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}
+
+      {/* refine the reply with AI, conversationally */}
+      <div className="flex items-end gap-2 rounded-2xl border border-border-muted bg-surface-container-low p-2 focus-within:border-electric-indigo/50">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              send()
+            }
+          }}
+          rows={1}
+          aria-label="Refine reply"
+          placeholder="ask to tighten, sharpen the take, change the angle…"
+          className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-1.5 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={send}
+          disabled={loading || !input.trim()}
+          aria-label="Send"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-40"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">arrow_upward</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ReplyStudio({
   voices,
   xConnected,
@@ -172,11 +300,8 @@ export function ReplyStudio({
   const [results, setResults] = useState<JudgedResult[] | null>(null)
   const [showSkipped, setShowSkipped] = useState(false)
 
-  // Generation (shared)
+  // The post a reply chat is open for (one chat at a time).
   const [target, setTarget] = useState<Target | null>(null)
-  const [generating, setGenerating] = useState(false)
-  const [genError, setGenError] = useState('')
-  const [variants, setVariants] = useState<string[]>([])
 
   // Persist the last-used topics so they don't retype every time.
   useEffect(() => {
@@ -194,8 +319,11 @@ export function ReplyStudio({
 
   function resetGeneration() {
     setTarget(null)
-    setVariants([])
-    setGenError('')
+  }
+  // Open (or switch) the reply chat for a post. The ReplyChat is keyed by post id,
+  // so it remounts and auto-writes a fresh first reply when the target changes.
+  function openReply(t: Target) {
+    setTarget(t)
   }
 
   async function onFetch() {
@@ -255,50 +383,6 @@ export function ReplyStudio({
     }
   }
 
-  async function generate(t: Target) {
-    if (generating) return
-    setTarget(t)
-    setVariants([])
-    setGenError('')
-    setGenerating(true)
-    try {
-      const res = await fetch('/api/reply/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          post: { id: t.id, text: t.text, authorHandle: t.authorHandle },
-          angle: t.angle,
-          angleType: t.angleType,
-          profileId: voiceId || undefined,
-        }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (res.status === 409 && data.needsVoice) {
-        router.push('/app/onboarding')
-        return
-      }
-      if (res.status === 403 && data.limitReached) {
-        setLeft(0)
-        setGenError(data.error ?? "You've used all your drafts.")
-        return
-      }
-      if (!res.ok) {
-        setGenError(data.error ?? "Couldn't write a reply.")
-        return
-      }
-      if (typeof data.draftsLeft === 'number') setLeft(data.draftsLeft)
-      if (data.ask) {
-        setGenError(data.ask)
-        return
-      }
-      setVariants(data.variants ?? [])
-    } catch {
-      setGenError('Network error. Try again.')
-    } finally {
-      setGenerating(false)
-    }
-  }
-
   const tab = (m: 'link' | 'discover', label: string) =>
     `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
       mode === m ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
@@ -307,21 +391,18 @@ export function ReplyStudio({
   const shown = results?.filter((r) => (showSkipped ? true : r.verdict !== 'skip')) ?? []
   const skippedCount = results?.filter((r) => r.verdict === 'skip').length ?? 0
 
-  // The generated replies, rendered inline right under whichever post is the
-  // target (so they never appear off-screen at the bottom of a long feed).
-  const variantsBlock = target && (
-    <div className="mt-4 flex flex-col gap-3 border-t border-border-muted pt-4">
-      <h3 className="font-code-label text-code-label uppercase text-on-surface-variant">Replies in your voice</h3>
-      {generating && (
-        <div className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
-          <Spinner size={16} className="text-electric-indigo" /> writing in your voice…
-        </div>
-      )}
-      {genError && <p className="font-body-sm text-body-sm text-error">{genError}</p>}
-      {variants.map((v, i) => (
-        <VariantCard key={i} tweetId={target.id} initialText={v} />
-      ))}
-    </div>
+  // The reply chat, rendered inline right under whichever post is the target (so
+  // it never appears off-screen at the bottom of a long feed). Keyed by post id so
+  // switching targets remounts it and writes a fresh first reply.
+  const replyChat = target && (
+    <ReplyChat
+      key={target.id}
+      target={target}
+      voiceId={voiceId}
+      onDraftsLeft={setLeft}
+      onLimit={() => setLeft(0)}
+      onNeedVoice={() => router.push('/app/onboarding')}
+    />
   )
 
   return (
@@ -387,15 +468,16 @@ export function ReplyStudio({
                 <span className="text-on-surface-variant">@{fetched.authorHandle} · {fetched.postedAt}</span>
               </div>
               <p className="whitespace-pre-wrap font-body-md text-on-surface">{fetched.text}</p>
-              <button
-                type="button"
-                onClick={() => generate({ id: fetched.id, text: fetched.text, authorHandle: fetched.authorHandle })}
-                disabled={generating}
-                className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
-              >
-                {generating ? <><Spinner size={16} /> Writing…</> : 'Generate replies'}
-              </button>
-              {target?.id === fetched.id && variantsBlock}
+              {target?.id !== fetched.id && (
+                <button
+                  type="button"
+                  onClick={() => openReply({ id: fetched.id, text: fetched.text, authorHandle: fetched.authorHandle, url: fetched.url })}
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                >
+                  Write a reply
+                </button>
+              )}
+              {target?.id === fetched.id && replyChat}
             </div>
           )}
         </div>
@@ -461,17 +543,16 @@ export function ReplyStudio({
                   {r.verdict === 'skip' ? `Skipped: ${r.reason || 'not worth the slot'}` : `“${r.reason}”`}
                 </p>
               )}
-              {r.verdict !== 'skip' && (
+              {r.verdict !== 'skip' && target?.id !== r.post.id && (
                 <button
                   type="button"
-                  onClick={() => generate({ id: r.post.id, text: r.post.text, authorHandle: r.post.authorHandle, angle: r.suggestedAngle, angleType: r.angleType })}
-                  disabled={generating}
+                  onClick={() => openReply({ id: r.post.id, text: r.post.text, authorHandle: r.post.authorHandle, url: r.post.url, angle: r.suggestedAngle, angleType: r.angleType })}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all active:scale-95 disabled:opacity-50"
                 >
-                  {generating && target?.id === r.post.id ? <><Spinner size={14} /> Writing…</> : 'Write reply'}
+                  Write reply
                 </button>
               )}
-              {target?.id === r.post.id && variantsBlock}
+              {target?.id === r.post.id && replyChat}
             </div>
           ))}
 

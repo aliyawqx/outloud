@@ -84,6 +84,9 @@ CREATE INDEX IF NOT EXISTS compose_history_owner_idx ON compose_history (owner_k
 -- Full chat transcript (user/assistant turns + draft turns) so a session can be
 -- reopened in the composer and continued.
 ALTER TABLE compose_history ADD COLUMN IF NOT EXISTS messages JSONB NOT NULL DEFAULT '[]'::jsonb;
+-- When a session is a reply (Reply Studio), the post being replied to
+-- {tweetId,url,authorHandle,text}. NULL for normal post sessions.
+ALTER TABLE compose_history ADD COLUMN IF NOT EXISTS reply_to JSONB;
 
 CREATE TABLE IF NOT EXISTS prompts (
   id          TEXT PRIMARY KEY,

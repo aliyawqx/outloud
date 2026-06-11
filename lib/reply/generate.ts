@@ -15,7 +15,7 @@ export type ReplyContext = {
 
 /** Build the reply generator's "idea": the post as context + the angle to aim at.
  *  The /reply seed (≤2 sentences, specific angle, no pitch) handles the rest. */
-function buildIdea(post: ReplyContext): string {
+export function buildIdea(post: ReplyContext): string {
   const by = post.authorHandle ? ` (by @${post.authorHandle})` : ''
   const angle = post.angle?.trim()
     ? `\n\nAim for this angle${post.angleType && post.angleType !== 'none' ? ` (${post.angleType})` : ''}: ${post.angle.trim()}`
@@ -54,4 +54,38 @@ export async function generateReplyVariants(
     count: Math.min(3, Math.max(1, count)),
   })
   return { needsVoice: false, variants: drafts, voiceName: profile.name, clarify }
+}
+
+export type ReplyChatResult =
+  | { needsVoice: true }
+  | { needsVoice: false; draft?: DraftPost; voiceName: string; voiceProfileId: string; clarify: string }
+
+/**
+ * One step of the reply chat: either the FIRST reply for a target post, or a
+ * revision of the current draft per the user's instruction (e.g. "shorter",
+ * "more pointed"). Same voice pipeline as posts — revising edits the existing
+ * draft so it stays on-voice instead of drifting on a fresh generation.
+ */
+export async function generateReplyChat(
+  userId: string,
+  profileId: string | undefined,
+  post: ReplyContext,
+  opts: { reviseBase?: string; instruction?: string } = {},
+): Promise<ReplyChatResult> {
+  const profile =
+    profileId && profileId.trim()
+      ? await getProfile(userId, profileId)
+      : (await listProfiles(userId)).find(isVoiceReady) ?? null
+  if (!profile || !isVoiceReady(profile)) return { needsVoice: true }
+
+  const samples = await listEnabledTexts(userId, profile.id, 5)
+  const { drafts, clarify } = await generatePost({
+    idea: opts.reviseBase ? opts.instruction?.trim() || 'Improve this reply.' : buildIdea(post),
+    reviseBase: opts.reviseBase,
+    formatText: seedText('reply'),
+    voiceProfile: profile,
+    samples,
+    count: 1,
+  })
+  return { needsVoice: false, draft: drafts[0], voiceName: profile.name, voiceProfileId: profile.id, clarify }
 }

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
-import type { ChatTurnRecord, DraftPost, HistoryEntry } from './types'
+import type { ChatTurnRecord, DraftPost, HistoryEntry, ReplyTarget } from './types'
 
 // Persistence for compose sessions (the History panel). Owner-scoped.
 
@@ -11,6 +11,7 @@ type Row = {
   idea: string
   drafts: DraftPost[]
   messages: ChatTurnRecord[] | null
+  reply_to: ReplyTarget | null
   created_at: Date
 }
 
@@ -22,6 +23,7 @@ function mapRow(r: Row): HistoryEntry {
     idea: r.idea,
     drafts: r.drafts ?? [],
     messages: r.messages ?? [],
+    replyTo: r.reply_to ?? null,
     createdAt: r.created_at.toISOString(),
   }
 }
@@ -33,11 +35,12 @@ export async function saveComposeSession(input: {
   idea: string
   drafts: DraftPost[]
   messages?: ChatTurnRecord[]
+  replyTo?: ReplyTarget | null
 }): Promise<HistoryEntry> {
   await ensureSchema()
   const { rows } = await getPool().query<Row>(
-    `INSERT INTO compose_history (id, owner_key, voice_profile_id, voice_name, idea, drafts, messages)
-     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb) RETURNING *`,
+    `INSERT INTO compose_history (id, owner_key, voice_profile_id, voice_name, idea, drafts, messages, reply_to)
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb) RETURNING *`,
     [
       randomUUID(),
       input.ownerKey,
@@ -46,6 +49,7 @@ export async function saveComposeSession(input: {
       input.idea,
       JSON.stringify(input.drafts),
       JSON.stringify(input.messages ?? []),
+      input.replyTo ? JSON.stringify(input.replyTo) : null,
     ],
   )
   return mapRow(rows[0])

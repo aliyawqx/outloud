@@ -93,6 +93,14 @@ export type ChatTurnRecord =
   | { role: 'assistant'; text: string }
   | { role: 'assistant'; draft: DraftPost }
 
+/** The X post a reply session is aimed at (Reply Studio). */
+export type ReplyTarget = {
+  tweetId: string
+  url: string
+  authorHandle: string
+  text: string
+}
+
 /** A saved compose session for the History panel. */
 export type HistoryEntry = {
   id: string
@@ -102,6 +110,8 @@ export type HistoryEntry = {
   drafts: DraftPost[]
   /** Full chat transcript, so the session can be reopened and continued. */
   messages: ChatTurnRecord[]
+  /** Set when this session is a reply: the post being replied to. Null for posts. */
+  replyTo: ReplyTarget | null
   createdAt: string
 }
 
