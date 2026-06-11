@@ -19,10 +19,13 @@ export async function POST(req: Request) {
   const text = typeof (body as { text?: unknown })?.text === 'string' ? (body as { text: string }).text.trim() : ''
   if (!text) return NextResponse.json({ error: 'Nothing to publish.' }, { status: 400 })
   if (text.length > TEXT_MAX) return NextResponse.json({ error: 'That post is too long.' }, { status: 400 })
+  // Optional: when set, publish as a reply to this tweet (Reply Studio).
+  const rawReplyTo = (body as { inReplyTo?: unknown }).inReplyTo
+  const inReplyTo = typeof rawReplyTo === 'string' && /^\d{1,25}$/.test(rawReplyTo) ? rawReplyTo : undefined
 
   try {
     const token = await getValidAccessToken(session.userId)
-    const { id } = await postTweet(token, text)
+    const { id } = await postTweet(token, text, inReplyTo)
     const account = await getAccount(session.userId)
     const url = account ? `https://x.com/${account.username}/status/${id}` : `https://x.com/i/web/status/${id}`
     return NextResponse.json({ id, url })

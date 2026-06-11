@@ -39,6 +39,32 @@ function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: s
   const [text, setText] = useState(initialText)
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [posting, setPosting] = useState(false)
+  const [posted, setPosted] = useState<string | null>(null)
+  const [error, setError] = useState('')
+
+  async function postReply() {
+    setPosting(true)
+    setError('')
+    try {
+      const res = await fetch('/api/x/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, inReplyTo: tweetId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.url) {
+        setPosted(data.url)
+      } else {
+        setError(data.error || "Couldn't post the reply. Try again.")
+      }
+    } catch {
+      setError('Network error. Try again.')
+    } finally {
+      setPosting(false)
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-border-muted bg-surface-container-low p-4">
       <div className="mb-2 flex items-center justify-end gap-3">
@@ -78,17 +104,41 @@ function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: s
       )}
 
       <div className="mt-3 flex items-center gap-3">
-        <a
-          href={replyIntentUrl(tweetId, text)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95"
-        >
-          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">reply</span>
-          Reply on X
-        </a>
+        {posted ? (
+          <a
+            href={posted}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 rounded-full bg-cyber-lime/15 px-4 py-2 font-code-label text-code-label text-cyber-lime transition-all hover:bg-cyber-lime/25"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">check_circle</span>
+            Posted · view on X
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={postReply}
+            disabled={posting || !text.trim()}
+            className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+          >
+            {posting ? (
+              <><Spinner size={14} /> Posting…</>
+            ) : (
+              <><span aria-hidden="true" className="material-symbols-outlined text-[16px]">reply</span> Post reply</>
+            )}
+          </button>
+        )}
         <span className="ml-auto font-code-label text-code-label text-on-surface-variant/60">{text.length} chars</span>
       </div>
+
+      {error && (
+        <p className="mt-2 font-body-sm text-body-sm text-error">
+          {error}{' '}
+          <a href={replyIntentUrl(tweetId, text)} target="_blank" rel="noreferrer" className="text-electric-indigo hover:underline">
+            Open on X instead
+          </a>
+        </p>
+      )}
     </div>
   )
 }

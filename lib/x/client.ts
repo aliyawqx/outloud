@@ -20,11 +20,19 @@ export async function getMe(accessToken: string): Promise<{ id: string; username
   return { id: data.data.id, username: data.data.username }
 }
 
-export async function postTweet(accessToken: string, text: string): Promise<{ id: string }> {
+/** Publish a tweet. Pass `replyToTweetId` to post it as a reply to that tweet —
+ *  same endpoint/scope as a normal post, just with the reply field set. */
+export async function postTweet(
+  accessToken: string,
+  text: string,
+  replyToTweetId?: string,
+): Promise<{ id: string }> {
+  const payload: Record<string, unknown> = { text }
+  if (replyToTweetId) payload.reply = { in_reply_to_tweet_id: replyToTweetId }
   const res = await fetch(`${API}/tweets`, {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(payload),
   })
   const data = (await readJson(res)) as { data?: { id?: string }; detail?: string; title?: string } | null
   if (!res.ok || !data?.data?.id) {
