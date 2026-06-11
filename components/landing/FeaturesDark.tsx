@@ -1,4 +1,5 @@
 import { Sparkle, Underline } from './Doodles'
+import { FeatureBeams } from './FeatureBeams'
 
 const FEATURES = [
   {
@@ -59,6 +60,13 @@ export function FeaturesDark() {
             </span>
             .
           </h2>
+        </div>
+
+        <div className="reveal mb-14 rounded-3xl border border-border-muted bg-white/[0.02] py-6">
+          <FeatureBeams />
+          <p className="mx-auto mt-2 max-w-md text-center font-body-sm text-body-sm text-on-surface-variant">
+            One captured voice powers both loops — everything you ship flows in, on-voice posts and replies flow out.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-3">
