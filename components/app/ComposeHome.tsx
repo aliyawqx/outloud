@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { PLANS, PRO_PRICE, STARTER_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
 import { startCheckout } from '@/lib/billing/client'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
@@ -329,44 +330,53 @@ export function ComposeHome({
     }
   }
 
-  const voicePicker = voices.length > 0 && (
-    <label className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
-      Voice
-      <select
-        value={voiceId}
-        onChange={(e) => setVoiceId(e.target.value)}
-        aria-label="Voice"
-        className="rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none"
-      >
-        {voices.map((v) => (
-          <option key={v.id} value={v.id}>
-            {v.name}
-            {v.isActive ? ' (active)' : ''}
-          </option>
+  // Mode + Voice as inline dropdowns in the input toolbar (animated-ai-input style).
+  // Empty activeCommand means the default post format.
+  const defaultCommand = commands.some((c) => c.command === 'post') ? 'post' : commands[0]?.command ?? ''
+  const currentMode = activeCommand || defaultCommand
+  const modeTitle = commands.find((c) => c.command === currentMode)?.title ?? 'Mode'
+  const triggerClass =
+    'flex h-8 items-center gap-1.5 rounded-md px-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:bg-white/[0.06] hover:text-on-surface focus-visible:outline-none'
+
+  const modeDropdown = commands.length > 0 && (
+    <DropdownMenu>
+      <DropdownMenuTrigger className={triggerClass} aria-label="Mode">
+        <span className="material-symbols-outlined text-[16px] text-electric-indigo">category</span>
+        {modeTitle}
+        <span className="material-symbols-outlined text-[16px] opacity-50">expand_more</span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[11rem]">
+        {commands.map((c) => (
+          <DropdownMenuItem
+            key={c.command}
+            onSelect={() => setActiveCommand(c.command === defaultCommand ? '' : c.command)}
+            className="flex items-center justify-between gap-2"
+          >
+            {c.title}
+            {currentMode === c.command && <span className="material-symbols-outlined text-[16px] text-electric-indigo">check</span>}
+          </DropdownMenuItem>
         ))}
-      </select>
-    </label>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 
-  // The format/mode is normally chosen via the slash menu, but it should always be
-  // switchable here too. Empty activeCommand means the default post format.
-  const defaultCommand = commands.some((c) => c.command === 'post') ? 'post' : commands[0]?.command ?? ''
-  const modePicker = commands.length > 0 && (
-    <label className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
-      Mode
-      <select
-        value={activeCommand || defaultCommand}
-        onChange={(e) => setActiveCommand(e.target.value === defaultCommand ? '' : e.target.value)}
-        aria-label="Mode"
-        className="rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none"
-      >
-        {commands.map((c) => (
-          <option key={c.command} value={c.command}>
-            {c.title}
-          </option>
+  const currentVoiceName = voices.find((v) => v.id === voiceId)?.name ?? 'Voice'
+  const voiceDropdown = voices.length > 0 && (
+    <DropdownMenu>
+      <DropdownMenuTrigger className={triggerClass} aria-label="Voice">
+        <span className="material-symbols-outlined text-[16px] text-electric-indigo">graphic_eq</span>
+        {currentVoiceName}
+        <span className="material-symbols-outlined text-[16px] opacity-50">expand_more</span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[11rem]">
+        {voices.map((v) => (
+          <DropdownMenuItem key={v.id} onSelect={() => setVoiceId(v.id)} className="flex items-center justify-between gap-2">
+            <span>{v.name}{v.isActive ? ' (active)' : ''}</span>
+            {voiceId === v.id && <span className="material-symbols-outlined text-[16px] text-electric-indigo">check</span>}
+          </DropdownMenuItem>
         ))}
-      </select>
-    </label>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 
   const draftsBadge =
@@ -385,7 +395,6 @@ export function ComposeHome({
       </button>
     ))
 
-  const activeTitle = commands.find((c) => c.command === activeCommand)?.title
   const composer = (
     <div className="relative">
       {/* slash command menu */}
@@ -405,45 +414,36 @@ export function ComposeHome({
         </div>
       )}
 
-      <div className="flex items-end gap-2 rounded-2xl border border-border-muted bg-surface-container-low p-3">
-        <div className="flex flex-1 flex-col gap-1.5">
-          {activeCommand && (
-            <span className="flex w-fit items-center gap-1 rounded-full bg-electric-indigo/15 px-2.5 py-1 font-code-label text-code-label text-electric-indigo">
-              /{activeCommand}{activeTitle ? ` · ${activeTitle}` : ''}
-              <button type="button" onClick={() => setActiveCommand('')} aria-label="Clear format" className="hover:text-on-surface">
-                <span aria-hidden="true" className="material-symbols-outlined text-[14px]">close</span>
-              </button>
-            </span>
-          )}
-          <textarea
-            ref={taRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            rows={1}
-            aria-label="Message"
-            placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?  (type / for formats)'}
-            className="max-h-[50vh] w-full resize-none overflow-y-auto rounded-xl bg-transparent p-2 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
-          />
+      <div className="rounded-2xl border border-border-muted bg-surface-container-low focus-within:border-electric-indigo/50">
+        <textarea
+          ref={taRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          rows={1}
+          aria-label="Message"
+          placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?  (type / for formats)'}
+          className="max-h-[50vh] min-h-[60px] w-full resize-none overflow-y-auto rounded-2xl rounded-b-none bg-transparent px-4 pb-2 pt-4 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
+        />
+        {/* toolbar: mode + voice dropdowns, drafts, send */}
+        <div className="flex items-center gap-1 px-2.5 pb-2.5">
+          {modeDropdown}
+          {modeDropdown && voiceDropdown && <div className="mx-0.5 h-4 w-px bg-white/10" />}
+          {voiceDropdown}
+          <div className="ml-auto flex items-center gap-3">
+            {draftsBadge}
+            <button
+              type="button"
+              onClick={send}
+              disabled={loading || !input.trim()}
+              aria-label="Send"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-40"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">arrow_upward</span>
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={send}
-          disabled={loading || !input.trim()}
-          aria-label="Send"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-50"
-        >
-          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">arrow_upward</span>
-        </button>
       </div>
-    </div>
-  )
-
-  const controlsRow = (modePicker || voicePicker || draftsBadge) && (
-    <div className="mb-2 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-      {draftsBadge}
-      {modePicker}
-      {voicePicker}
     </div>
   )
 
@@ -460,7 +460,6 @@ export function ComposeHome({
           </p>
         </div>
         <div className="sticky bottom-0 -mx-1 bg-surface/80 px-1 pb-2 pt-1 backdrop-blur-sm">
-          {controlsRow}
           {composer}
           {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
         </div>
@@ -499,7 +498,6 @@ export function ComposeHome({
       </div>
 
       <div className="sticky bottom-0 -mx-1 bg-surface/80 px-1 pb-2 pt-1 backdrop-blur-sm">
-        {controlsRow}
         {composer}
         {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
