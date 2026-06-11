@@ -27,6 +27,22 @@ describe('postTweet', () => {
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer tok')
   })
 
+  it('posts a reply with the in_reply_to field when given a target tweet', async () => {
+    const fetchMock = vi.fn(async (_url: string | URL, _init: RequestInit) =>
+      new Response(JSON.stringify({ data: { id: '999' } }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await postTweet('tok', 'agreed', '123')
+    const init = fetchMock.mock.calls[0][1]
+    expect(JSON.parse(init.body as string)).toEqual({ text: 'agreed', reply: { in_reply_to_tweet_id: '123' } })
+  })
+
+  it('throws ReplyNotAllowedError when the author restricted replies', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({ detail: 'Reply to this conversation is not allowed because you have not been mentioned or otherwise engaged by the author of the post you are replying to.' }),
+      { status: 403 })))
+    await expect(postTweet('tok', 'nice point', '123')).rejects.toMatchObject({ name: 'ReplyNotAllowedError' })
+  })
+
   it('throws PublishError with X detail on failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ detail: 'Text too long.' }), { status: 403 })))
     await expect(postTweet('tok', 'x')).rejects.toThrow('Text too long.')

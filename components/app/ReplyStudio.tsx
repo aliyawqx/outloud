@@ -134,8 +134,8 @@ function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: s
       {error && (
         <p className="mt-2 font-body-sm text-body-sm text-error">
           {error}{' '}
-          <a href={replyIntentUrl(tweetId, text)} target="_blank" rel="noreferrer" className="text-electric-indigo hover:underline">
-            Open on X instead
+          <a href={replyIntentUrl(tweetId, text)} target="_blank" rel="noreferrer" className="font-semibold text-electric-indigo hover:underline">
+            Open on X to post →
           </a>
         </p>
       )}

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getAccount, getValidAccessToken } from '@/lib/x/store'
 import { postTweet } from '@/lib/x/client'
-import { PostTooLongError, PublishError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
+import { PostTooLongError, PublishError, ReplyNotAllowedError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 
 const TEXT_MAX = 25000 // X long-post ceiling; account tier enforces the real limit.
 
@@ -33,6 +33,9 @@ export async function POST(req: Request) {
     if (err instanceof XNotConnectedError) return NextResponse.json({ error: err.message }, { status: 409 })
     if (err instanceof XAuthError)
       return NextResponse.json({ error: 'Your X connection expired. Reconnect your X account.', needsReconnect: true }, { status: 409 })
+    if (err instanceof ReplyNotAllowedError) {
+      return NextResponse.json({ error: err.message, replyBlocked: true }, { status: 422 })
+    }
     if (err instanceof PostTooLongError) {
       return NextResponse.json(
         {

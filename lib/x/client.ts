@@ -1,4 +1,4 @@
-import { ImportNotAvailableError, PostTooLongError, PublishError, XAuthError } from './errors'
+import { ImportNotAvailableError, PostTooLongError, PublishError, ReplyNotAllowedError, XAuthError } from './errors'
 
 const API = 'https://api.x.com/2'
 
@@ -37,6 +37,11 @@ export async function postTweet(
   const data = (await readJson(res)) as { data?: { id?: string }; detail?: string; title?: string } | null
   if (!res.ok || !data?.data?.id) {
     const reason = data?.detail || data?.title || ''
+    // The author restricted who can reply to this conversation — a policy block,
+    // not transient. Only meaningful when we're posting a reply.
+    if (replyToTweetId && /reply to this conversation is not allowed|not allowed to reply|who can reply/i.test(reason)) {
+      throw new ReplyNotAllowedError()
+    }
     // Non-premium accounts get rejected for over-limit posts. X phrases this a few
     // ways; also treat any failure on text over the free limit as this case.
     const tooLong =

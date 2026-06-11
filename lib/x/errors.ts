@@ -62,3 +62,14 @@ export class PostTooLongError extends Error {
     this.name = 'PostTooLongError'
   }
 }
+
+// X refused the reply with its "conversation reply controls" error. This can come
+// from the post's reply restrictions OR from the X API access level the app is on
+// (it can reject replies the same account is allowed to make in the X app). Not
+// transient — surface it clearly and let the user post on X directly.
+export class ReplyNotAllowedError extends Error {
+  constructor() {
+    super("X wouldn't post this reply through the app (its reply-permission check failed). You can still post it on X directly.")
+    this.name = 'ReplyNotAllowedError'
+  }
+}
