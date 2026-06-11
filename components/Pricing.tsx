@@ -87,7 +87,7 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
           disabled={busy}
           onClick={() => {
             setBusy(true)
-            startCheckout(plan.id as 'pro' | 'starter').catch(() => setBusy(false))
+            startCheckout(plan.id as 'pro' | 'starter', mode).catch(() => setBusy(false))
           }}
           className={`flex items-center justify-center gap-2 disabled:opacity-60 ${ctaClass}`}
         >

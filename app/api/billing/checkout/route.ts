@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { createCheckout } from '@/lib/billing/polar'
-import { isPaidPlanId, productIdFor } from '@/lib/billing/plans'
+import { isBillingPeriod, isPaidPlanId, productIdFor } from '@/lib/billing/plans'
 
 // POST /api/billing/checkout — start a Polar checkout for a paid plan. Ties the
 // payment to the signed-in user via metadata so the webhook/success can activate
@@ -19,7 +19,10 @@ export async function POST(req: Request) {
   const plan = (body as { plan?: unknown }).plan
   if (!isPaidPlanId(plan)) return NextResponse.json({ error: 'Unknown plan.' }, { status: 400 })
 
-  const productId = productIdFor(plan)
+  const rawPeriod = (body as { period?: unknown }).period
+  const period = isBillingPeriod(rawPeriod) ? rawPeriod : 'monthly'
+
+  const productId = productIdFor(plan, period)
   if (!productId) {
     console.error('[billing/checkout] product id not configured for', plan)
     return NextResponse.json({ error: 'Checkout is not available yet.' }, { status: 503 })
@@ -33,7 +36,7 @@ export async function POST(req: Request) {
       productId,
       successUrl,
       customerEmail: session.email,
-      metadata: { userId: session.userId, plan },
+      metadata: { userId: session.userId, plan, period },
     })
     return NextResponse.json({ url })
   } catch (err) {
