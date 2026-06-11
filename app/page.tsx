@@ -3,7 +3,6 @@ import { Pricing } from '@/components/Pricing'
 import { TrialBanner } from '@/components/TrialBanner'
 import { SiteNav } from '@/components/landing/SiteNav'
 import { Hero } from '@/components/landing/Hero'
-import { ProductScroll } from '@/components/landing/ProductScroll'
 import { Highlights } from '@/components/landing/Highlights'
 import { FeaturesDark } from '@/components/landing/FeaturesDark'
 import { Showcase } from '@/components/landing/Showcase'
@@ -17,7 +16,6 @@ export default function Page() {
       <SiteNav />
       <main>
         <Hero />
-        <ProductScroll />
         <Highlights />
         <FeaturesDark />
         <Showcase />

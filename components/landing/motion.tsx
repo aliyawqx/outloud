@@ -1,9 +1,53 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 
 function prefersReduced(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/**
+ * A single word in a headline that rotates through a list, each swapping up on a
+ * spring (the animated-hero technique). Reduced motion shows the first word only.
+ */
+export function RotatingWord({
+  words,
+  className = '',
+  interval = 2200,
+}: {
+  words: string[]
+  className?: string
+  interval?: number
+}) {
+  const [i, setI] = useState(0)
+  const [reduced, setReduced] = useState(false)
+  useEffect(() => {
+    const r = prefersReduced()
+    setReduced(r)
+    if (r || words.length < 2) return
+    const id = setInterval(() => setI((p) => (p + 1) % words.length), interval)
+    return () => clearInterval(id)
+  }, [words.length, interval])
+
+  if (reduced) return <span className={`font-bold ${className}`}>{words[0]}</span>
+
+  return (
+    <span className="relative inline-flex w-full justify-center overflow-hidden">
+      &nbsp;
+      {words.map((w, idx) => (
+        <motion.span
+          key={idx}
+          className={`absolute font-bold ${className}`}
+          initial={{ opacity: 0, y: '-100%' }}
+          transition={{ type: 'spring', stiffness: 50 }}
+          animate={i === idx ? { y: 0, opacity: 1 } : { y: i > idx ? '-150%' : '150%', opacity: 0 }}
+        >
+          {w}
+        </motion.span>
+      ))}
+    </span>
+  )
 }
 
 /**
