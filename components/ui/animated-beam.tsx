@@ -22,6 +22,7 @@ export interface AnimatedBeamProps {
   startYOffset?: number
   endXOffset?: number
   endYOffset?: number
+  glowColor?: string
 }
 
 export function AnimatedBeam({
@@ -33,11 +34,12 @@ export function AnimatedBeam({
   reverse = false,
   duration = Math.random() * 3 + 4,
   delay = 0,
-  pathColor = 'rgba(255,255,255,0.12)',
-  pathWidth = 2,
+  pathColor = 'rgba(176,107,255,0.22)',
+  pathWidth = 3,
   pathOpacity = 1,
   gradientStartColor = '#b06bff',
   gradientStopColor = '#ADFF2F',
+  glowColor = '#b06bff',
   startXOffset = 0,
   startYOffset = 0,
   endXOffset = 0,
@@ -86,7 +88,14 @@ export function AnimatedBeam({
       viewBox={`0 0 ${svgDimensions.width} ${svgDimensions.height}`}
     >
       <path d={pathD} stroke={pathColor} strokeWidth={pathWidth} strokeOpacity={pathOpacity} strokeLinecap="round" />
-      <path d={pathD} strokeWidth={pathWidth} stroke={`url(#${id})`} strokeOpacity="1" strokeLinecap="round" />
+      <path
+        d={pathD}
+        strokeWidth={pathWidth + 1}
+        stroke={`url(#${id})`}
+        strokeOpacity="1"
+        strokeLinecap="round"
+        style={{ filter: `drop-shadow(0 0 5px ${glowColor})` }}
+      />
       <defs>
         <motion.linearGradient
           className="transform-gpu"
