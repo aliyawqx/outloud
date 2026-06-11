@@ -9,13 +9,13 @@ const WORDS = ['posts in your voice.', 'replies that grow you.', 'build-in-publi
 export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden bg-charcoal-black">
-      {/* lamp light, sitting lower so it lights the headline + the 3D card */}
-      <LampGlow className="top-[5rem] h-[34rem]" />
+      {/* static lamp light, sitting above the headline */}
+      <LampGlow className="top-[3rem] h-[32rem]" />
 
       <div className="relative z-10">
         <ContainerScroll
           titleComponent={
-            <div className="flex flex-col items-center gap-5 pb-24 md:pb-32">
+            <div className="flex flex-col items-center gap-5 pt-20 pb-24 md:pt-28 md:pb-32">
               <div className="inline-flex items-center gap-2 rounded-full border border-border-muted bg-surface-container-low px-3 py-1">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-electric-indigo opacity-75" />
