@@ -12,14 +12,14 @@ export function ComingSoonGate() {
         <div>
           <h2 className="font-headline-lg text-headline-lg">Opening soon</h2>
           <p className="mx-auto mt-2 max-w-sm font-body-md text-body-md text-on-surface-variant">
-            We’re putting the finishing touches on Outloud. Join the waitlist and we’ll let you in first.
+            We’re putting the finishing touches on Outloud. Sign up and we’ll let you in first.
           </p>
         </div>
         <Link
           href={WAITLIST_HREF}
           className="rounded-full bg-electric-indigo px-7 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95"
         >
-          Join the waitlist
+          Sign up
         </Link>
       </div>
     </div>

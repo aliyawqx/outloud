@@ -1,9 +1,9 @@
 // Access control for the signed-in app. Gating is by nFactorial incubator
 // participation (asked once, stored on the profile): participants get full access
-// with a lifetime draft cap; non-participants see an "unavailable" / waitlist page.
+// with a lifetime draft cap; non-participants are pointed to sign up.
 
-/** Where non-participants are pointed. */
-export const WAITLIST_HREF = '/early-access'
+/** Where non-participants / would-be users are pointed (waitlist removed). */
+export const WAITLIST_HREF = '/signup'
 
 /** Lifetime draft cap for incubator participants. */
 export const DRAFT_LIMIT = 5

@@ -3,7 +3,7 @@ import { Logo } from '@/components/Logo'
 
 const COLUMNS = [
   { title: 'Product', links: [{ label: 'Features', href: '#features' }, { label: 'Examples', href: '#examples' }, { label: 'Pricing', href: '#pricing' }] },
-  { title: 'Company', links: [{ label: 'Early access', href: '/early-access' }, { label: 'Log in', href: '/login' }, { label: 'Get started', href: '/signup' }] },
+  { title: 'Company', links: [{ label: 'Log in', href: '/login' }, { label: 'Get started', href: '/signup' }] },
   { title: 'Legal', links: [{ label: 'Privacy', href: '#' }, { label: 'Terms', href: '#' }] },
 ]
 

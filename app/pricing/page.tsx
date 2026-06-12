@@ -22,9 +22,9 @@ export default function PricingPage() {
             </Link>
             <Link
               className="rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform active:scale-95"
-              href="/early-access"
+              href="/signup"
             >
-              Early Access
+              Sign up
             </Link>
           </nav>
         </div>

@@ -16,7 +16,7 @@ export default function ReplyPage() {
             <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/login">Log in</Link>
             <Link className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-primary" href="/">Home</Link>
           </nav>
-          <Link href="/early-access" className="rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform active:scale-95">Early Access</Link>
+          <Link href="/signup" className="rounded-full bg-electric-indigo px-6 py-2 font-bold text-white transition-transform active:scale-95">Sign up</Link>
         </div>
       </header>
 
