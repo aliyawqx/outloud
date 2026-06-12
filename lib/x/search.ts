@@ -1,4 +1,5 @@
 import { SearchUnavailableError, XAuthError } from './errors'
+import { spaced } from './throttle'
 
 const API = 'https://api.x.com/2'
 const WINDOW_HOURS = 24
@@ -69,11 +70,156 @@ type SearchResponse = {
 
 const cache = new Map<string, { at: number; posts: CandidatePost[] }>()
 
+function clampMax(max?: number): number {
+  return Math.min(100, Math.max(10, max ?? 100))
+}
+
+/** Build a CandidatePost from raw fields (shared by every search source). */
+function toCandidate(p: {
+  id: string
+  url?: string
+  authorHandle?: string
+  authorName?: string
+  followers?: number
+  text: string
+  createdAt: string
+  now: number
+  likes?: number
+  replies?: number
+  reposts?: number
+  quotes?: number
+}): CandidatePost {
+  const followers = Math.max(0, p.followers ?? 0)
+  const likes = Math.max(0, p.likes ?? 0)
+  const replies = Math.max(0, p.replies ?? 0)
+  const reposts = Math.max(0, p.reposts ?? 0)
+  const quotes = Math.max(0, p.quotes ?? 0)
+  const ageHours = Math.max(0, (p.now - new Date(p.createdAt).getTime()) / 3600000)
+  const handle = (p.authorHandle || '').trim()
+  return {
+    id: p.id,
+    url: p.url || `https://x.com/${handle || 'i'}/status/${p.id}`,
+    authorHandle: handle,
+    authorName: p.authorName || handle,
+    followers,
+    text: p.text,
+    createdAt: p.createdAt,
+    ageHours: Math.round(ageHours * 10) / 10,
+    likes,
+    replies,
+    reposts,
+    quotes,
+    engagement: likes + replies + reposts + quotes,
+    reachScore: computeReachScore({ followers, likes, replies, reposts, quotes, ageHours }),
+  }
+}
+
+/** Source A — the official X recent-search API (paid). Uses the user's token. */
+async function searchViaXApi(accessToken: string, q: string, now: number, max: number): Promise<CandidatePost[]> {
+  const startTime = new Date(now - WINDOW_HOURS * 3600 * 1000).toISOString()
+  const url = new URL(`${API}/tweets/search/recent`)
+  url.searchParams.set('query', `${q} lang:en -is:retweet -is:reply -is:quote`)
+  url.searchParams.set('max_results', String(max))
+  url.searchParams.set('start_time', startTime)
+  url.searchParams.set('sort_order', 'relevancy')
+  url.searchParams.set('tweet.fields', 'public_metrics,created_at,author_id')
+  url.searchParams.set('expansions', 'author_id')
+  url.searchParams.set('user.fields', 'public_metrics,name,username')
+
+  let res: Response
+  try {
+    res = await fetch(url, { headers: { authorization: `Bearer ${accessToken}` } })
+  } catch {
+    throw new SearchUnavailableError()
+  }
+  if (res.status === 401) throw new XAuthError()
+  if (res.status === 403 || res.status === 429) throw new SearchUnavailableError()
+  if (!res.ok) throw new SearchUnavailableError()
+
+  const data = (await res.json().catch(() => null)) as SearchResponse | null
+  const tweets = data?.data ?? []
+  const users = new Map((data?.includes?.users ?? []).map((u) => [u.id, u]))
+  return tweets.map((t) => {
+    const u = users.get(t.author_id)
+    const m = t.public_metrics ?? {}
+    return toCandidate({
+      id: t.id,
+      authorHandle: u?.username ?? '',
+      authorName: u?.name ?? u?.username ?? '',
+      followers: u?.public_metrics?.followers_count ?? 0,
+      text: t.text,
+      createdAt: t.created_at,
+      now,
+      likes: m.like_count ?? 0,
+      replies: m.reply_count ?? 0,
+      reposts: m.retweet_count ?? 0,
+      quotes: m.quote_count ?? 0,
+    })
+  })
+}
+
+type WorkerPost = {
+  id?: string
+  url?: string
+  authorHandle?: string
+  authorName?: string
+  followers?: number
+  text?: string
+  createdAt?: string
+  likes?: number
+  replies?: number
+  reposts?: number
+  quotes?: number
+}
+
+/** Source B — a self-hosted worker (Nitter / x-tweet-fetcher) over HTTP. No X
+ *  account, no official API. Configure with X_SEARCH_WORKER_URL (+ optional
+ *  X_SEARCH_WORKER_TOKEN). Spaced + a generous timeout to stay gentle on it. */
+async function searchViaWorker(base: string, q: string, now: number, max: number): Promise<CandidatePost[]> {
+  const u = new URL(base.replace(/\/+$/, '') + '/search')
+  u.searchParams.set('q', q)
+  u.searchParams.set('hours', String(WINDOW_HOURS))
+  u.searchParams.set('limit', String(max))
+
+  const headers: Record<string, string> = { accept: 'application/json' }
+  if (process.env.X_SEARCH_WORKER_TOKEN) headers.authorization = `Bearer ${process.env.X_SEARCH_WORKER_TOKEN}`
+
+  await spaced('x-search-worker', 1500, 800)
+  let res: Response
+  try {
+    res = await fetch(u, { headers, signal: AbortSignal.timeout(20_000) })
+  } catch {
+    throw new SearchUnavailableError()
+  }
+  if (!res.ok) throw new SearchUnavailableError()
+
+  const data = (await res.json().catch(() => null)) as { posts?: WorkerPost[] } | WorkerPost[] | null
+  const list: WorkerPost[] = Array.isArray(data) ? data : data?.posts ?? []
+  return list
+    .filter((p): p is WorkerPost & { id: string; text: string } => Boolean(p && p.id && typeof p.text === 'string' && p.text.trim()))
+    .map((p) =>
+      toCandidate({
+        id: p.id,
+        url: p.url,
+        authorHandle: p.authorHandle,
+        authorName: p.authorName,
+        followers: p.followers,
+        text: p.text.trim(),
+        createdAt: p.createdAt || new Date(now).toISOString(),
+        now,
+        likes: p.likes ?? 0,
+        replies: p.replies ?? 0,
+        reposts: p.reposts ?? 0,
+        quotes: p.quotes ?? 0,
+      }),
+    )
+}
+
 /**
- * THE search seam (Mode B). Recent original posts on a topic from the last ~12h,
- * ranked by the reach approximation. Uses the user's X token; recent search needs
- * paid API access, so a 401/403 surfaces as SearchUnavailableError. Results are
- * cached per topic for a few minutes so re-opening the feed doesn't re-bill.
+ * THE search seam (Mode B). Recent original posts on a topic in the last 24h,
+ * ranked by the reach approximation. Source is the self-hosted worker when
+ * X_SEARCH_WORKER_URL is set, else the official X API (the user's token). Results
+ * are cached per topic for a few minutes so re-opening the feed doesn't re-fetch.
  */
 export async function searchPosts(
   accessToken: string,
@@ -87,61 +233,11 @@ export async function searchPosts(
   const hit = cache.get(key)
   if (hit && now - hit.at < CACHE_TTL_MS) return hit.posts
 
-  const startTime = new Date(now - WINDOW_HOURS * 3600 * 1000).toISOString()
-  const url = new URL(`${API}/tweets/search/recent`)
-  url.searchParams.set('query', `${q} lang:en -is:retweet -is:reply -is:quote`)
-  url.searchParams.set('max_results', String(Math.min(100, Math.max(10, opts.max ?? 100))))
-  url.searchParams.set('start_time', startTime)
-  // Most-engaged matches in the window, NOT just the newest — newest posts haven't
-  // accumulated likes yet, so recency sort + a like floor returns almost nothing.
-  url.searchParams.set('sort_order', 'relevancy')
-  url.searchParams.set('tweet.fields', 'public_metrics,created_at,author_id')
-  url.searchParams.set('expansions', 'author_id')
-  url.searchParams.set('user.fields', 'public_metrics,name,username')
-
-  let res: Response
-  try {
-    res = await fetch(url, { headers: { authorization: `Bearer ${accessToken}` } })
-  } catch {
-    throw new SearchUnavailableError()
-  }
-  // Paid-tier / access gating and rate limits → a clean "not available" message.
-  if (res.status === 401) throw new XAuthError()
-  if (res.status === 403 || res.status === 429) throw new SearchUnavailableError()
-  if (!res.ok) throw new SearchUnavailableError()
-
-  const data = (await res.json().catch(() => null)) as SearchResponse | null
-  const tweets = data?.data ?? []
-  const users = new Map((data?.includes?.users ?? []).map((u) => [u.id, u]))
-
-  const mapped: CandidatePost[] = tweets
-    .map((t) => {
-      const u = users.get(t.author_id)
-      const m = t.public_metrics ?? {}
-      const followers = u?.public_metrics?.followers_count ?? 0
-      const likes = m.like_count ?? 0
-      const replies = m.reply_count ?? 0
-      const reposts = m.retweet_count ?? 0
-      const quotes = m.quote_count ?? 0
-      const ageHours = Math.max(0, (now - new Date(t.created_at).getTime()) / 3600000)
-      const handle = u?.username ?? ''
-      return {
-        id: t.id,
-        url: `https://x.com/${handle || 'i'}/status/${t.id}`,
-        authorHandle: handle,
-        authorName: u?.name ?? handle,
-        followers,
-        text: t.text,
-        createdAt: t.created_at,
-        ageHours: Math.round(ageHours * 10) / 10,
-        likes,
-        replies,
-        reposts,
-        quotes,
-        engagement: likes + replies + reposts + quotes,
-        reachScore: computeReachScore({ followers, likes, replies, reposts, quotes, ageHours }),
-      }
-    })
+  const max = clampMax(opts.max)
+  const worker = process.env.X_SEARCH_WORKER_URL
+  const mapped = worker
+    ? await searchViaWorker(worker, q, now, max)
+    : await searchViaXApi(accessToken, q, now, max)
 
   // Prefer posts that clear the ideal bar; if none do, relax to the fallback floor
   // so the feed shows the best available instead of a dead end. Rank by reach desc
