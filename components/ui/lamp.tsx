@@ -36,7 +36,11 @@ function Beams() {
 export function LampGlow({ className }: { className?: string }) {
   return (
     <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-0 h-[30rem] overflow-hidden', className)}>
-      <Beams />
+      {/* Shrink the lamp on mobile so it doesn't span edge-to-edge — leaves black on
+          the left/right. Full size from the `sm` breakpoint up. */}
+      <div className="h-full w-full origin-top scale-[0.55] sm:scale-100">
+        <Beams />
+      </div>
     </div>
   )
 }
