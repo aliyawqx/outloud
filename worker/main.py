@@ -22,15 +22,12 @@ import re
 import time
 import html
 import threading
-import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
 import httpx
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, Header, HTTPException, Query
-
-DC = "{http://purl.org/dc/elements/1.1/}"
 
 NITTER_BASE = os.environ.get("NITTER_BASE", "https://nitter.net").rstrip("/")
 WORKER_TOKEN = os.environ.get("WORKER_TOKEN", "")  # if set, callers must send it
@@ -118,58 +115,6 @@ def _parse(html_text: str, now: datetime) -> list[dict]:
 @app.get("/health")
 def health():
     return {"ok": True, "nitter": NITTER_BASE}
-
-
-@app.get("/timeline")
-def timeline(
-    handle: str = Query(..., min_length=1),
-    limit: int = Query(20, ge=1, le=100),
-    authorization: str | None = Header(default=None),
-):
-    """A user's recent ORIGINAL posts (for voice capture) via Nitter RSS — no X API,
-    no account. Skips retweets (different author) and replies (start with @)."""
-    if WORKER_TOKEN and authorization != f"Bearer {WORKER_TOKEN}":
-        raise HTTPException(status_code=401, detail="bad token")
-
-    h = handle.lstrip("@").strip()
-    key = f"tl|{h.lower()}|{limit}"
-    cached = _cache.get(key)
-    if cached and time.time() - cached[0] < CACHE_TTL_S:
-        return {"posts": cached[1]}
-
-    _throttle()
-    url = f"{NITTER_BASE}/{h}/rss"
-    try:
-        resp = httpx.get(url, timeout=REQUEST_TIMEOUT_S, headers={"user-agent": USER_AGENT}, follow_redirects=True)
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"nitter unreachable: {exc}")
-    if resp.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"nitter status {resp.status_code}")
-
-    try:
-        root = ET.fromstring(resp.content)
-    except ET.ParseError as exc:
-        raise HTTPException(status_code=502, detail=f"bad rss: {exc}")
-
-    want = ("@" + h).lower()
-    posts: list[dict] = []
-    for item in root.iter("item"):
-        creator_el = item.find(DC + "creator")
-        creator = (creator_el.text or "").strip().lower() if creator_el is not None else ""
-        if creator and creator != want:  # skip retweets of other accounts
-            continue
-        desc_el = item.find("description")
-        title_el = item.find("title")
-        raw = (desc_el.text if desc_el is not None and desc_el.text else (title_el.text if title_el is not None else "")) or ""
-        text = BeautifulSoup(raw, "html.parser").get_text("\n").strip()
-        if not text or text.startswith("@"):  # skip empties + replies
-            continue
-        posts.append({"text": text})
-        if len(posts) >= limit:
-            break
-
-    _cache[key] = (time.time(), posts)
-    return {"posts": posts}
 
 
 @app.get("/search")

@@ -18,9 +18,6 @@ results in the shape the Next.js app expects. The app calls it when
   - send `Authorization: Bearer <WORKER_TOKEN>` if a token is configured
   - each post: `{ id, url, authorHandle, authorName, followers, text, createdAt, likes, replies, reposts, quotes }`
   - `followers` is `0` (not on the search page) — ranking leans on engagement.
-- `GET /timeline?handle=<@handle>&limit=20` → `{ "posts": [ { "text" } … ] }`  (voice import)
-  - a user's recent ORIGINAL posts via Nitter RSS (skips retweets + replies); public accounts only.
-  - app side: set `X_IMPORT_PROVIDER=nitter` to import voice by handle (no X API / no account).
 
 ## Env
 
