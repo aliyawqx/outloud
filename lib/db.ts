@@ -39,6 +39,21 @@ CREATE TABLE IF NOT EXISTS profiles (
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS incubator TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS drafts_used INTEGER NOT NULL DEFAULT 0;
 
+-- Credit system: cached balance on the profile (source of truth), with every
+-- change also appended to credit_ledger as an audit trail. Deduction is an atomic
+-- conditional UPDATE (balance never goes negative).
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credit_balance INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS credit_ledger (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL,
+  amount     INTEGER NOT NULL,                 -- signed: grants/purchases +, spends -
+  reason     TEXT NOT NULL,                    -- 'grant' | 'post' | 'search' | 'purchase'
+  metadata   JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS credit_ledger_user_idx ON credit_ledger (user_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS voice_profiles (
   id TEXT PRIMARY KEY,
   owner_key TEXT NOT NULL,
