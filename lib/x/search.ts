@@ -1,5 +1,7 @@
 import { SearchUnavailableError, XAuthError } from './errors'
 import { spaced } from './throttle'
+import { tweetIdFromUrl } from './fetchPost'
+import { findTweetUrlsViaWeb } from '@/lib/anthropic'
 
 const API = 'https://api.x.com/2'
 const WINDOW_HOURS = 24
@@ -215,9 +217,66 @@ async function searchViaWorker(base: string, q: string, now: number, max: number
     )
 }
 
+type FxFull = {
+  tweet?: {
+    id?: string
+    url?: string
+    text?: string
+    created_timestamp?: number
+    likes?: number
+    retweets?: number
+    replies?: number
+    views?: number
+    author?: { name?: string; screen_name?: string; followers?: number }
+  }
+}
+
+/** Resolve a tweet id to a REAL post via FxTwitter (anonymous, no X account):
+ *  confirms it exists and pulls true text + engagement. Returns null on failure. */
+async function resolveTweet(id: string, now: number): Promise<CandidatePost | null> {
+  await spaced('x-read', 600, 400)
+  let res: Response
+  try {
+    res = await fetch(`https://api.fxtwitter.com/status/${id}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) })
+  } catch {
+    return null
+  }
+  if (!res.ok) return null
+  const t = ((await res.json().catch(() => null)) as FxFull | null)?.tweet
+  const text = typeof t?.text === 'string' ? t.text.trim() : ''
+  if (!t || !text) return null
+  const handle = (t.author?.screen_name || '').trim()
+  return toCandidate({
+    id,
+    url: t.url,
+    authorHandle: handle,
+    authorName: t.author?.name,
+    followers: t.author?.followers ?? 0,
+    text,
+    createdAt: t.created_timestamp ? new Date(t.created_timestamp * 1000).toISOString() : new Date(now).toISOString(),
+    now,
+    likes: t.likes ?? 0,
+    replies: t.replies ?? 0,
+    reposts: t.retweets ?? 0,
+    quotes: 0,
+  })
+}
+
+/** Source C — LLM web-search discovery. The model finds candidate tweet URLs;
+ *  each is then VERIFIED + enriched via FxTwitter so we only ever surface real,
+ *  replyable posts with true metrics. No official X API, no user account. */
+async function searchViaLLM(topic: string, now: number, max: number): Promise<CandidatePost[]> {
+  const urls = await findTweetUrlsViaWeb(topic, Math.min(max, 18))
+  const ids = [...new Set(urls.map((u) => tweetIdFromUrl(u)).filter((x): x is string => Boolean(x)))].slice(0, 18)
+  if (!ids.length) return []
+  const resolved = await Promise.all(ids.map((id) => resolveTweet(id, now)))
+  return resolved.filter((p): p is CandidatePost => Boolean(p))
+}
+
 /**
  * THE search seam (Mode B). Recent original posts on a topic in the last 24h,
- * ranked by the reach approximation. Source is the self-hosted worker when
+ * ranked by the reach approximation. Source is chosen by X_SEARCH_PROVIDER:
+ * 'llm' (web-search + FxTwitter verify), else the self-hosted worker when
  * X_SEARCH_WORKER_URL is set, else the official X API (the user's token). Results
  * are cached per topic for a few minutes so re-opening the feed doesn't re-fetch.
  */
@@ -234,10 +293,14 @@ export async function searchPosts(
   if (hit && now - hit.at < CACHE_TTL_MS) return hit.posts
 
   const max = clampMax(opts.max)
+  const provider = (process.env.X_SEARCH_PROVIDER || '').toLowerCase()
   const worker = process.env.X_SEARCH_WORKER_URL
-  const mapped = worker
-    ? await searchViaWorker(worker, q, now, max)
-    : await searchViaXApi(accessToken, q, now, max)
+  const mapped =
+    provider === 'llm'
+      ? await searchViaLLM(q, now, max)
+      : worker
+        ? await searchViaWorker(worker, q, now, max)
+        : await searchViaXApi(accessToken, q, now, max)
 
   // Prefer posts that clear the ideal bar; if none do, relax to the fallback floor
   // so the feed shows the best available instead of a dead end. Rank by reach desc

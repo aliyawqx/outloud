@@ -457,6 +457,38 @@ function createMessage(params: Anthropic.MessageCreateParamsNonStreaming): Promi
 }
 
 /**
+ * Discovery (Mode B, LLM provider): use Anthropic's native web search to find
+ * recent high-engagement X posts on a topic, and return their tweet URLs. We do
+ * NOT trust the model's text about a tweet — the caller re-fetches each URL via
+ * FxTwitter to confirm it's real and pull true metrics. Returns [] on any failure
+ * so search can fall back. Note: web search is a billed server tool.
+ */
+export async function findTweetUrlsViaWeb(topic: string, max = 18): Promise<string[]> {
+  const prompt =
+    `Use web search to find recent (last ~48h), high-engagement public posts on X/Twitter about: "${topic}".\n` +
+    `Prefer posts from large/active accounts with real traction.\n` +
+    `Return ONLY direct post URLs, one per line, in the form https://x.com/<handle>/status/<id>. ` +
+    `Up to ${max}. No commentary.`
+  let msg: Anthropic.Message
+  try {
+    msg = await createMessage({
+      model: getModel(),
+      max_tokens: 1500,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }],
+      messages: [{ role: 'user', content: prompt }],
+    })
+  } catch {
+    return []
+  }
+  // Scan ALL text the model emitted (answer + any inline citations) for status URLs.
+  const text = msg.content
+    .map((b) => (b.type === 'text' ? b.text : ''))
+    .join('\n')
+  const matches = text.matchAll(/https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/[A-Za-z0-9_]+\/status(?:es)?\/\d{1,25}/g)
+  return [...new Set([...matches].map((m) => m[0]))].slice(0, max)
+}
+
+/**
  * Generate X content in a per-user voice. The voice is ALWAYS captured per user:
  * their own Style Guide/samples, or a chosen preset's summary/samples. There is
  * NO default/built-in voice — with no voice signal this throws VoiceRequiredError
