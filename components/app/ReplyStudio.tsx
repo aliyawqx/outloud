@@ -483,88 +483,35 @@ export function ReplyStudio({
         </div>
       )}
 
-      {/* ── Mode B: discover by topic ──────────────────────────────── */}
+      {/* ── Mode B: discover by topic — temporarily disabled (coming soon) ── */}
       {mode === 'discover' && (
-        <div className="flex flex-col gap-4">
-          {!xConnected && (
-            <div className="rounded-2xl border border-border-muted bg-surface-container-low p-4 font-body-sm text-body-sm text-on-surface-variant">
-              Connect your X account in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to discover posts.
+        <div className="relative overflow-hidden rounded-2xl border border-border-muted">
+          {/* blurred faux preview behind the lock */}
+          <div aria-hidden className="pointer-events-none select-none blur-[7px] opacity-40">
+            <div className="flex flex-col gap-4 p-5">
+              <div className="h-12 rounded-xl bg-surface-container-high" />
+              <div className="h-12 rounded-xl bg-surface-container-high" />
+              <div className="h-28 rounded-2xl bg-surface-container-low" />
+              <div className="h-28 rounded-2xl bg-surface-container-low" />
             </div>
-          )}
-          <label className="flex flex-col gap-1.5">
-            <span className="font-code-label text-code-label uppercase text-on-surface-variant">What are you interested in?</span>
-            <input value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="indie hacking, AI tools, build in public" className={field} />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="font-code-label text-code-label uppercase text-on-surface-variant">Topic to comment on</span>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-                placeholder="e.g. AI agents"
-                className={field}
-              />
-              <button
-                type="button"
-                onClick={onSearch}
-                disabled={searching || !topic.trim()}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-electric-indigo px-5 py-3 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
-              >
-                {searching ? <><Spinner size={16} /> Finding…</> : 'Find posts'}
-              </button>
-            </div>
-          </label>
-          <p className="font-code-label text-code-label text-on-surface-variant/60">
-            Big posts from the last 24h — high engagement and large accounts in your topic.
-          </p>
-          {searchError && <p className="font-body-sm text-body-sm text-error">{searchError}</p>}
-
-          {results && shown.length === 0 && !searchError && (
-            <p className="font-body-sm text-body-sm text-on-surface-variant">No worthwhile posts right now. Try another topic.</p>
-          )}
-
-          {shown.map((r) => (
-            <div key={r.post.id} className="rounded-2xl border border-border-muted bg-surface-container-low p-4">
-              <div className="mb-1 flex items-center gap-2">
-                <span className={`rounded-full border px-2 py-0.5 font-code-label text-[11px] uppercase ${verdictBadge[r.verdict]}`}>{r.verdict}</span>
-                <span className="font-body-sm text-body-sm font-bold text-on-surface">{r.post.authorName}</span>
-                <span className="font-code-label text-code-label text-on-surface-variant">@{r.post.authorHandle} · {relAge(r.post.ageHours)}</span>
-              </div>
-              <p className="mb-2 whitespace-pre-wrap font-body-md text-on-surface">{r.post.text}</p>
-              <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-code-label text-code-label text-on-surface-variant/70">
-                <span>{r.post.followers.toLocaleString()} followers</span>
-                <span>♥ {r.post.likes}</span>
-                <span>↺ {r.post.reposts}</span>
-                <span>💬 {r.post.replies}</span>
-              </div>
-              {(r.reason || r.verdict === 'skip') && (
-                <p className="mb-3 font-code-label text-code-label text-on-surface-variant/80">
-                  {r.verdict === 'skip' ? `Skipped: ${r.reason || 'not worth the slot'}` : `“${r.reason}”`}
-                </p>
-              )}
-              {r.verdict !== 'skip' && target?.id !== r.post.id && (
-                <button
-                  type="button"
-                  onClick={() => openReply({ id: r.post.id, text: r.post.text, authorHandle: r.post.authorHandle, url: r.post.url, angle: r.suggestedAngle, angleType: r.angleType })}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all active:scale-95 disabled:opacity-50"
-                >
-                  Write reply
-                </button>
-              )}
-              {target?.id === r.post.id && replyChat}
-            </div>
-          ))}
-
-          {skippedCount > 0 && (
+          </div>
+          {/* lock overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-electric-indigo/15 text-electric-indigo">
+              <span className="material-symbols-outlined text-[32px]">lock</span>
+            </span>
+            <h3 className="font-headline-sm text-headline-sm">Discover by topic — coming soon</h3>
+            <p className="max-w-sm font-body-sm text-body-sm text-on-surface-variant">
+              We’re polishing topic discovery. For now, paste a post link and reply in your voice.
+            </p>
             <button
               type="button"
-              onClick={() => setShowSkipped((s) => !s)}
-              className="self-start font-code-label text-code-label text-on-surface-variant underline-offset-2 hover:underline"
+              onClick={() => setMode('link')}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95"
             >
-              {showSkipped ? 'Hide skipped' : `Show ${skippedCount} skipped`}
+              <span className="material-symbols-outlined text-[16px]">link</span> Paste a link instead
             </button>
-          )}
+          </div>
         </div>
       )}
 
