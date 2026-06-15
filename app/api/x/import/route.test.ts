@@ -12,7 +12,7 @@ const { sessionMock, tokenMock, accountMock, fetchTweetsMock, timelineMock, getP
 vi.mock('@/lib/auth/session', () => ({ getSession: sessionMock }))
 vi.mock('@/lib/x/store', () => ({ getValidAccessToken: tokenMock, getAccount: accountMock }))
 vi.mock('@/lib/x/client', () => ({ fetchOriginalTweets: fetchTweetsMock }))
-vi.mock('@/lib/x/timeline', () => ({ fetchTimelineViaWorker: timelineMock }))
+vi.mock('@/lib/x/timeline', () => ({ fetchTimeline: timelineMock }))
 vi.mock('@/lib/voice/store', () => ({ getProfile: getProfileMock }))
 vi.mock('@/lib/voice/samples', () => ({ addSamples: addSamplesMock }))
 

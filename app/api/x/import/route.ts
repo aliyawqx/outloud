@@ -4,7 +4,7 @@ import { getProfile } from '@/lib/voice/store'
 import { addSamples } from '@/lib/voice/samples'
 import { getAccount, getValidAccessToken } from '@/lib/x/store'
 import { fetchOriginalTweets } from '@/lib/x/client'
-import { fetchTimelineViaWorker } from '@/lib/x/timeline'
+import { fetchTimeline } from '@/lib/x/timeline'
 import { ImportNotAvailableError, SearchUnavailableError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 
 const IMPORT_COUNT = 20
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       const account = await getAccount(session.userId)
       const handle = bodyHandle || account?.username || ''
       if (!handle) return NextResponse.json({ error: 'Enter your @handle to import.', needsHandle: true }, { status: 400 })
-      texts = await fetchTimelineViaWorker(handle, IMPORT_COUNT)
+      texts = await fetchTimeline(handle, IMPORT_COUNT)
     } else {
       const account = await getAccount(session.userId)
       if (!account) return NextResponse.json({ error: 'Connect your X account first.' }, { status: 409 })

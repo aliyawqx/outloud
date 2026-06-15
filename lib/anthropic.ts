@@ -474,7 +474,8 @@ export async function findTweetUrlsViaWeb(topic: string, max = 18): Promise<stri
     msg = await createMessage({
       model: getModel(),
       max_tokens: 1500,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }],
+      // Restrict to X so results are real tweet URLs, not articles about tweets.
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6, allowed_domains: ['x.com', 'twitter.com'] }],
       messages: [{ role: 'user', content: prompt }],
     })
   } catch {
