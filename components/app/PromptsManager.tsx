@@ -34,9 +34,6 @@ function DefaultCard({ prompt }: { prompt: DefaultPrompt }) {
       <div className="flex items-center gap-2">
         <span className="font-code-label text-code-label text-electric-indigo">/{prompt.command}</span>
         <span className="font-body-sm text-body-sm text-on-surface">{prompt.title}</span>
-        <span className="ml-auto rounded-full border border-border-muted px-2 py-0.5 font-code-label text-[10px] uppercase text-on-surface-variant/60">
-          read-only
-        </span>
       </div>
       <div className="relative">
         <p
