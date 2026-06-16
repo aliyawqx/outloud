@@ -6,6 +6,16 @@ import { PLANS, ANNUAL_BADGE, PRICING_NOTE, type BillingMode, type Plan } from '
 import { startCheckout } from '@/lib/billing/client'
 import { Spinner } from '@/components/Spinner'
 
+// ── Credit display config (marketing copy only — NO billing/deduction logic) ─────
+// Edit these and the per-plan card labels recompute automatically.
+const POST_COST = 500 // credits per generated post
+const SEARCH_COST = 3000 // credits per topic search (~20 X-posts read)
+// Monthly credit grant per paid plan. Plans not listed here keep their feature list.
+const PLAN_CREDITS: Record<string, number> = {
+  starter: 200_000, // $15/mo
+  pro: 800_000, // $30/mo
+}
+
 function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
   const pill = (active: boolean) =>
     `rounded-full px-5 py-1.5 font-code-label text-code-label transition-colors ${
@@ -35,6 +45,7 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
 
   const saveLine = plan.trial ? '' : annual ? plan.annual.save : plan.annual.save ? `${plan.annual.save} with annual` : ''
   const paidPlan = plan.id === 'pro' || plan.id === 'starter'
+  const credits = PLAN_CREDITS[plan.id] // when set, show the credit display instead of features
   const [busy, setBusy] = useState(false)
   const ctaClass = `rounded-full px-6 py-3 text-center font-bold transition-all active:scale-95 ${
     plan.highlight
@@ -72,14 +83,24 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
       <div className="font-body-sm text-body-sm text-on-surface-variant">{sub}</div>
       <div className="mt-1 min-h-[1.25rem] font-code-label text-code-label text-secondary">{saveLine}</div>
 
-      <ul className="my-8 flex-1 space-y-3">
-        {plan.features.map((f) => (
-          <li key={f} className="flex items-start gap-3 font-body-sm text-body-sm text-on-surface">
-            <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
-            {f}
-          </li>
-        ))}
-      </ul>
+      {credits ? (
+        // Credit-based display: total monthly credits + an approximate breakdown.
+        <div className="my-8 flex-1">
+          <div className="font-headline-lg text-2xl font-bold text-on-surface">{credits / 1000}k credits / mo</div>
+          <div className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">
+            ≈ {Math.floor(credits / POST_COST)} posts or {Math.floor(credits / SEARCH_COST)} topic searches
+          </div>
+        </div>
+      ) : (
+        <ul className="my-8 flex-1 space-y-3">
+          {plan.features.map((f) => (
+            <li key={f} className="flex items-start gap-3 font-body-sm text-body-sm text-on-surface">
+              <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
+              {f}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {paidPlan ? (
         <button
@@ -130,7 +151,11 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
         ))}
       </div>
 
-      <p className="reveal mx-auto mt-8 max-w-xl text-center font-code-label text-code-label text-on-surface-variant">
+      <p className="reveal mx-auto mt-6 max-w-xl text-center font-body-sm text-body-sm text-on-surface-variant/70">
+        Credits are shared across actions. Posts ≈ {POST_COST} cr · Topic search ≈ {SEARCH_COST / 1000}k cr.
+      </p>
+
+      <p className="reveal mx-auto mt-3 max-w-xl text-center font-code-label text-code-label text-on-surface-variant">
         {PRICING_NOTE}
       </p>
 
