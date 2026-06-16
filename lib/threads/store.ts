@@ -76,6 +76,14 @@ export async function deleteAccount(userId: string): Promise<boolean> {
   return (rowCount ?? 0) > 0
 }
 
+/** Delete a connection by its Threads user id — used by Meta's uninstall/delete
+ *  callbacks, which identify the user by their Threads id (not our user id). */
+export async function deleteAccountByThreadsUserId(threadsUserId: string): Promise<boolean> {
+  await ensureSchema()
+  const { rowCount } = await getPool().query('DELETE FROM threads_accounts WHERE threads_user_id = $1', [threadsUserId])
+  return (rowCount ?? 0) > 0
+}
+
 /**
  * A usable access token, refreshing transparently when it is expiring. Serialized
  * with a row lock (`SELECT ... FOR UPDATE`) so concurrent requests (or two
