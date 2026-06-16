@@ -26,7 +26,12 @@ export async function getMe(accessToken: string): Promise<{ id: string; username
   const u = new URL(`${API}/me`)
   u.searchParams.set('fields', 'id,username')
   u.searchParams.set('access_token', accessToken)
-  const res = await fetch(u)
+  let res: Response
+  try {
+    res = await fetch(u, { signal: AbortSignal.timeout(10_000) })
+  } catch {
+    throw new ThreadsAuthError()
+  }
   if (!res.ok) throw new ThreadsAuthError()
   const data = (await readJson(res)) as { id?: string; username?: string } | null
   if (!data?.id) throw new ThreadsAuthError()

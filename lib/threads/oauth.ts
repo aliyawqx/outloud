@@ -13,6 +13,10 @@ const REFRESH_URL = 'https://graph.threads.net/refresh_access_token'
 // threads_manage_replies is required to publish replies (reply_to_id).
 export const THREADS_SCOPES = 'threads_basic,threads_content_publish,threads_manage_replies'
 
+// Don't let a slow/hanging Meta call spin the OAuth callback forever — fail fast
+// so the user gets a clean "couldn't connect" instead of an endless redirect.
+const TOKEN_TIMEOUT_MS = 10_000
+
 // Topic search (keyword_search) needs threads_keyword_search, which Meta gates
 // behind app review. Requesting an unapproved scope can break the authorize step,
 // so it's only added when the operator opts in via THREADS_KEYWORD_SEARCH=1 — i.e.
@@ -64,11 +68,17 @@ export async function exchangeCode(p: {
     // Meta appends "#_" to the code on the redirect; strip any trailing fragment.
     code: p.code.replace(/#_$/, ''),
   })
-  const res = await fetch(SHORT_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body,
-  })
+  let res: Response
+  try {
+    res = await fetch(SHORT_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(TOKEN_TIMEOUT_MS),
+    })
+  } catch {
+    throw new ThreadsAuthError()
+  }
   if (!res.ok) throw new ThreadsAuthError()
   const data = (await res.json().catch(() => null)) as { access_token?: string; user_id?: string | number } | null
   if (!data?.access_token || data.user_id == null) throw new ThreadsAuthError()
@@ -94,7 +104,12 @@ export async function refreshLongLived(p: { longToken: string }): Promise<LongTo
 }
 
 async function getLongToken(u: URL): Promise<LongTokenResponse> {
-  const res = await fetch(u, { method: 'GET' })
+  let res: Response
+  try {
+    res = await fetch(u, { method: 'GET', signal: AbortSignal.timeout(TOKEN_TIMEOUT_MS) })
+  } catch {
+    throw new ThreadsAuthError()
+  }
   if (!res.ok) throw new ThreadsAuthError()
   const data = (await res.json().catch(() => null)) as
     | { access_token?: string; token_type?: string; expires_in?: number }
