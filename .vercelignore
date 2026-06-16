@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+
+# Media / promo assets — not needed for the build, and huge (reel/ is multi-GB).
+reel
+promo
+reeldyn
+*.mp4
+*.mov
+*.MOV
+cap_*.png
+hi_*.png
+site_*.png
