@@ -65,7 +65,7 @@ export function AppShot() {
           </div>
 
           <div className="flex items-center gap-3 rounded-2xl border border-border-muted bg-surface-container-low p-3">
-            <span className="flex items-center gap-2 rounded-lg border border-border-muted px-3 py-1.5 font-code-label text-code-label text-on-surface-variant">Mode · X post</span>
+            <span className="flex items-center gap-2 rounded-lg border border-border-muted px-3 py-1.5 font-code-label text-code-label text-on-surface-variant">Mode · Post</span>
             <span className="flex items-center gap-2 rounded-lg border border-border-muted px-3 py-1.5 font-code-label text-code-label text-on-surface-variant">Voice · Elen</span>
             <span className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-electric-indigo text-white"><span className="material-symbols-outlined text-[18px]">arrow_upward</span></span>
           </div>

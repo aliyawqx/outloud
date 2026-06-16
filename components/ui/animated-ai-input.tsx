@@ -51,7 +51,7 @@ function useAutoResizeTextarea({ minHeight, maxHeight }: UseAutoResizeTextareaPr
 }
 
 // Outloud's own choices in place of the AI-model picker.
-const MODES = ['X post', 'Reply', 'Thread', 'Announcement', 'Quote post', '5 hooks']
+const MODES = ['Post', 'Reply', 'Thread', 'Announcement', 'Quote post', '5 hooks']
 const VOICES = ['Elen', 'Sam', 'Trung', 'Naval', 'You']
 
 function Picker({
@@ -111,7 +111,7 @@ function Picker({
 export function AI_Prompt() {
   const [value, setValue] = useState('')
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight: 72, maxHeight: 300 })
-  const [mode, setMode] = useState('X post')
+  const [mode, setMode] = useState('Post')
   const [voice, setVoice] = useState('Elen')
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

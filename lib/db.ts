@@ -125,6 +125,19 @@ CREATE TABLE IF NOT EXISTS x_accounts (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Threads (Meta) connection. Mirrors x_accounts, but the long-lived token is
+-- self-refreshing so there is no separate refresh token.
+CREATE TABLE IF NOT EXISTS threads_accounts (
+  user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  threads_user_id   TEXT NOT NULL,
+  username          TEXT NOT NULL,
+  access_token_enc  TEXT NOT NULL,
+  scope             TEXT NOT NULL DEFAULT '',
+  expires_at        TIMESTAMPTZ NOT NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 `
 
 let pool: Pool | null = null

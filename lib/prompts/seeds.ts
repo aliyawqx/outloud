@@ -32,7 +32,7 @@ const QUOTE = `FORMAT: a quote-post reacting to a quoted post (the quoted post i
 const HOOK = `FORMAT: generate 5 opening-line hooks for an X post about the idea. Each is ONE line, concrete, front-loading a stake, claim, or surprise that makes someone stop scrolling. No clickbait the post couldn't pay off. Put all 5 in fullText, one per line, numbered 1-5.`
 
 export const SEED_PROMPTS: SeedPrompt[] = [
-  { command: 'post', title: 'X post', text: POST },
+  { command: 'post', title: 'Post', text: POST },
   { command: 'reply', title: 'Reply', text: REPLY },
   { command: 'thread', title: 'Thread', text: THREAD },
   { command: 'announcement', title: 'Announcement', text: ANNOUNCEMENT },

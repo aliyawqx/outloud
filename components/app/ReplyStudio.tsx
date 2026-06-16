@@ -13,8 +13,11 @@ type Candidate = {
 }
 type Verdict = 'reply' | 'maybe' | 'skip'
 type JudgedResult = { post: Candidate; verdict: Verdict; reason: string; suggestedAngle: string; angleType: string; confidence: number }
+// The platform a reply publishes to. A reply ALWAYS goes to the same platform as
+// its target post — never a destination toggle — so it's inferred, not chosen.
+type ReplyPlatform = 'x' | 'threads'
 // The post we're generating a reply for, plus any angle the judge suggested.
-type Target = { id: string; text: string; authorHandle: string; url?: string; angle?: string; angleType?: string }
+type Target = { id: string; text: string; authorHandle: string; url?: string; angle?: string; angleType?: string; platform?: ReplyPlatform }
 
 const TOPICS_KEY = 'outloud.reply.topics'
 // Mode B (discover by topic) is temporarily closed for users. The full discovery
@@ -38,19 +41,21 @@ const verdictBadge: Record<Verdict, string> = {
 // One generated reply variant. Editable in place (some people like the idea but
 // want to reword) — the same edit pattern as the New Post drafts. The tweetId is
 // fixed, so editing the text never changes WHICH post the reply goes to.
-function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: string }) {
+function VariantCard({ tweetId, initialText, platform }: { tweetId: string; initialText: string; platform: ReplyPlatform }) {
   const [text, setText] = useState(initialText)
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [posting, setPosting] = useState(false)
   const [posted, setPosted] = useState<string | null>(null)
   const [error, setError] = useState('')
+  // A reply publishes to the SAME platform as the post it replies to.
+  const platformLabel = platform === 'threads' ? 'Threads' : 'X'
 
   async function postReply() {
     setPosting(true)
     setError('')
     try {
-      const res = await fetch('/api/x/publish', {
+      const res = await fetch(`/api/${platform}/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, inReplyTo: tweetId }),
@@ -115,7 +120,7 @@ function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: s
             className="flex items-center gap-1.5 rounded-full bg-cyber-lime/15 px-4 py-2 font-code-label text-code-label text-cyber-lime transition-all hover:bg-cyber-lime/25"
           >
             <span aria-hidden="true" className="material-symbols-outlined text-[16px]">check_circle</span>
-            Posted · view on X
+            Posted · view on {platformLabel}
           </a>
         ) : (
           <button
@@ -137,9 +142,11 @@ function VariantCard({ tweetId, initialText }: { tweetId: string; initialText: s
       {error && (
         <p className="mt-2 font-body-sm text-body-sm text-error">
           {error}{' '}
-          <a href={replyIntentUrl(tweetId, text)} target="_blank" rel="noreferrer" className="font-semibold text-electric-indigo hover:underline">
-            Open on X to post →
-          </a>
+          {platform === 'x' && (
+            <a href={replyIntentUrl(tweetId, text)} target="_blank" rel="noreferrer" className="font-semibold text-electric-indigo hover:underline">
+              Open on X to post →
+            </a>
+          )}
         </p>
       )}
     </div>
@@ -226,7 +233,7 @@ function ReplyChat({
       <h3 className="font-code-label text-code-label uppercase text-on-surface-variant">Reply in your voice</h3>
       {turns.map((t) =>
         'draft' in t ? (
-          <VariantCard key={t.id} tweetId={target.id} initialText={t.draft.fullText} />
+          <VariantCard key={t.id} tweetId={target.id} initialText={t.draft.fullText} platform={target.platform ?? 'x'} />
         ) : t.role === 'user' ? (
           <div key={t.id} className="self-end max-w-[85%] rounded-2xl rounded-br-md bg-electric-indigo/15 px-4 py-2.5">
             <p className="whitespace-pre-wrap font-body-md text-on-surface">{t.text}</p>
@@ -274,13 +281,19 @@ function ReplyChat({
   )
 }
 
+// A Threads topic-search hit. No engagement/follower metrics (keyword_search
+// doesn't expose them), so these render without the X reach badge/metrics.
+type ThreadsSearchResult = { id: string; text: string; username: string; permalink: string; timestamp: string; hasReplies: boolean }
+
 export function ReplyStudio({
   voices,
   xConnected,
+  threadsConnected,
   draftsLeft,
 }: {
   voices: VoiceOption[]
   xConnected: boolean
+  threadsConnected: boolean
   draftsLeft: number | null
 }) {
   const router = useRouter()
@@ -302,6 +315,11 @@ export function ReplyStudio({
   const [searchError, setSearchError] = useState('')
   const [results, setResults] = useState<JudgedResult[] | null>(null)
   const [showSkipped, setShowSkipped] = useState(false)
+  // Topic-search platform (X = existing flow, Threads = keyword_search). ONLY in
+  // discover mode; the paste-a-link mode stays X-only.
+  const [searchPlatform, setSearchPlatform] = useState<ReplyPlatform>('x')
+  const [author, setAuthor] = useState('') // optional Threads author_username filter
+  const [threadsResults, setThreadsResults] = useState<ThreadsSearchResult[] | null>(null)
 
   // The post a reply chat is open for (one chat at a time).
   const [target, setTarget] = useState<Target | null>(null)
@@ -355,7 +373,18 @@ export function ReplyStudio({
     }
   }
 
+  // Switching the topic-search platform clears the other feed so they never mix.
+  function switchSearchPlatform(p: ReplyPlatform) {
+    if (p === searchPlatform) return
+    setSearchPlatform(p)
+    setResults(null)
+    setThreadsResults(null)
+    setSearchError('')
+    setTarget(null)
+  }
+
   async function onSearch() {
+    if (searchPlatform === 'threads') return onSearchThreads()
     const t = topic.trim()
     if (!t || searching) return
     setSearchError('')
@@ -386,9 +415,47 @@ export function ReplyStudio({
     }
   }
 
+  // Threads topic search — mirrors onSearch but hits the keyword_search route and
+  // surfaces results without the reach judge (no metrics available).
+  async function onSearchThreads() {
+    const t = topic.trim()
+    if (!t || searching) return
+    setSearchError('')
+    setThreadsResults(null)
+    resetGeneration()
+    saveTopics({ interests: interests.trim(), topic: t })
+    setSearching(true)
+    try {
+      const res = await fetch('/api/reply/threads-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: t, author: author.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 409 && data.needsVoice) {
+        router.push('/app/onboarding')
+        return
+      }
+      if (!res.ok) {
+        setSearchError(data.error ?? "Couldn't search right now.")
+        return
+      }
+      setThreadsResults(data.results ?? [])
+    } catch {
+      setSearchError('Network error. Try again.')
+    } finally {
+      setSearching(false)
+    }
+  }
+
   const tab = (m: 'link' | 'discover', label: string) =>
     `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
       mode === m ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
+    }`
+
+  const searchTab = (p: ReplyPlatform) =>
+    `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
+      searchPlatform === p ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
     }`
 
   const shown = results?.filter((r) => (showSkipped ? true : r.verdict !== 'skip')) ?? []
@@ -521,15 +588,34 @@ export function ReplyStudio({
       {/* ── Mode B: discover by topic (full UI/logic kept; shown when enabled) ── */}
       {mode === 'discover' && DISCOVER_ENABLED && (
         <div className="flex flex-col gap-4">
-          {!xConnected && (
+          {/* Topic-search platform — X (existing) or Threads. This mode only. */}
+          <div className="inline-flex items-center gap-1 self-start rounded-full border border-border-muted bg-surface-container-low p-1">
+            <button type="button" className={searchTab('x')} onClick={() => switchSearchPlatform('x')}>X</button>
+            <button type="button" className={searchTab('threads')} onClick={() => switchSearchPlatform('threads')}>Threads</button>
+          </div>
+
+          {searchPlatform === 'x' && !xConnected && (
             <div className="rounded-2xl border border-border-muted bg-surface-container-low p-4 font-body-sm text-body-sm text-on-surface-variant">
               Connect your X account in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to discover posts.
             </div>
           )}
-          <label className="flex flex-col gap-1.5">
-            <span className="font-code-label text-code-label uppercase text-on-surface-variant">What are you interested in?</span>
-            <input value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="indie hacking, AI tools, build in public" className={field} />
-          </label>
+          {searchPlatform === 'threads' && !threadsConnected && (
+            <div className="rounded-2xl border border-border-muted bg-surface-container-low p-4 font-body-sm text-body-sm text-on-surface-variant">
+              Connect your Threads account in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to discover posts.
+            </div>
+          )}
+
+          {searchPlatform === 'x' ? (
+            <label className="flex flex-col gap-1.5">
+              <span className="font-code-label text-code-label uppercase text-on-surface-variant">What are you interested in?</span>
+              <input value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="indie hacking, AI tools, build in public" className={field} />
+            </label>
+          ) : (
+            <label className="flex flex-col gap-1.5">
+              <span className="font-code-label text-code-label uppercase text-on-surface-variant">From a specific account (optional)</span>
+              <input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="@username" className={field} />
+            </label>
+          )}
           <label className="flex flex-col gap-1.5">
             <span className="font-code-label text-code-label uppercase text-on-surface-variant">Topic to comment on</span>
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -551,54 +637,100 @@ export function ReplyStudio({
             </div>
           </label>
           <p className="font-code-label text-code-label text-on-surface-variant/60">
-            Big posts from the last 24h — high engagement and large accounts in your topic.
+            {searchPlatform === 'x'
+              ? 'Big posts from the last 24h — high engagement and large accounts in your topic.'
+              : 'Top Threads posts for your topic — reply in your voice, same as on X.'}
           </p>
           {searchError && <p className="font-body-sm text-body-sm text-error">{searchError}</p>}
 
-          {results && shown.length === 0 && !searchError && (
-            <p className="font-body-sm text-body-sm text-on-surface-variant">No worthwhile posts right now. Try another topic.</p>
-          )}
-
-          {shown.map((r) => (
-            <div key={r.post.id} className="rounded-2xl border border-border-muted bg-surface-container-low p-4">
-              <div className="mb-1 flex items-center gap-2">
-                <span className={`rounded-full border px-2 py-0.5 font-code-label text-[11px] uppercase ${verdictBadge[r.verdict]}`}>{r.verdict}</span>
-                <span className="font-body-sm text-body-sm font-bold text-on-surface">{r.post.authorName}</span>
-                <span className="font-code-label text-code-label text-on-surface-variant">@{r.post.authorHandle} · {relAge(r.post.ageHours)}</span>
-              </div>
-              <p className="mb-2 whitespace-pre-wrap font-body-md text-on-surface">{r.post.text}</p>
-              <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-code-label text-code-label text-on-surface-variant/70">
-                <span>{r.post.followers.toLocaleString()} followers</span>
-                <span>♥ {r.post.likes}</span>
-                <span>↺ {r.post.reposts}</span>
-                <span>💬 {r.post.replies}</span>
-              </div>
-              {(r.reason || r.verdict === 'skip') && (
-                <p className="mb-3 font-code-label text-code-label text-on-surface-variant/80">
-                  {r.verdict === 'skip' ? `Skipped: ${r.reason || 'not worth the slot'}` : `“${r.reason}”`}
-                </p>
+          {/* ── X results (existing flow, unchanged) ── */}
+          {searchPlatform === 'x' && (
+            <>
+              {results && shown.length === 0 && !searchError && (
+                <p className="font-body-sm text-body-sm text-on-surface-variant">No worthwhile posts right now. Try another topic.</p>
               )}
-              {r.verdict !== 'skip' && target?.id !== r.post.id && (
+
+              {shown.map((r) => (
+                <div key={r.post.id} className="rounded-2xl border border-border-muted bg-surface-container-low p-4">
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className={`rounded-full border px-2 py-0.5 font-code-label text-[11px] uppercase ${verdictBadge[r.verdict]}`}>{r.verdict}</span>
+                    <span className="font-body-sm text-body-sm font-bold text-on-surface">{r.post.authorName}</span>
+                    <span className="font-code-label text-code-label text-on-surface-variant">@{r.post.authorHandle} · {relAge(r.post.ageHours)}</span>
+                  </div>
+                  <p className="mb-2 whitespace-pre-wrap font-body-md text-on-surface">{r.post.text}</p>
+                  <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-code-label text-code-label text-on-surface-variant/70">
+                    <span>{r.post.followers.toLocaleString()} followers</span>
+                    <span>♥ {r.post.likes}</span>
+                    <span>↺ {r.post.reposts}</span>
+                    <span>💬 {r.post.replies}</span>
+                  </div>
+                  {(r.reason || r.verdict === 'skip') && (
+                    <p className="mb-3 font-code-label text-code-label text-on-surface-variant/80">
+                      {r.verdict === 'skip' ? `Skipped: ${r.reason || 'not worth the slot'}` : `“${r.reason}”`}
+                    </p>
+                  )}
+                  {r.verdict !== 'skip' && target?.id !== r.post.id && (
+                    <button
+                      type="button"
+                      onClick={() => openReply({ id: r.post.id, text: r.post.text, authorHandle: r.post.authorHandle, url: r.post.url, angle: r.suggestedAngle, angleType: r.angleType })}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      Write reply
+                    </button>
+                  )}
+                  {target?.id === r.post.id && replyChat}
+                </div>
+              ))}
+
+              {skippedCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => openReply({ id: r.post.id, text: r.post.text, authorHandle: r.post.authorHandle, url: r.post.url, angle: r.suggestedAngle, angleType: r.angleType })}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all active:scale-95 disabled:opacity-50"
+                  onClick={() => setShowSkipped((s) => !s)}
+                  className="self-start font-code-label text-code-label text-on-surface-variant underline-offset-2 hover:underline"
                 >
-                  Write reply
+                  {showSkipped ? 'Hide skipped' : `Show ${skippedCount} skipped`}
                 </button>
               )}
-              {target?.id === r.post.id && replyChat}
-            </div>
-          ))}
+            </>
+          )}
 
-          {skippedCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowSkipped((s) => !s)}
-              className="self-start font-code-label text-code-label text-on-surface-variant underline-offset-2 hover:underline"
-            >
-              {showSkipped ? 'Hide skipped' : `Show ${skippedCount} skipped`}
-            </button>
+          {/* ── Threads results (keyword_search; no reach metrics/judge) ── */}
+          {searchPlatform === 'threads' && (
+            <>
+              {threadsResults && threadsResults.length === 0 && !searchError && (
+                <p className="font-body-sm text-body-sm text-on-surface-variant">No posts found for that topic. Try another keyword.</p>
+              )}
+
+              {threadsResults?.map((r) => (
+                <div key={r.id} className="rounded-2xl border border-border-muted bg-surface-container-low p-4">
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="font-body-sm text-body-sm font-bold text-on-surface">@{r.username || 'threads user'}</span>
+                    {r.timestamp && (
+                      <span className="font-code-label text-code-label text-on-surface-variant">
+                        {relAge(Math.max(0, (Date.now() - new Date(r.timestamp).getTime()) / 3600000))}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mb-2 whitespace-pre-wrap font-body-md text-on-surface">{r.text}</p>
+                  <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-code-label text-code-label text-on-surface-variant/70">
+                    {r.permalink && (
+                      <a href={r.permalink} target="_blank" rel="noreferrer" className="hover:underline">View on Threads ↗</a>
+                    )}
+                    {r.hasReplies && <span>has replies</span>}
+                  </div>
+                  {target?.id !== r.id && (
+                    <button
+                      type="button"
+                      onClick={() => openReply({ id: r.id, text: r.text, authorHandle: r.username, url: r.permalink, platform: 'threads' })}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-code-label text-code-label text-white transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      Write reply
+                    </button>
+                  )}
+                  {target?.id === r.id && replyChat}
+                </div>
+              ))}
+            </>
           )}
         </div>
       )}

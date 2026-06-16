@@ -2,16 +2,18 @@ import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { ProfileForm } from '@/components/app/ProfileForm'
 import { XConnection } from '@/components/app/XConnection'
+import { ThreadsConnection } from '@/components/app/ThreadsConnection'
 import { DeleteAccount } from '@/components/app/DeleteAccount'
 
 export const metadata = { title: 'Outloud | Profile' }
 
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ x?: string }> }) {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ x?: string; threads?: string }> }) {
   const session = await getSession()
   if (!session) return null
   const profile = await getProfile(session.userId)
-  const { x } = await searchParams
+  const { x, threads } = await searchParams
   const flash = x === 'connected' || x === 'error' ? x : undefined
+  const threadsFlash = threads === 'connected' || threads === 'error' ? threads : undefined
 
   return (
     <div className="mx-auto max-w-xl">
@@ -25,8 +27,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           plan: profile?.plan ?? 'free',
         }}
       />
-      <div className="mt-8">
+      <div className="mt-8 flex flex-col gap-4">
         <XConnection flash={flash} />
+        <ThreadsConnection flash={threadsFlash} />
       </div>
       <DeleteAccount />
     </div>

@@ -108,13 +108,35 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
 
 type VoiceOption = { id: string; name: string; isActive: boolean }
 
-function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
+// The platforms a generated post can be published to. The SAME text goes to each
+// selected, connected platform — no per-platform rewrite.
+type Dest = 'x' | 'threads'
+const DESTINATIONS: { key: Dest; label: string; endpoint: string }[] = [
+  { key: 'x', label: 'X', endpoint: '/api/x/publish' },
+  { key: 'threads', label: 'Threads', endpoint: '/api/threads/publish' },
+]
+
+function DraftCard({
+  draft,
+  index,
+  xConnected,
+  threadsConnected,
+}: {
+  draft: DraftPost
+  index: number
+  xConnected: boolean
+  threadsConnected: boolean
+}) {
   const [text, setText] = useState(draft.fullText)
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
-  const [publishError, setPublishError] = useState('')
-  const [publishedUrl, setPublishedUrl] = useState('')
+  // Per-platform outcome after a publish attempt (url on success, error on failure).
+  const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string }>>>({})
+
+  const connected: Record<Dest, boolean> = { x: xConnected, threads: threadsConnected }
+  // Pre-select every connected platform; the user can toggle any off before publishing.
+  const [selected, setSelected] = useState<Record<Dest, boolean>>({ x: xConnected, threads: threadsConnected })
 
   async function copy() {
     await navigator.clipboard.writeText(text)
@@ -122,28 +144,44 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
     setTimeout(() => setCopied(false), 1500)
   }
 
-  async function publish() {
-    setPublishError('')
-    setPublishedUrl('')
-    setPublishing(true)
+  function toggle(key: Dest) {
+    if (!connected[key]) return
+    setSelected((s) => ({ ...s, [key]: !s[key] }))
+  }
+
+  async function publishTo(d: (typeof DESTINATIONS)[number]): Promise<[Dest, { url?: string; error?: string }]> {
     try {
-      const res = await fetch('/api/x/publish', {
+      const res = await fetch(d.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setPublishError(res.status === 409 ? 'Connect your X account in Profile first.' : data.error ?? 'Could not publish.')
-        return
+        const error = res.status === 409 ? `Connect your ${d.label} account in Profile first.` : data.error ?? 'Could not publish.'
+        return [d.key, { error }]
       }
-      setPublishedUrl(data.url)
+      return [d.key, { url: data.url }]
     } catch {
-      setPublishError('Network error. Try again.')
+      return [d.key, { error: 'Network error. Try again.' }]
+    }
+  }
+
+  const chosen = DESTINATIONS.filter((d) => connected[d.key] && selected[d.key])
+
+  async function publish() {
+    if (chosen.length === 0) return
+    setResults({})
+    setPublishing(true)
+    try {
+      const settled = await Promise.all(chosen.map(publishTo))
+      setResults(Object.fromEntries(settled))
     } finally {
       setPublishing(false)
     }
   }
+
+  const noneConnected = !xConnected && !threadsConnected
 
   return (
     <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
@@ -172,24 +210,73 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
         <p className="whitespace-pre-wrap font-body-md leading-relaxed text-on-surface">{text}</p>
       )}
 
+      {/* Destination selector: same text to each selected, connected platform. */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="font-code-label text-code-label uppercase text-on-surface-variant/70">Post to</span>
+        {DESTINATIONS.map((d) => {
+          const isConnected = connected[d.key]
+          const on = isConnected && selected[d.key]
+          return (
+            <button
+              key={d.key}
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              aria-label={d.label}
+              disabled={!isConnected}
+              onClick={() => toggle(d.key)}
+              title={isConnected ? undefined : `Connect ${d.label} in Profile to enable`}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                on
+                  ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface'
+                  : 'border-border-muted text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{on ? 'check_circle' : 'radio_button_unchecked'}</span>
+              {d.label}
+            </button>
+          )
+        })}
+      </div>
+      {noneConnected ? (
+        <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
+          Connect X or Threads in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to publish.
+        </p>
+      ) : (
+        (!xConnected || !threadsConnected) && (
+          <p className="mt-2 font-code-label text-code-label text-on-surface-variant/60">
+            Connect {!xConnected ? 'X' : 'Threads'} in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to post there too.
+          </p>
+        )
+      )}
+
       <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
           onClick={publish}
-          disabled={publishing || !text.trim()}
+          disabled={publishing || !text.trim() || chosen.length === 0}
           className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
         >
           {publishing ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">send</span>}
-          {publishing ? 'Publishing…' : 'Publish to X'}
+          {publishing ? 'Publishing…' : 'Publish'}
         </button>
         <span className="font-code-label text-code-label text-on-surface-variant/60">{text.length} chars</span>
-        {publishedUrl && (
-          <a href={publishedUrl} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
-            View on X →
-          </a>
-        )}
       </div>
-      {publishError && <p className="mt-2 font-body-sm text-body-sm text-error">{publishError}</p>}
+
+      {/* Per-platform outcomes. */}
+      <div className="mt-2 flex flex-col gap-1">
+        {DESTINATIONS.map((d) => {
+          const r = results[d.key]
+          if (!r) return null
+          return r.url ? (
+            <a key={d.key} href={r.url} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
+              View on {d.label} →
+            </a>
+          ) : (
+            <p key={d.key} className="font-body-sm text-body-sm text-error">{d.label}: {r.error}</p>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -208,12 +295,16 @@ export function ComposeHome({
   commands = [],
   draftsLeft = null,
   initialSession,
+  xConnected = false,
+  threadsConnected = false,
 }: {
   name: string
   voices: VoiceOption[]
   commands?: CommandOption[]
   draftsLeft?: number | null
   initialSession?: ComposeSession
+  xConnected?: boolean
+  threadsConnected?: boolean
 }) {
   const router = useRouter()
   const active = voices.find((v) => v.isActive) ?? voices[0]
@@ -508,7 +599,7 @@ export function ComposeHome({
       <div className="flex flex-1 flex-col gap-4 pb-4">
         {turns.map((t) => {
           if ('draft' in t) {
-            return <DraftCard key={t.id} draft={t.draft} index={draftN++} />
+            return <DraftCard key={t.id} draft={t.draft} index={draftN++} xConnected={xConnected} threadsConnected={threadsConnected} />
           }
           if (t.role === 'user') {
             return (

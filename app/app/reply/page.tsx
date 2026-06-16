@@ -4,6 +4,7 @@ import { getProfile } from '@/lib/profile/store'
 import { listProfiles } from '@/lib/voice/store'
 import { hasReadyVoice, isVoiceReady } from '@/lib/voice/ready'
 import { getAccount } from '@/lib/x/store'
+import { getAccount as getThreadsAccount } from '@/lib/threads/store'
 import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
 import { ReplyStudio } from '@/components/app/ReplyStudio'
 
@@ -13,10 +14,11 @@ export default async function ReplyPage() {
   const session = await getSession()
   if (!session) return null // layout guards auth
 
-  const [profile, voices, x] = await Promise.all([
+  const [profile, voices, x, threads] = await Promise.all([
     getProfile(session.userId),
     listProfiles(session.userId),
     getAccount(session.userId),
+    getThreadsAccount(session.userId),
   ])
 
   // Same no-voice gate as posts: no captured voice → onboarding, no generation.
@@ -29,6 +31,7 @@ export default async function ReplyPage() {
     <ReplyStudio
       voices={readyVoices.map((v) => ({ id: v.id, name: v.name, isActive: v.isActive }))}
       xConnected={Boolean(x)}
+      threadsConnected={Boolean(threads)}
       draftsLeft={draftsLeft}
     />
   )

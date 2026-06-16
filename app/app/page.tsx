@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { listProfiles } from '@/lib/voice/store'
+import { getAccount as getXAccount } from '@/lib/x/store'
+import { getAccount as getThreadsAccount } from '@/lib/threads/store'
 import { getComposeEntry } from '@/lib/voice/history'
 import { listPrompts } from '@/lib/prompts/store'
 import { SEED_PROMPTS } from '@/lib/prompts/seeds'
@@ -15,9 +17,11 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
   const session = await getSession()
   if (!session) return null // layout already guards; keeps types happy
 
-  const [profile, voices] = await Promise.all([
+  const [profile, voices, xAccount, threadsAccount] = await Promise.all([
     getProfile(session.userId),
     listProfiles(session.userId),
+    getXAccount(session.userId),
+    getThreadsAccount(session.userId),
   ])
 
   // The gate: no usable voice yet → onboarding is the only way in. No generation
@@ -61,6 +65,8 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
       commands={commands}
       draftsLeft={draftsLeft}
       initialSession={initialSession}
+      xConnected={Boolean(xAccount)}
+      threadsConnected={Boolean(threadsAccount)}
     />
   )
 }

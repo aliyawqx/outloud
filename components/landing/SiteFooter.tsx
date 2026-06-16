@@ -4,7 +4,7 @@ import { Logo } from '@/components/Logo'
 const COLUMNS = [
   { title: 'Product', links: [{ label: 'Features', href: '#features' }, { label: 'Examples', href: '#examples' }, { label: 'Pricing', href: '#pricing' }] },
   { title: 'Company', links: [{ label: 'Log in', href: '/login' }, { label: 'Get started', href: '/signup' }] },
-  { title: 'Legal', links: [{ label: 'Privacy', href: '#' }, { label: 'Terms', href: '#' }] },
+  { title: 'Legal', links: [{ label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' }] },
 ]
 
 const SOCIALS = ['link', 'alternate_email', 'rss_feed']
