@@ -231,6 +231,9 @@ export type IntakeResult =
   | { action: 'write'; brief: string }
 
 const IntakeSchema = z.object({
+  // Filled FIRST so the model commits to the user's language before writing the
+  // question/options — far more reliable than a free-text "match the user" rule.
+  language: z.string().optional().default(''),
   action: z.enum(['ask', 'write']),
   question: z.string().optional().default(''),
   // Up to 3 tappable suggested answers for the clarifying question (empty on write).
@@ -243,13 +246,16 @@ const INTAKE_FORMAT = {
   schema: {
     type: 'object',
     additionalProperties: false,
+    // Property order matters: `language` is first so the model detects + commits to
+    // it before generating `question` and `options` (which must be in that language).
     properties: {
+      language: { type: 'string' },
       action: { type: 'string', enum: ['ask', 'write'] },
       question: { type: 'string' },
       options: { type: 'array', items: { type: 'string' } },
       brief: { type: 'string' },
     },
-    required: ['action', 'question', 'options', 'brief'],
+    required: ['language', 'action', 'question', 'options', 'brief'],
   },
 }
 
@@ -267,7 +273,7 @@ export async function runIntake(messages: ChatTurn[], format?: string): Promise<
   // single default (English, Russian, or otherwise); always mirror the user.
   system.push({
     type: 'text',
-    text: 'LANGUAGE: detect the language the USER is actually writing in (if they mix languages, use their dominant one) and write BOTH the "question" and every string in "options" in that EXACT same language. Mirror the user, whatever language that is - never default to English, never default to Russian, never default to any language other than the one the user themselves wrote in. This instruction is written in English, but that NEVER means you answer in English.',
+    text: 'LANGUAGE — do this FIRST: set the "language" field to the exact language the USER is writing in (their dominant one if they mix). Then write BOTH the "question" AND every single string in "options" in that language. The options array MUST be in the same language as "language" and "question" — never leave the options in a different language. Mirror the user whatever language that is; never default to English, never default to Russian, never default to any language other than the one the user themselves wrote in. This instruction is written in English, but that NEVER means you answer in English.',
   })
   if (format?.trim()) {
     // The output FORMAT is already chosen — intake must ask only for missing CONTENT
