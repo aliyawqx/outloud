@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { getProfile as getUserProfile, incrementDraftsUsed } from '@/lib/profile/store'
-import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
-import { isPaidPlan } from '@/lib/billing/plans'
+import { isStaff } from '@/lib/appLock'
+import { deduct, getBalance, InsufficientCreditsError, POST_COST } from '@/lib/credits'
 import { generateReplyChat } from '@/lib/reply/generate'
 import { ModelBusyError } from '@/lib/anthropic'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
@@ -69,11 +68,10 @@ export async function POST(req: Request) {
   const turns = parseTurns(b.turns)
   const profileId = typeof b.profileId === 'string' && b.profileId ? b.profileId : undefined
 
-  // Draft cap: trial pool; staff and paid plans are uncapped.
-  const up = await getUserProfile(session.userId)
-  const capped = !isStaff(session.email) && !isPaidPlan(up?.plan)
-  if (capped && (up?.draftsUsed ?? 0) >= DRAFT_LIMIT) {
-    return NextResponse.json({ error: `You've used all ${DRAFT_LIMIT} of your drafts.`, limitReached: true, draftsLeft: 0 }, { status: 403 })
+  // Metered by credits (staff unlimited). Pre-check, then charge after a draft.
+  const staff = isStaff(session.email)
+  if (!staff && (await getBalance(session.userId)) < POST_COST) {
+    return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: POST_COST, balance: await getBalance(session.userId) }, { status: 402 })
   }
 
   // Latest draft (to revise) and latest instruction (how to revise it).
@@ -90,6 +88,17 @@ export async function POST(req: Request) {
     if (result.needsVoice) return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
     if (result.clarify && !result.draft) return NextResponse.json({ ask: result.clarify, voiceName: result.voiceName })
     if (!result.draft) return NextResponse.json({ error: "Couldn't write a reply. Try again." }, { status: 500 })
+
+    // A reply draft was produced → charge for it (atomic, never negative).
+    if (!staff) {
+      try {
+        await deduct(session.userId, POST_COST, 'post', { kind: 'reply', tweetId: target.tweetId })
+      } catch (e) {
+        if (e instanceof InsufficientCreditsError)
+          return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })
+        throw e
+      }
+    }
 
     // History (best-effort): ONE entry per reply chat, with the target post.
     const replyTo: ReplyTarget = { tweetId: target.tweetId, url: target.url, authorHandle: target.authorHandle, text: target.text }
@@ -117,12 +126,8 @@ export async function POST(req: Request) {
       historyId = undefined
     }
 
-    let draftsLeft: number | undefined
-    if (capped) {
-      const used = await incrementDraftsUsed(session.userId)
-      draftsLeft = Math.max(0, DRAFT_LIMIT - used)
-    }
-    return NextResponse.json({ draft: result.draft, voiceName: result.voiceName, historyId, draftsLeft })
+    const creditsLeft = staff ? undefined : await getBalance(session.userId)
+    return NextResponse.json({ draft: result.draft, voiceName: result.voiceName, historyId, creditsLeft })
   } catch (err) {
     if (err instanceof ModelBusyError) {
       return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })

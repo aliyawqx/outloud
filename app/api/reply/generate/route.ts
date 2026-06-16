@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { getProfile as getUserProfile, incrementDraftsUsed } from '@/lib/profile/store'
-import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
-import { isPaidPlan } from '@/lib/billing/plans'
+import { isStaff } from '@/lib/appLock'
+import { deduct, getBalance, InsufficientCreditsError, POST_COST } from '@/lib/credits'
 import { generateReplyVariants } from '@/lib/reply/generate'
 import { VoiceNotReadyError } from '@/lib/voice/generate'
 import { ModelBusyError } from '@/lib/anthropic'
@@ -36,11 +35,10 @@ export async function POST(req: Request) {
   const angleType = typeof b.angleType === 'string' ? b.angleType : undefined
   const profileId = typeof b.profileId === 'string' ? b.profileId : undefined
 
-  // Same draft cap as posts: trial pool; staff and paid plans are uncapped.
-  const up = await getUserProfile(session.userId)
-  const capped = !isStaff(session.email) && !isPaidPlan(up?.plan)
-  if (capped && (up?.draftsUsed ?? 0) >= DRAFT_LIMIT) {
-    return NextResponse.json({ error: `You've used all ${DRAFT_LIMIT} of your drafts.`, limitReached: true, draftsLeft: 0 }, { status: 403 })
+  // Metered by credits (staff unlimited). Pre-check, then charge after variants.
+  const staff = isStaff(session.email)
+  if (!staff && (await getBalance(session.userId)) < POST_COST) {
+    return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: POST_COST, balance: await getBalance(session.userId) }, { status: 402 })
   }
 
   try {
@@ -52,13 +50,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ ask: result.clarify, voiceName: result.voiceName })
     }
 
-    let draftsLeft: number | undefined
-    if (capped) {
-      const used = await incrementDraftsUsed(session.userId)
-      draftsLeft = Math.max(0, DRAFT_LIMIT - used)
+    // Reply variants produced → charge once (atomic, never negative).
+    if (!staff) {
+      try {
+        await deduct(session.userId, POST_COST, 'post', { kind: 'reply', tweetId })
+      } catch (e) {
+        if (e instanceof InsufficientCreditsError)
+          return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })
+        throw e
+      }
     }
+    const creditsLeft = staff ? undefined : await getBalance(session.userId)
     const variants = result.variants.map((d) => d.fullText)
-    return NextResponse.json({ variants, tweetId, voiceName: result.voiceName, draftsLeft })
+    return NextResponse.json({ variants, tweetId, voiceName: result.voiceName, creditsLeft })
   } catch (err) {
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })

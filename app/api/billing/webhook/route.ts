@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
 import { setPlan } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
+import { addCredits, grantPlan, packByProductId } from '@/lib/credits'
 
 // POST /api/billing/webhook — Polar's durable activation path (Standard Webhooks).
 // Verifies the signature, then flips the user's plan on subscribe / cancel. Set
@@ -52,13 +53,24 @@ export async function POST(req: Request) {
   const data = event.data ?? {}
 
   try {
+    const productId = data.product_id as string | undefined
+    // A one-time credit-pack purchase (fires order.paid). Add credits, no plan change.
+    const pack = packByProductId(productId)
+    if (type === 'order.paid' && pack) {
+      const userId = await resolveUserId(data)
+      if (userId) await addCredits(userId, pack.credits, { pack: pack.id, productId, orderId: data.id })
+    }
     // Activate on payment / active / re-activated subscription. NOT on
     // subscription.canceled (that only schedules a cancel — access stays until the
-    // period ends and subscription.revoked fires).
-    if (type === 'order.paid' || type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled') {
+    // period ends and subscription.revoked fires). order.paid also fires on each
+    // renewal, so granting here refills the monthly credits.
+    else if (type === 'order.paid' || type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled') {
       const userId = await resolveUserId(data)
-      const plan = planForProductId(data.product_id as string | undefined)
-      if (userId && plan) await setPlan(userId, plan)
+      const plan = planForProductId(productId)
+      if (userId && plan) {
+        await setPlan(userId, plan)
+        await grantPlan(userId, plan) // reset (not stack) to the plan's monthly grant
+      }
     } else if (type === 'subscription.revoked') {
       const userId = await resolveUserId(data)
       if (userId) await setPlan(userId, 'free')

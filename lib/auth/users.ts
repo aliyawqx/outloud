@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
 import { hashPassword } from './password'
+import { SIGNUP_GRANT } from '@/lib/credits'
 
 export type AuthUser = { id: string; email: string }
 
@@ -30,8 +31,13 @@ export async function createUser(input: {
       hash,
     ])
     await client.query(
-      'INSERT INTO profiles (user_id, display_name, email) VALUES ($1, $2, $3)',
-      [id, input.displayName, input.email],
+      'INSERT INTO profiles (user_id, display_name, email, credit_balance) VALUES ($1, $2, $3, $4)',
+      [id, input.displayName, input.email, SIGNUP_GRANT],
+    )
+    // Audit the free starting grant.
+    await client.query(
+      'INSERT INTO credit_ledger (id, user_id, amount, reason, metadata) VALUES ($1, $2, $3, $4, $5::jsonb)',
+      [randomUUID(), id, SIGNUP_GRANT, 'grant', JSON.stringify({ signup: true })],
     )
     await client.query('COMMIT')
     return { id, email: input.email }

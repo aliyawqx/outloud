@@ -13,6 +13,8 @@ export type Profile = {
   incubator: Incubator
   /** Lifetime drafts generated (counts toward the participant cap). */
   draftsUsed: number
+  /** Metered-action credit balance (see lib/credits). */
+  creditBalance: number
   createdAt: string
   updatedAt: string
 }
@@ -26,6 +28,7 @@ type Row = {
   plan: string
   incubator: string | null
   drafts_used: number
+  credit_balance: number
   created_at: Date
   updated_at: Date
 }
@@ -40,6 +43,7 @@ function mapRow(r: Row): Profile {
     plan: r.plan,
     incubator: r.incubator === 'yes' ? 'yes' : r.incubator === 'no' ? 'no' : null,
     draftsUsed: r.drafts_used ?? 0,
+    creditBalance: r.credit_balance ?? 0,
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
   }

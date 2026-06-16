@@ -1,14 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPrompt, deletePrompt, updatePrompt, type DefaultPrompt, type Prompt } from '@/lib/prompts/client'
 import { Spinner } from '@/components/Spinner'
 
 const field =
   'w-full rounded-lg border border-border-muted bg-surface-container-lowest px-3 py-2 font-body-sm text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none'
 
+// Matches the card's `bg-surface-container-low`, used behind the "Show more"
+// button and for the fade-out gradient so clamped text dissolves into the card.
+const CARD_BG = '#1a1c20'
+
 /** A built-in "Outloud" prompt — read-only. */
 function DefaultCard({ prompt }: { prompt: DefaultPrompt }) {
+  const textRef = useRef<HTMLParagraphElement>(null)
+  const [expanded, setExpanded] = useState(false)
+  const [overflowing, setOverflowing] = useState(false)
+
+  // Detect whether the (clamped) text actually overflows 3 lines. Only meaningful
+  // while collapsed — when expanded the clamp is removed so scrollHeight === clientHeight.
+  useEffect(() => {
+    const el = textRef.current
+    if (!el || expanded) return
+    const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 1)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [prompt.text, expanded])
+
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-border-muted bg-surface-container-low p-4 opacity-90">
       <div className="flex items-center gap-2">
@@ -18,7 +38,33 @@ function DefaultCard({ prompt }: { prompt: DefaultPrompt }) {
           read-only
         </span>
       </div>
-      <p className="whitespace-pre-wrap font-body-sm text-body-sm leading-relaxed text-on-surface-variant">{prompt.text}</p>
+      <div className="relative">
+        <p
+          ref={textRef}
+          className={`whitespace-pre-wrap font-body-sm text-body-sm leading-relaxed text-on-surface-variant ${expanded ? '' : 'line-clamp-3'}`}
+        >
+          {prompt.text}
+        </p>
+        {overflowing && (
+          <div className="pointer-events-none absolute bottom-0 right-0 flex items-end font-body-sm text-body-sm leading-relaxed">
+            {!expanded && (
+              <span
+                aria-hidden="true"
+                className="h-[1.625em] w-20"
+                style={{ background: `linear-gradient(to right, transparent, ${CARD_BG})` }}
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => setExpanded((e) => !e)}
+              className="pointer-events-auto pl-1 text-on-surface-variant transition-colors hover:text-on-surface"
+              style={{ backgroundColor: CARD_BG }}
+            >
+              {expanded ? 'Show less' : 'Show more'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

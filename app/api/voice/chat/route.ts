@@ -3,9 +3,8 @@ import { getSession } from '@/lib/auth/session'
 import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
-import { getProfile as getUserProfile, incrementDraftsUsed } from '@/lib/profile/store'
-import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
-import { isPaidPlan } from '@/lib/billing/plans'
+import { isStaff } from '@/lib/appLock'
+import { deduct, getBalance, InsufficientCreditsError, POST_COST } from '@/lib/credits'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { getPromptText } from '@/lib/prompts/store'
 import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
@@ -68,15 +67,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
   }
 
-  // Draft cap: trial participants get DRAFT_LIMIT lifetime drafts; staff and PAID
-  // plans are uncapped.
-  const up = await getUserProfile(session.userId)
-  const capped = !isStaff(session.email) && !isPaidPlan(up?.plan)
-  if (capped && (up?.draftsUsed ?? 0) >= DRAFT_LIMIT) {
-    return NextResponse.json(
-      { error: `You've used all ${DRAFT_LIMIT} of your drafts.`, limitReached: true, draftsLeft: 0 },
-      { status: 403 },
-    )
+  // Metered by credits (staff are unlimited). Cheap pre-check so we don't run any
+  // LLM work for a user who can't afford a post; the real charge is atomic below.
+  const staff = isStaff(session.email)
+  if (!staff && (await getBalance(session.userId)) < POST_COST) {
+    return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: POST_COST, balance: await getBalance(session.userId) }, { status: 402 })
   }
 
   // When iterating on an existing draft, edit THAT draft (keeps the voice and
@@ -93,6 +88,16 @@ export async function POST(req: Request) {
     const intake = await runIntake(messages, formatText ?? undefined)
     if (intake.action === 'ask') {
       return NextResponse.json({ ask: intake.question, voiceName: profile.name })
+    }
+    // Charge for the post atomically, right before generating it.
+    if (!staff) {
+      try {
+        await deduct(session.userId, POST_COST, 'post', { kind: 'post', command })
+      } catch (e) {
+        if (e instanceof InsufficientCreditsError)
+          return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })
+        throw e
+      }
     }
     const samples = await listEnabledTexts(session.userId, profile.id, 5)
     const { drafts, clarify } = await generatePost({
@@ -131,13 +136,8 @@ export async function POST(req: Request) {
       console.error('[voice/chat] history save failed:', e)
       historyId = undefined
     }
-    // A draft was produced → count it toward the cap (revisions count too).
-    let draftsLeft: number | undefined
-    if (capped) {
-      const used = await incrementDraftsUsed(session.userId)
-      draftsLeft = Math.max(0, DRAFT_LIMIT - used)
-    }
-    return NextResponse.json({ draft: drafts[0], voiceName: profile.name, historyId, draftsLeft })
+    const creditsLeft = staff ? undefined : await getBalance(session.userId)
+    return NextResponse.json({ draft: drafts[0], voiceName: profile.name, historyId, creditsLeft })
   } catch (err) {
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })

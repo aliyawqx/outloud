@@ -9,3 +9,14 @@ next-env.d.ts
 .DS_Store
 .playwright-mcp
 .vercel
+
+# Media / promo assets (not tracked in repo)
+reel/
+promo/
+reeldyn/
+cap_*.png
+hi_*.png
+site_*.png
+*.mp4
+*.mov
+*.MOV
