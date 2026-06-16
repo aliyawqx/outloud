@@ -69,6 +69,16 @@ export async function updateComposeChat(
   )
 }
 
+/** Rename a chat — updates the title (idea) shown in the History sidebar. */
+export async function renameComposeEntry(ownerKey: string, id: string, idea: string): Promise<boolean> {
+  await ensureSchema()
+  const { rowCount } = await getPool().query(
+    `UPDATE compose_history SET idea = $3 WHERE owner_key = $1 AND id = $2`,
+    [ownerKey, id, idea],
+  )
+  return (rowCount ?? 0) > 0
+}
+
 /** One entry, scoped to its owner — used to reopen a session in the composer. */
 export async function getComposeEntry(ownerKey: string, id: string): Promise<HistoryEntry | null> {
   await ensureSchema()

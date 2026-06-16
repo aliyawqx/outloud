@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Logo } from '@/components/Logo'
+import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
 
 export type SidebarProfile = {
   displayName: string
@@ -20,11 +21,18 @@ function navItems(voiceCount: number): NavItem[] {
     { href: '/app/voices', label: 'Voices', icon: 'graphic_eq', badge: voiceCount },
     { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks' },
     { href: '/app/knowledge', label: 'Knowledge', icon: 'menu_book', soon: true },
-    { href: '/app/history', label: 'History', icon: 'history' },
   ]
 }
 
-export function AppSidebar({ profile, voiceCount }: { profile: SidebarProfile; voiceCount: number }) {
+export function AppSidebar({
+  profile,
+  voiceCount,
+  history,
+}: {
+  profile: SidebarProfile
+  voiceCount: number
+  history: SidebarHistoryItem[]
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -39,7 +47,7 @@ export function AppSidebar({ profile, voiceCount }: { profile: SidebarProfile; v
   }
 
   const nav = (
-    <nav className="flex flex-1 flex-col gap-1 px-3" aria-label="Primary">
+    <nav className="flex flex-col gap-1 px-3" aria-label="Primary">
       {items.map((it) => {
         const active = isActive(it.href)
         return (
@@ -74,7 +82,7 @@ export function AppSidebar({ profile, voiceCount }: { profile: SidebarProfile; v
   )
 
   const footer = (
-    <div className="mt-auto flex flex-col gap-2 border-t border-border-muted p-3">
+    <div className="flex flex-col gap-2 border-t border-border-muted p-3">
       <Link
         href="/app/profile"
         onClick={() => setOpen(false)}
@@ -137,6 +145,7 @@ export function AppSidebar({ profile, voiceCount }: { profile: SidebarProfile; v
               <Logo />
             </div>
             {nav}
+            <SidebarHistory initial={history} onNavigate={() => setOpen(false)} />
             {footer}
           </aside>
         </div>
@@ -150,6 +159,7 @@ export function AppSidebar({ profile, voiceCount }: { profile: SidebarProfile; v
           </Link>
         </div>
         {nav}
+        <SidebarHistory initial={history} />
         {footer}
       </aside>
     </>

@@ -88,3 +88,7 @@ export function saveStyleGuide(
 export function deleteHistory(id: string): Promise<{ ok: true }> {
   return api(`/api/voice/history/${id}`, { method: 'DELETE' })
 }
+
+export function renameHistory(id: string, title: string): Promise<{ ok: true }> {
+  return api(`/api/voice/history/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) })
+}
