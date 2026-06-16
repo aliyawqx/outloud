@@ -218,7 +218,10 @@ export function ComposeHome({
   const router = useRouter()
   const active = voices.find((v) => v.isActive) ?? voices[0]
   const initialTurns: Turn[] = (initialSession?.turns ?? []).map(
-    (t, i) => ('draft' in t ? { id: i, role: 'assistant', draft: t.draft } : { id: i, role: t.role, text: t.text }) as Turn,
+    (t, i) =>
+      ('draft' in t
+        ? { id: i, role: 'assistant', draft: t.draft }
+        : { id: i, role: t.role, text: t.text, ...('options' in t && t.options ? { options: t.options } : {}) }) as Turn,
   )
   const [voiceId, setVoiceId] = useState(initialSession?.voiceId ?? active?.id ?? '')
   const [turns, setTurns] = useState<Turn[]>(initialTurns)
@@ -261,7 +264,10 @@ export function ComposeHome({
   // which the server uses both to run the chat and to persist the transcript.
   function toRecords(extra: Turn): ChatTurnRecord[] {
     return [...turns, extra].map(
-      (t) => ('draft' in t ? { role: 'assistant', draft: t.draft } : { role: t.role, text: t.text }) as ChatTurnRecord,
+      (t) =>
+        ('draft' in t
+          ? { role: 'assistant', draft: t.draft }
+          : { role: t.role, text: t.text, ...('options' in t && t.options ? { options: t.options } : {}) }) as ChatTurnRecord,
     )
   }
 
@@ -312,6 +318,13 @@ export function ComposeHome({
       }
       if (typeof data.draftsLeft === 'number') setLeft(data.draftsLeft)
       if (data.historyId) setHistoryId(data.historyId)
+      // Anchor a brand-new chat in the URL once it has its first AI answer: the
+      // sidebar then lists + highlights it (gray), and "New post" (/app) becomes a
+      // clean, separate action that always opens a fresh chat. The remount restores
+      // the full transcript (options included) from the server, so nothing is lost.
+      if (data.historyId && !initialSession && !historyId) {
+        router.replace(`/app?session=${data.historyId}`, { scroll: false })
+      }
       if (data.ask) {
         const options = Array.isArray(data.options) ? (data.options as string[]) : []
         setPickedOption(null)

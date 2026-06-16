@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
@@ -35,10 +35,14 @@ export function AppSidebar({
 }) {
   const pathname = usePathname()
   const router = useRouter()
+  // A history chat is open when /app carries a ?session — in that case the compose
+  // chat (highlighted gray in the History list) is the active item, NOT "New post".
+  const viewingChat = Boolean(useSearchParams().get('session'))
   const [open, setOpen] = useState(false)
   const items = navItems(voiceCount)
 
-  const isActive = (href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href))
+  const isActive = (href: string) =>
+    href === '/app' ? pathname === '/app' && !viewingChat : pathname.startsWith(href)
 
   async function signOut() {
     await fetch('/api/auth/logout', { method: 'POST' })

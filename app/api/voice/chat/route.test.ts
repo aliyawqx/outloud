@@ -91,7 +91,7 @@ describe('POST /api/voice/chat', () => {
       drafts: [],
       messages: [
         { role: 'user', text: 'got into an incubator' },
-        { role: 'assistant', text: 'x or linkedin?' },
+        { role: 'assistant', text: 'x or linkedin?', options: ['X', 'LinkedIn', 'Both'] },
       ],
     }))
   })

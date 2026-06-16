@@ -90,7 +90,7 @@ export type DraftPost = {
 /** One turn of the composer chat, in restorable form (persisted with history). */
 export type ChatTurnRecord =
   | { role: 'user'; text: string }
-  | { role: 'assistant'; text: string }
+  | { role: 'assistant'; text: string; options?: string[] }
   | { role: 'assistant'; draft: DraftPost }
 
 /** The X post a reply session is aimed at (Reply Studio). */

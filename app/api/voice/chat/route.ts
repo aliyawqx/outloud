@@ -24,12 +24,18 @@ function parseTurns(raw: unknown): ChatTurnRecord[] {
   const out: ChatTurnRecord[] = []
   for (const t of raw) {
     if (!t || typeof t !== 'object') continue
-    const o = t as { role?: unknown; text?: unknown; draft?: unknown }
+    const o = t as { role?: unknown; text?: unknown; draft?: unknown; options?: unknown }
     const draft = o.draft as DraftPost | undefined
     if (draft && typeof draft === 'object' && typeof draft.fullText === 'string') {
       out.push({ role: 'assistant', draft })
     } else if (typeof o.text === 'string') {
-      out.push({ role: o.role === 'assistant' ? 'assistant' : 'user', text: o.text.slice(0, TEXT_MAX) } as ChatTurnRecord)
+      const isAssistant = o.role === 'assistant'
+      const options = isAssistant && Array.isArray(o.options) ? (o.options as unknown[]).filter((x): x is string => typeof x === 'string') : undefined
+      out.push({
+        role: isAssistant ? 'assistant' : 'user',
+        text: o.text.slice(0, TEXT_MAX),
+        ...(options && options.length ? { options } : {}),
+      } as ChatTurnRecord)
     }
   }
   return out.slice(-MAX_TURNS)
@@ -127,7 +133,7 @@ export async function POST(req: Request) {
     if (intake.action === 'ask') {
       // A question IS the first AI answer — persist the chat now so it shows up in
       // History even before any draft exists.
-      const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: intake.question }]
+      const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: intake.question, options: intake.options }]
       const allDrafts = fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : []))
       const historyId = await persistHistory({
         ownerKey: session.userId,
