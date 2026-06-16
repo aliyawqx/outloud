@@ -38,6 +38,40 @@ function parseTurns(raw: unknown): ChatTurnRecord[] {
 const toContent = (t: ChatTurnRecord): ChatTurn =>
   'draft' in t ? { role: 'assistant', content: t.draft.fullText } : { role: t.role, content: t.text }
 
+/**
+ * Persist the chat as ONE history entry (best-effort) and return its id. Created
+ * as soon as the chat has its FIRST assistant reply — a question, a clarification,
+ * or a draft — and updated in place on every later turn. Never throws.
+ */
+async function persistHistory(input: {
+  ownerKey: string
+  voiceProfileId: string
+  voiceName: string
+  idea: string
+  drafts: DraftPost[]
+  messages: ChatTurnRecord[]
+  historyId?: string
+}): Promise<string | undefined> {
+  try {
+    if (input.historyId && (await getComposeEntry(input.ownerKey, input.historyId))) {
+      await updateComposeChat(input.ownerKey, input.historyId, { drafts: input.drafts, messages: input.messages })
+      return input.historyId
+    }
+    const entry = await saveComposeSession({
+      ownerKey: input.ownerKey,
+      voiceProfileId: input.voiceProfileId,
+      voiceName: input.voiceName,
+      idea: input.idea,
+      drafts: input.drafts,
+      messages: input.messages,
+    })
+    return entry.id
+  } catch (e) {
+    console.error('[voice/chat] history save failed:', e)
+    return undefined
+  }
+}
+
 // POST /api/voice/chat — one step of the composer chat. Reads the conversation,
 // then either asks ONE follow-up question or writes a draft in the user's voice.
 export async function POST(req: Request) {
@@ -84,10 +118,27 @@ export async function POST(req: Request) {
   const command = typeof b.command === 'string' && b.command ? b.command : DEFAULT_COMMAND
   const formatText = (await getPromptText(session.userId, command)) ?? seedText(command) ?? seedText(DEFAULT_COMMAND)
 
+  // The first user message names the chat in the History panel.
+  const firstIdea = turns.find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text || lastUserMessage
+  const priorHistoryId = typeof b.historyId === 'string' && b.historyId ? b.historyId : undefined
+
   try {
     const intake = await runIntake(messages, formatText ?? undefined)
     if (intake.action === 'ask') {
-      return NextResponse.json({ ask: intake.question, options: intake.options, voiceName: profile.name })
+      // A question IS the first AI answer — persist the chat now so it shows up in
+      // History even before any draft exists.
+      const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: intake.question }]
+      const allDrafts = fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : []))
+      const historyId = await persistHistory({
+        ownerKey: session.userId,
+        voiceProfileId: profile.id,
+        voiceName: profile.name,
+        idea: firstIdea || intake.question,
+        drafts: allDrafts,
+        messages: fullTurns,
+        historyId: priorHistoryId,
+      })
+      return NextResponse.json({ ask: intake.question, options: intake.options, voiceName: profile.name, historyId })
     }
     // Charge for the post atomically, right before generating it.
     if (!staff) {
@@ -109,33 +160,33 @@ export async function POST(req: Request) {
       count: 1,
     })
     if (clarify && drafts.length === 0) {
-      return NextResponse.json({ ask: clarify, voiceName: profile.name })
+      // A generation-time clarification is also a first AI answer — persist it too.
+      const askTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: clarify }]
+      const historyId = await persistHistory({
+        ownerKey: session.userId,
+        voiceProfileId: profile.id,
+        voiceName: profile.name,
+        idea: firstIdea || clarify,
+        drafts: askTurns.flatMap((t) => ('draft' in t ? [t.draft] : [])),
+        messages: askTurns,
+        historyId: priorHistoryId,
+      })
+      return NextResponse.json({ ask: clarify, voiceName: profile.name, historyId })
     }
 
-    // History (best-effort): ONE entry per chat. Persist the full transcript so the
-    // session can be reopened and continued. drafts = every draft in the transcript.
+    // ONE entry per chat. Persist the full transcript so the session can be reopened
+    // and continued. drafts = every draft in the transcript.
     const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', draft: drafts[0] }]
     const allDrafts = fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : []))
-    let historyId = typeof b.historyId === 'string' && b.historyId ? b.historyId : undefined
-    try {
-      if (historyId && (await getComposeEntry(session.userId, historyId))) {
-        await updateComposeChat(session.userId, historyId, { drafts: allDrafts, messages: fullTurns })
-      } else {
-        const firstIdea = turns.find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text || intake.brief
-        const entry = await saveComposeSession({
-          ownerKey: session.userId,
-          voiceProfileId: profile.id,
-          voiceName: profile.name,
-          idea: firstIdea,
-          drafts: allDrafts,
-          messages: fullTurns,
-        })
-        historyId = entry.id
-      }
-    } catch (e) {
-      console.error('[voice/chat] history save failed:', e)
-      historyId = undefined
-    }
+    const historyId = await persistHistory({
+      ownerKey: session.userId,
+      voiceProfileId: profile.id,
+      voiceName: profile.name,
+      idea: firstIdea || intake.brief,
+      drafts: allDrafts,
+      messages: fullTurns,
+      historyId: priorHistoryId,
+    })
     const creditsLeft = staff ? undefined : await getBalance(session.userId)
     return NextResponse.json({ draft: drafts[0], voiceName: profile.name, historyId, creditsLeft })
   } catch (err) {

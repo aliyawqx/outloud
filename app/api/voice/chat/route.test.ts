@@ -83,7 +83,17 @@ describe('POST /api/voice/chat', () => {
     expect(body.ask).toBe('x or linkedin?')
     expect(body.options).toEqual(['X', 'LinkedIn', 'Both'])
     expect(genMock).not.toHaveBeenCalled()
-    expect(saveMock).not.toHaveBeenCalled() // ask turns never create history (no empty entries)
+    // A question is the first AI answer → the chat is saved to History right away,
+    // with the question stored as an assistant turn and no drafts yet.
+    expect(body.historyId).toBe('h1')
+    expect(saveMock).toHaveBeenCalledWith(expect.objectContaining({
+      idea: 'got into an incubator',
+      drafts: [],
+      messages: [
+        { role: 'user', text: 'got into an incubator' },
+        { role: 'assistant', text: 'x or linkedin?' },
+      ],
+    }))
   })
 
   it('writes a draft, saves ONE history entry with the transcript', async () => {
