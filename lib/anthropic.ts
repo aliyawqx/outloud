@@ -227,12 +227,14 @@ export async function generateStyleGuide(samples: string[]): Promise<StyleGuide>
 export type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
 export type IntakeResult =
-  | { action: 'ask'; question: string }
+  | { action: 'ask'; question: string; options: string[] }
   | { action: 'write'; brief: string }
 
 const IntakeSchema = z.object({
   action: z.enum(['ask', 'write']),
   question: z.string().optional().default(''),
+  // Up to 3 tappable suggested answers for the clarifying question (empty on write).
+  options: z.array(z.string()).optional().default([]),
   brief: z.string().optional().default(''),
 })
 
@@ -244,9 +246,10 @@ const INTAKE_FORMAT = {
     properties: {
       action: { type: 'string', enum: ['ask', 'write'] },
       question: { type: 'string' },
+      options: { type: 'array', items: { type: 'string' } },
       brief: { type: 'string' },
     },
-    required: ['action', 'question', 'brief'],
+    required: ['action', 'question', 'options', 'brief'],
   },
 }
 
@@ -289,7 +292,12 @@ export async function runIntake(messages: ChatTurn[], format?: string): Promise<
     throw new Error('Model returned non-JSON output')
   }
   const r = IntakeSchema.parse(parsed)
-  if (r.action === 'ask') return { action: 'ask', question: noEmDashes(r.question.trim()) }
+  if (r.action === 'ask')
+    return {
+      action: 'ask',
+      question: noEmDashes(r.question.trim()),
+      options: r.options.map((o) => noEmDashes(o.trim())).filter(Boolean).slice(0, 3),
+    }
   return { action: 'write', brief: r.brief.trim() }
 }
 

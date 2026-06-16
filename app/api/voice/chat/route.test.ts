@@ -76,10 +76,12 @@ describe('POST /api/voice/chat', () => {
   })
 
   it('returns ONE follow-up question when intake decides to ask', async () => {
-    intakeMock.mockResolvedValue({ action: 'ask', question: 'x or linkedin?' })
+    intakeMock.mockResolvedValue({ action: 'ask', question: 'x or linkedin?', options: ['X', 'LinkedIn', 'Both'] })
     const res = await POST(json({ turns: [{ role: 'user', text: 'got into an incubator' }], profileId: 'p1' }))
     expect(res.status).toBe(200)
-    expect((await res.json()).ask).toBe('x or linkedin?')
+    const body = await res.json()
+    expect(body.ask).toBe('x or linkedin?')
+    expect(body.options).toEqual(['X', 'LinkedIn', 'Both'])
     expect(genMock).not.toHaveBeenCalled()
     expect(saveMock).not.toHaveBeenCalled() // ask turns never create history (no empty entries)
   })

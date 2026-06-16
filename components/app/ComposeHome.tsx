@@ -196,7 +196,7 @@ function DraftCard({ draft, index }: { draft: DraftPost; index: number }) {
 
 type Turn =
   | { id: number; role: 'user'; text: string }
-  | { id: number; role: 'assistant'; text: string }
+  | { id: number; role: 'assistant'; text: string; options?: string[] }
   | { id: number; role: 'assistant'; draft: DraftPost }
 
 export type ComposeSession = { historyId: string; voiceId?: string; turns: ChatTurnRecord[] }
@@ -229,6 +229,10 @@ export function ComposeHome({
   const [activeCommand, setActiveCommand] = useState('')
   const [left, setLeft] = useState<number | null>(draftsLeft)
   const [showUpgrade, setShowUpgrade] = useState(false)
+  // When the latest question has tappable options, the composer stays hidden until
+  // the user picks "Write your own". Reset each time a fresh question arrives.
+  const [writeOwn, setWriteOwn] = useState(false)
+  const [pickedOption, setPickedOption] = useState<string | null>(null)
 
   // Auto-grow the input with its content, up to ~3 rows (then it scrolls). The
   // max height comes from the textarea's CSS max-h; we just track scrollHeight.
@@ -262,16 +266,20 @@ export function ComposeHome({
     )
   }
 
-  async function send() {
-    let text = input.trim()
+  async function send(override?: string) {
+    let text = (override ?? input).trim()
     if (!text || loading) return
-    // Bare "/command" → just select the format, don't send yet.
-    const bare = text.match(/^\/([a-z0-9-]+)$/i)
-    if (bare && commands.some((c) => c.command === bare[1].toLowerCase())) {
-      pickCommand(bare[1].toLowerCase())
-      return
+    // Bare "/command" → just select the format, don't send yet (typed input only).
+    if (override === undefined) {
+      const bare = text.match(/^\/([a-z0-9-]+)$/i)
+      if (bare && commands.some((c) => c.command === bare[1].toLowerCase())) {
+        pickCommand(bare[1].toLowerCase())
+        return
+      }
     }
     setError('')
+    // Answering the current question: clear the options gate.
+    setWriteOwn(false)
     let command = activeCommand || undefined
     // Inline "/command rest of idea" → use that command for this message.
     const inline = text.match(/^\/([a-z0-9-]+)\s+([\s\S]+)$/i)
@@ -308,7 +316,10 @@ export function ComposeHome({
       if (typeof data.draftsLeft === 'number') setLeft(data.draftsLeft)
       if (data.historyId) setHistoryId(data.historyId)
       if (data.ask) {
-        setTurns((t) => [...t, { id: id(), role: 'assistant', text: data.ask }])
+        const options = Array.isArray(data.options) ? (data.options as string[]) : []
+        setWriteOwn(false)
+        setPickedOption(null)
+        setTurns((t) => [...t, { id: id(), role: 'assistant', text: data.ask, options }])
       } else if (data.draft) {
         setTurns((t) => [...t, { id: id(), role: 'assistant', draft: data.draft }])
       }
@@ -318,6 +329,22 @@ export function ComposeHome({
       setLoading(false)
     }
   }
+
+  // Tapping a suggested option submits it as the answer to the current question.
+  function chooseOption(option: string) {
+    if (loading) return
+    setPickedOption(option)
+    send(option)
+  }
+
+  // The latest turn is an unanswered question with tappable options: gate the
+  // composer behind "Write your own" so the buttons lead.
+  const lastTurn = turns[turns.length - 1]
+  const optionsTurn =
+    lastTurn && !('draft' in lastTurn) && lastTurn.role === 'assistant' && lastTurn.options && lastTurn.options.length > 0
+      ? lastTurn
+      : null
+  const awaitingOptions = Boolean(optionsTurn) && !writeOwn
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -434,7 +461,7 @@ export function ComposeHome({
             {draftsBadge}
             <button
               type="button"
-              onClick={send}
+              onClick={() => send()}
               disabled={loading || !input.trim()}
               aria-label="Send"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-40"
@@ -483,9 +510,45 @@ export function ComposeHome({
               </div>
             )
           }
+          const showOptions = optionsTurn?.id === t.id && !writeOwn
           return (
-            <div key={t.id} className="self-start max-w-[85%] rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-2.5">
-              <p className="whitespace-pre-wrap font-body-md text-on-surface">{t.text}</p>
+            <div key={t.id} className="flex max-w-[85%] flex-col gap-2 self-start">
+              <div className="rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-2.5">
+                <p className="whitespace-pre-wrap font-body-md text-on-surface">{t.text}</p>
+              </div>
+              {showOptions && (
+                <div className="flex flex-col gap-2">
+                  {t.options!.map((opt) => {
+                    const picked = pickedOption === opt
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => chooseOption(opt)}
+                        disabled={loading}
+                        className={`rounded-xl border px-4 py-2.5 text-left font-body-md transition-colors disabled:opacity-50 ${
+                          picked
+                            ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface'
+                            : 'border-border-muted bg-surface-container-low text-on-surface hover:border-electric-indigo/60 hover:bg-electric-indigo/10'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    )
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWriteOwn(true)
+                      requestAnimationFrame(() => taRef.current?.focus())
+                    }}
+                    disabled={loading}
+                    className="rounded-xl border border-dashed border-border-muted px-4 py-2.5 text-left font-body-md text-on-surface-variant transition-colors hover:border-on-surface-variant hover:text-on-surface disabled:opacity-50"
+                  >
+                    ✏️ Write your own
+                  </button>
+                </div>
+              )}
             </div>
           )
         })}
@@ -498,7 +561,7 @@ export function ComposeHome({
       </div>
 
       <div className="sticky bottom-0 -mx-1 bg-surface/80 px-1 pb-2 pt-1 backdrop-blur-sm">
-        {composer}
+        {!awaitingOptions && composer}
         {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}

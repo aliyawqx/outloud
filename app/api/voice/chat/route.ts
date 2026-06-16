@@ -87,7 +87,7 @@ export async function POST(req: Request) {
   try {
     const intake = await runIntake(messages, formatText ?? undefined)
     if (intake.action === 'ask') {
-      return NextResponse.json({ ask: intake.question, voiceName: profile.name })
+      return NextResponse.json({ ask: intake.question, options: intake.options, voiceName: profile.name })
     }
     // Charge for the post atomically, right before generating it.
     if (!staff) {
