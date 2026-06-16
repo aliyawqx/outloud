@@ -84,12 +84,21 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
       <div className="mt-1 min-h-[1.25rem] font-code-label text-code-label text-secondary">{saveLine}</div>
 
       {credits ? (
-        // Credit-based display: total monthly credits + an approximate breakdown.
+        // Credit-based display: total monthly credits + an approximate breakdown,
+        // then the plan's perks listed like the free plan.
         <div className="my-8 flex-1">
           <div className="font-headline-lg text-2xl font-bold text-on-surface">{credits / 1000}k credits / mo</div>
           <div className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">
             ≈ {Math.floor(credits / POST_COST)} posts or {Math.floor(credits / SEARCH_COST)} topic searches
           </div>
+          <ul className="mt-6 space-y-3 border-t border-border-muted pt-6">
+            {plan.features.map((f) => (
+              <li key={f} className="flex items-start gap-3 font-body-sm text-body-sm text-on-surface">
+                <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
+                {f}
+              </li>
+            ))}
+          </ul>
         </div>
       ) : (
         <ul className="my-8 flex-1 space-y-3">

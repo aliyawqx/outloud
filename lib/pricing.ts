@@ -59,8 +59,8 @@ export const PLANS: Plan[] = [
     features: [
       'Posts in your voice across X, LinkedIn & Telegram',
       'Voice capture from your existing posts',
-      'Up to 20 posts / month',
-      'X Reply engine — up to 10 replies / month',
+      'X Reply engine included',
+      'Topic search to find what to reply to',
       '1 connected account per platform',
     ],
     cta: 'Get Starter',
@@ -75,8 +75,7 @@ export const PLANS: Plan[] = [
     annual: { perMo: 20, sub: 'billed annually · $240/year', save: 'save 33%' },
     features: [
       'Everything in Starter',
-      'Unlimited posts',
-      'X Reply engine + trending discovery — up to 30 replies / month',
+      'X Reply engine + trending discovery',
       'Style presets + adjustable hook intensity',
       'Multiple accounts / handle strategy',
       'Priority generation',
