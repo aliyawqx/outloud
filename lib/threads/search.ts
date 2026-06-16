@@ -74,8 +74,6 @@ export async function searchThreadsPosts(
 
   const data = (await res.json().catch(() => null)) as SearchResponse | null
   const arr = Array.isArray(data?.data) ? data!.data! : []
-  // TEMP DEBUG — remove after diagnosing empty results.
-  console.log('[threads-search DEBUG] status=%s items=%s raw=%s', res.status, arr.length, JSON.stringify(data)?.slice(0, 1000))
   return arr
     .filter((p): p is { id: string; text: string } & typeof p => Boolean(p && p.id && typeof p.text === 'string' && p.text.trim()))
     .map((p) => ({
