@@ -9,7 +9,7 @@ import { Spinner } from '@/components/Spinner'
 // ── Credit display config (marketing copy only — NO billing/deduction logic) ─────
 // Edit these and the per-plan card labels recompute automatically.
 const POST_COST = 1000 // credits per generated post
-const REPLY_COST = 3000 // credits per reply
+const REPLY_COST = 5000 // credits per reply
 // Monthly credit grant per paid plan. Plans not listed here keep their feature list.
 const PLAN_CREDITS: Record<string, number> = {
   starter: 200_000, // $15/mo
@@ -161,7 +161,7 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
       </div>
 
       <p className="reveal mx-auto mt-6 max-w-xl text-center font-body-sm text-body-sm text-on-surface-variant/70">
-        Credits are shared across actions. Posts ≈ {POST_COST} cr · Reply ≈ {REPLY_COST / 1000}k cr.
+        Credits are shared across actions. Posts ≈ {POST_COST / 1000}k cr · Reply ≈ {REPLY_COST / 1000}k cr.
       </p>
 
       <p className="reveal mx-auto mt-3 max-w-xl text-center font-code-label text-code-label text-on-surface-variant">
