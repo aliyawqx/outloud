@@ -8,7 +8,7 @@ import { Spinner } from '@/components/Spinner'
 
 // ── Credit display config (marketing copy only — NO billing/deduction logic) ─────
 // Edit these and the per-plan card labels recompute automatically.
-const POST_COST = 500 // credits per generated post
+const POST_COST = 1000 // credits per generated post
 const REPLY_COST = 3000 // credits per reply
 // Monthly credit grant per paid plan. Plans not listed here keep their feature list.
 const PLAN_CREDITS: Record<string, number> = {
