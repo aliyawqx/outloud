@@ -22,7 +22,7 @@ type Target = { id: string; text: string; authorHandle: string; url?: string; an
 const TOPICS_KEY = 'outloud.reply.topics'
 // Mode B (discover by topic) is temporarily closed for users. The full discovery
 // UI + logic below is kept intact — flip this to true to re-enable.
-const DISCOVER_ENABLED = false
+const DISCOVER_ENABLED = true
 const field =
   'w-full rounded-xl border border-border-muted bg-surface-container-lowest px-4 py-3 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none'
 
