@@ -13,7 +13,7 @@ const REPLY_COST = 5000 // credits per reply
 // Monthly credit grant per paid plan. Plans not listed here keep their feature list.
 const PLAN_CREDITS: Record<string, number> = {
   starter: 200_000, // $15/mo
-  pro: 800_000, // $30/mo
+  pro: 600_000, // $30/mo
 }
 
 function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
