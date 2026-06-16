@@ -51,7 +51,11 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
   }
 
   return (
+    // key on the session id (or "new") forces a fresh mount when switching chats or
+    // starting a new one, so the composer always reflects the chosen transcript and
+    // never keeps the previous chat's state.
     <ComposeHome
+      key={sessionId ?? 'new'}
       name={firstName}
       voices={readyVoices.map((v) => ({ id: v.id, name: v.name, isActive: v.isActive }))}
       commands={commands}
