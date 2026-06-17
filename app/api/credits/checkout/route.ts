@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { createCheckout } from '@/lib/billing/polar'
 import { packById } from '@/lib/credits'
+import { getProfile } from '@/lib/profile/store'
 
 // POST /api/credits/checkout — start a Polar checkout for a one-time credit pack.
 // The webhook (order.paid → addCredits) is the durable path that actually credits
@@ -19,6 +20,15 @@ export async function POST(req: Request) {
   const packId = (body as { pack?: unknown }).pack
   const pack = typeof packId === 'string' ? packById(packId) : null
   if (!pack) return NextResponse.json({ error: 'Unknown credit pack.' }, { status: 400 })
+
+  // No top-ups during the trial (spec §4) — the path forward is to start the plan.
+  const profile = await getProfile(session.userId)
+  if (profile?.trialing) {
+    return NextResponse.json(
+      { error: "Top-ups aren't available during your free trial.", trialing: true },
+      { status: 409 },
+    )
+  }
 
   const productId = process.env[pack.productEnv]
   if (!productId) {

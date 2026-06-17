@@ -5,7 +5,7 @@ import { CREDIT_PACKS } from '@/lib/creditsConfig'
 import { startPackCheckout } from '@/lib/billing/client'
 import { Spinner } from '@/components/Spinner'
 
-export function AddCredits() {
+export function AddCredits({ trialing = false }: { trialing?: boolean }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -23,13 +23,18 @@ export function AddCredits() {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border-muted bg-surface-container-low p-4">
       <span className="font-code-label text-code-label uppercase text-on-surface-variant">Add credits</span>
-      <div className="grid gap-2 sm:grid-cols-3">
+      {trialing && (
+        <p className="font-body-sm text-body-sm text-on-surface-variant">
+          Top-ups aren't available during your free trial — they unlock once your plan starts.
+        </p>
+      )}
+      <div className={`grid gap-2 sm:grid-cols-3 ${trialing ? 'pointer-events-none opacity-50' : ''}`}>
         {CREDIT_PACKS.map((p) => (
           <button
             key={p.id}
             type="button"
             onClick={() => buy(p.id)}
-            disabled={busy !== null}
+            disabled={busy !== null || trialing}
             className={`relative flex flex-col items-center gap-1 rounded-xl border px-4 py-3 transition-colors hover:border-electric-indigo disabled:opacity-60 ${
               p.bestValue ? 'border-electric-indigo' : 'border-border-muted'
             }`}

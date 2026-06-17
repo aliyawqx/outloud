@@ -15,6 +15,8 @@ export type Profile = {
   draftsUsed: number
   /** Metered-action credit balance (see lib/credits). */
   creditBalance: number
+  /** True while a subscription is in its 7-day trial (top-ups are blocked then). */
+  trialing: boolean
   createdAt: string
   updatedAt: string
 }
@@ -29,6 +31,7 @@ type Row = {
   incubator: string | null
   drafts_used: number
   credit_balance: number
+  trialing: boolean
   created_at: Date
   updated_at: Date
 }
@@ -44,6 +47,7 @@ function mapRow(r: Row): Profile {
     incubator: r.incubator === 'yes' ? 'yes' : r.incubator === 'no' ? 'no' : null,
     draftsUsed: r.drafts_used ?? 0,
     creditBalance: r.credit_balance ?? 0,
+    trialing: r.trialing ?? false,
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
   }
@@ -59,6 +63,12 @@ export async function setIncubator(userId: string, value: 'yes' | 'no'): Promise
 export async function setPlan(userId: string, plan: string): Promise<void> {
   await ensureSchema()
   await getPool().query('UPDATE profiles SET plan = $1, updated_at = now() WHERE user_id = $2', [plan, userId])
+}
+
+/** Flag whether the subscription is currently in its trial (blocks top-ups). */
+export async function setTrialing(userId: string, value: boolean): Promise<void> {
+  await ensureSchema()
+  await getPool().query('UPDATE profiles SET trialing = $1, updated_at = now() WHERE user_id = $2', [value, userId])
 }
 
 /** Atomically bump the lifetime draft counter; returns the new total. */

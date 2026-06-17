@@ -45,6 +45,8 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS drafts_used INTEGER NOT NULL DEFAU
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credit_balance INTEGER NOT NULL DEFAULT 0;
 -- When the FREE allowance next auto-resets (lazy, on read). NULL = reset on next read.
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credits_reset_at TIMESTAMPTZ;
+-- True while a subscription is in its 7-day trial (no top-ups allowed during trial).
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trialing BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS credit_ledger (
   id           TEXT PRIMARY KEY,

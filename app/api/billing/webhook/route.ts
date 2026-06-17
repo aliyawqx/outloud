@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
-import { setPlan } from '@/lib/profile/store'
+import { setPlan, setTrialing } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
 import { addCredits, grantPlan, grantTrialPool, packByProductId } from '@/lib/credits'
 
@@ -69,15 +69,17 @@ export async function POST(req: Request) {
       const plan = planForProductId(productId)
       if (userId && plan) {
         await setPlan(userId, plan)
+        await setTrialing(userId, false) // a real charge means the trial converted
         await grantPlan(userId, plan) // reset (not stack) to the plan's allowance
       }
     } else if (type === 'subscription.created' && status === 'trialing') {
       // Trial start (card added, no charge): set the plan label so the gate is passed,
-      // and grant the 10k trial pool (NOT the full plan allowance).
+      // grant the 10k trial pool (NOT the full plan), and flag the trial (no top-ups).
       const userId = await resolveUserId(data)
       const plan = planForProductId(productId)
       if (userId && plan) {
         await setPlan(userId, plan)
+        await setTrialing(userId, true)
         await grantTrialPool(userId)
       }
     } else if (type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled') {
@@ -89,7 +91,10 @@ export async function POST(req: Request) {
       if (userId && plan) await setPlan(userId, plan)
     } else if (type === 'subscription.revoked') {
       const userId = await resolveUserId(data)
-      if (userId) await setPlan(userId, 'free')
+      if (userId) {
+        await setPlan(userId, 'free')
+        await setTrialing(userId, false)
+      }
     }
   } catch (err) {
     console.error('[billing/webhook] handler failed:', err)

@@ -40,7 +40,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         {topup === 'success' && (
           <p className="font-body-sm text-body-sm text-cyber-lime">Payment received — your credits will appear in a moment.</p>
         )}
-        <AddCredits />
+        <AddCredits trialing={Boolean(profile?.trialing)} />
       </div>
 
       <div className="mt-8 flex flex-col gap-4">
