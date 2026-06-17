@@ -31,19 +31,32 @@ export async function createCheckout(opts: {
    *  Polar allows a trial only once per customer). Defaults to Polar's behavior. */
   allowTrial?: boolean
 }): Promise<{ url: string; id: string }> {
-  const res = await polar('/v1/checkouts/', {
-    method: 'POST',
-    body: JSON.stringify({
-      products: [opts.productId],
-      success_url: opts.successUrl,
-      ...(opts.customerEmail ? { customer_email: opts.customerEmail } : {}),
-      ...(opts.metadata ? { metadata: opts.metadata } : {}),
-      ...(opts.allowTrial === false ? { allow_trial: false } : {}),
-    }),
-  })
+  const attempt = (allowTrial: boolean | undefined) =>
+    polar('/v1/checkouts/', {
+      method: 'POST',
+      body: JSON.stringify({
+        products: [opts.productId],
+        success_url: opts.successUrl,
+        ...(opts.customerEmail ? { customer_email: opts.customerEmail } : {}),
+        ...(opts.metadata ? { metadata: opts.metadata } : {}),
+        ...(allowTrial === false ? { allow_trial: false } : {}),
+      }),
+    })
+
+  let res = await attempt(opts.allowTrial)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new Error(`Polar checkout create failed: ${res.status} ${body.slice(0, 300)}`)
+    // Polar allows a trial only once per customer. If we requested one and the
+    // customer already used theirs, retry without the trial (charge now) so a
+    // returning customer can still subscribe instead of hitting a dead end.
+    const trialUsed = /trial/i.test(body) && /(already used|once per customer|only be used once)/i.test(body)
+    if (opts.allowTrial !== false && trialUsed) {
+      res = await attempt(false)
+    }
+    if (!res.ok) {
+      const finalBody = res.bodyUsed ? body : await res.text().catch(() => body)
+      throw new Error(`Polar checkout create failed: ${res.status} ${finalBody.slice(0, 300)}`)
+    }
   }
   const d = (await res.json()) as { id: string; url: string }
   return { url: d.url, id: d.id }
