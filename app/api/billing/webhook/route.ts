@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
-import { setPlan, setTrialing } from '@/lib/profile/store'
+import { setPlan, setTrialing, markTrialStarted } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
 import { addCredits, grantPlan, grantTrialPool, packByProductId } from '@/lib/credits'
 
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       const plan = planForProductId(productId)
       if (userId && plan) {
         await setPlan(userId, plan)
-        await setTrialing(userId, true)
+        await markTrialStarted(userId) // trialing now + trial_used forever
         await grantTrialPool(userId)
       }
     } else if (type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled') {

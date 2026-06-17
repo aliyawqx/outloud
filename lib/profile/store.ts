@@ -17,6 +17,8 @@ export type Profile = {
   creditBalance: number
   /** True while a subscription is in its 7-day trial (top-ups are blocked then). */
   trialing: boolean
+  /** True once the user has ever started a trial (repeat checkouts skip the trial). */
+  trialUsed: boolean
   createdAt: string
   updatedAt: string
 }
@@ -32,6 +34,7 @@ type Row = {
   drafts_used: number
   credit_balance: number
   trialing: boolean
+  trial_used: boolean
   created_at: Date
   updated_at: Date
 }
@@ -48,6 +51,7 @@ function mapRow(r: Row): Profile {
     draftsUsed: r.drafts_used ?? 0,
     creditBalance: r.credit_balance ?? 0,
     trialing: r.trialing ?? false,
+    trialUsed: r.trial_used ?? false,
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
   }
@@ -69,6 +73,13 @@ export async function setPlan(userId: string, plan: string): Promise<void> {
 export async function setTrialing(userId: string, value: boolean): Promise<void> {
   await ensureSchema()
   await getPool().query('UPDATE profiles SET trialing = $1, updated_at = now() WHERE user_id = $2', [value, userId])
+}
+
+/** Mark the trial as started: in-trial now AND used-ever (the latter never resets,
+ *  so future checkouts skip the trial). */
+export async function markTrialStarted(userId: string): Promise<void> {
+  await ensureSchema()
+  await getPool().query('UPDATE profiles SET trialing = true, trial_used = true, updated_at = now() WHERE user_id = $1', [userId])
 }
 
 /** Atomically bump the lifetime draft counter; returns the new total. */

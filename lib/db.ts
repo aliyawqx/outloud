@@ -47,6 +47,9 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credit_balance INTEGER NOT NULL DE
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credits_reset_at TIMESTAMPTZ;
 -- True while a subscription is in its 7-day trial (no top-ups allowed during trial).
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trialing BOOLEAN NOT NULL DEFAULT false;
+-- True once the customer has ever started a trial — repeat checkouts skip the trial
+-- (allow_trial=false), since Polar allows a trial only once per customer.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trial_used BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS credit_ledger (
   id           TEXT PRIMARY KEY,

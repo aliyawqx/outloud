@@ -27,6 +27,9 @@ export async function createCheckout(opts: {
   successUrl: string
   customerEmail?: string
   metadata?: Record<string, string>
+  /** Pass false to skip the product's trial for this checkout (repeat customers —
+   *  Polar allows a trial only once per customer). Defaults to Polar's behavior. */
+  allowTrial?: boolean
 }): Promise<{ url: string; id: string }> {
   const res = await polar('/v1/checkouts/', {
     method: 'POST',
@@ -35,6 +38,7 @@ export async function createCheckout(opts: {
       success_url: opts.successUrl,
       ...(opts.customerEmail ? { customer_email: opts.customerEmail } : {}),
       ...(opts.metadata ? { metadata: opts.metadata } : {}),
+      ...(opts.allowTrial === false ? { allow_trial: false } : {}),
     }),
   })
   if (!res.ok) {

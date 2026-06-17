@@ -39,7 +39,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // anyone already on a plan (incl. in-trial) is past it. Off by default so it
   // never blocks existing free users until Polar trials are configured.
   if (process.env.TRIAL_GATE === '1' && !isStaff(session.email) && (profile?.plan ?? 'free') === 'free') {
-    return <TrialGate name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]} />
+    return (
+      <TrialGate
+        name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]}
+        trialUsed={Boolean(profile?.trialUsed)}
+      />
+    )
   }
 
   // Live credit balance for the header. Run the lazy free-allowance reset so a

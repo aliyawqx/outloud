@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { createCheckout } from '@/lib/billing/polar'
 import { isBillingPeriod, isPaidPlanId, productIdFor } from '@/lib/billing/plans'
+import { getProfile } from '@/lib/profile/store'
 
 // POST /api/billing/checkout — start a Polar checkout for a paid plan. Ties the
 // payment to the signed-in user via metadata so the webhook/success can activate
@@ -31,12 +32,17 @@ export async function POST(req: Request) {
   const origin = new URL(req.url).origin
   const successUrl = `${origin}/api/billing/success?checkout_id={CHECKOUT_ID}`
 
+  // A customer can only trial once — repeat checkouts skip the trial and charge now.
+  const profile = await getProfile(session.userId)
+  const allowTrial = !profile?.trialUsed
+
   try {
     const { url } = await createCheckout({
       productId,
       successUrl,
       customerEmail: session.email,
       metadata: { userId: session.userId, plan, period },
+      allowTrial,
     })
     return NextResponse.json({ url })
   } catch (err) {

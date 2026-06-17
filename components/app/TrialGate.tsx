@@ -17,7 +17,7 @@ const OPTIONS: { id: PlanId; name: string; price: number; highlight?: boolean }[
   { id: 'pro', name: 'Pro', price: PRO_PRICE, highlight: true },
 ]
 
-export function TrialGate({ name }: { name?: string }) {
+export function TrialGate({ name, trialUsed = false }: { name?: string; trialUsed?: boolean }) {
   const [busy, setBusy] = useState<PlanId | null>(null)
   const [error, setError] = useState('')
 
@@ -35,10 +35,14 @@ export function TrialGate({ name }: { name?: string }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-margin-mobile py-12 text-center">
       <h1 className="font-headline-xl text-headline-xl">
-        Start your 7-day free trial{name ? `, ${name}` : ''}
+        {trialUsed ? `Pick a plan to continue${name ? `, ${name}` : ''}` : `Start your 7-day free trial${name ? `, ${name}` : ''}`}
       </h1>
       <p className="mt-3 max-w-md font-body-md text-body-md text-on-surface-variant">
-        Pick a plan and add your card. You get <span className="text-on-surface">{PLAN_ALLOWANCE.free.toLocaleString()} credits free for 7 days</span> — cancel anytime before day 7 and you won't be charged.
+        {trialUsed ? (
+          <>You've already used your free trial. Pick a plan to keep posting — you'll be billed today.</>
+        ) : (
+          <>Pick a plan and add your card. You get <span className="text-on-surface">{PLAN_ALLOWANCE.free.toLocaleString()} credits free for 7 days</span> — cancel anytime before day 7 and you won't be charged.</>
+        )}
       </p>
 
       <div className="mt-8 grid w-full gap-4 sm:grid-cols-2">
@@ -65,7 +69,7 @@ export function TrialGate({ name }: { name?: string }) {
               }`}
             >
               {busy === o.id ? <Spinner size={16} /> : null}
-              Start free trial
+              {trialUsed ? 'Subscribe' : 'Start free trial'}
             </button>
           </div>
         ))}
@@ -73,7 +77,7 @@ export function TrialGate({ name }: { name?: string }) {
 
       {error && <p className="mt-4 font-body-sm text-body-sm text-error">{error}</p>}
       <p className="mt-6 font-code-label text-code-label text-on-surface-variant/60">
-        $0 today · card required · cancel anytime before day 7
+        {trialUsed ? 'billed today · cancel anytime' : '$0 today · card required · cancel anytime before day 7'}
       </p>
     </div>
   )
