@@ -66,11 +66,13 @@ async function ledger(
   balanceAfter: number,
   refId: string | null = null,
   metadata: Record<string, unknown> = {},
-) {
+): Promise<string> {
+  const id = randomUUID()
   await client.query(
     'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, ref_id, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)',
-    [randomUUID(), userId, amount, reason, balanceAfter, refId, JSON.stringify(metadata)],
+    [id, userId, amount, reason, balanceAfter, refId, JSON.stringify(metadata)],
   )
+  return id
 }
 
 /**
@@ -84,7 +86,7 @@ export async function deduct(
   cost: number,
   reason: 'post' | 'reply' | 'search',
   opts: { refId?: string | null; metadata?: Record<string, unknown> } = {},
-): Promise<number> {
+): Promise<{ balance: number; ledgerId: string }> {
   await ensureSchema()
   const client = await getPool().connect()
   try {
@@ -99,13 +101,65 @@ export async function deduct(
       throw new InsufficientCreditsError(cost, b[0]?.credit_balance ?? 0)
     }
     const balanceAfter = rows[0].credit_balance
-    await ledger(client, userId, -cost, reason, balanceAfter, opts.refId ?? null, opts.metadata ?? {})
+    const ledgerId = await ledger(client, userId, -cost, reason, balanceAfter, opts.refId ?? null, opts.metadata ?? {})
     await client.query('COMMIT')
-    return balanceAfter
+    return { balance: balanceAfter, ledgerId }
   } catch (err) {
     if (!(err instanceof InsufficientCreditsError)) {
       try { await client.query('ROLLBACK') } catch {}
     }
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
+/**
+ * Refund a previous deduction (its `ledgerId`) when the paid action failed —
+ * generation error, timeout, empty result, or a charge that only yielded a
+ * clarifying question. Idempotent: a second refund of the same entry is a no-op,
+ * so a retry can't double-credit. Returns the new balance, or null if nothing
+ * was refunded. A user must never lose credits for a failed action (spec §5).
+ */
+export async function refund(userId: string, ledgerId: string): Promise<number | null> {
+  await ensureSchema()
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const { rows: orig } = await client.query<{ amount: number; user_id: string }>(
+      'SELECT amount, user_id FROM credit_ledger WHERE id = $1 FOR UPDATE',
+      [ledgerId],
+    )
+    const o = orig[0]
+    // Only refund a real spend (negative) that belongs to this user.
+    if (!o || o.user_id !== userId || o.amount >= 0) {
+      await client.query('ROLLBACK')
+      return null
+    }
+    // Idempotency: bail if this entry was already refunded.
+    const { rows: dup } = await client.query(
+      "SELECT 1 FROM credit_ledger WHERE reason = 'refund' AND metadata->>'refundOf' = $1 LIMIT 1",
+      [ledgerId],
+    )
+    if (dup.length > 0) {
+      await client.query('ROLLBACK')
+      return null
+    }
+    const refundAmount = -o.amount // positive credit-back
+    const { rows: upd } = await client.query<{ credit_balance: number }>(
+      'UPDATE profiles SET credit_balance = credit_balance + $2, updated_at = now() WHERE user_id = $1 RETURNING credit_balance',
+      [userId, refundAmount],
+    )
+    if (upd.length === 0) {
+      await client.query('ROLLBACK')
+      return null
+    }
+    const balanceAfter = upd[0].credit_balance
+    await ledger(client, userId, refundAmount, 'refund', balanceAfter, null, { refundOf: ledgerId })
+    await client.query('COMMIT')
+    return balanceAfter
+  } catch (err) {
+    try { await client.query('ROLLBACK') } catch {}
     throw err
   } finally {
     client.release()

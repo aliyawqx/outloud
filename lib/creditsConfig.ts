@@ -42,7 +42,7 @@ export const CREDIT_PACKS = [
   { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 70, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
 ] as const
 
-export type CreditReason = 'grant' | 'post' | 'reply' | 'search' | 'purchase' | 'reset'
+export type CreditReason = 'grant' | 'post' | 'reply' | 'search' | 'purchase' | 'reset' | 'refund'
 
 export function packById(id: string) {
   return CREDIT_PACKS.find((p) => p.id === id) ?? null

@@ -4,7 +4,7 @@ import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import { isStaff } from '@/lib/appLock'
-import { deduct, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_POST } from '@/lib/credits'
+import { deduct, refund, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_POST } from '@/lib/credits'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { getPromptText } from '@/lib/prompts/store'
 import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
@@ -132,6 +132,9 @@ export async function POST(req: Request) {
   const firstIdea = turns.find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text || lastUserMessage
   const priorHistoryId = typeof b.historyId === 'string' && b.historyId ? b.historyId : undefined
 
+  // The deduction's ledger id, so we can refund if generation fails (spec §5).
+  let chargeLedgerId: string | undefined
+
   try {
     const intake = await runIntake(messages, formatText ?? undefined)
     if (intake.action === 'ask') {
@@ -150,10 +153,12 @@ export async function POST(req: Request) {
       })
       return NextResponse.json({ ask: intake.question, options: intake.options, voiceName: profile.name, historyId })
     }
-    // Charge for the post atomically, right before generating it.
+    // Charge for the post atomically, right before generating it. Keep the ledger
+    // id so a failed/empty generation below can be refunded.
     if (!staff) {
       try {
-        await deduct(session.userId, COST_PER_POST, 'post', { metadata: { kind: 'post', command } })
+        const charge = await deduct(session.userId, COST_PER_POST, 'post', { metadata: { kind: 'post', command } })
+        chargeLedgerId = charge.ledgerId
       } catch (e) {
         if (e instanceof InsufficientCreditsError)
           return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })
@@ -170,6 +175,8 @@ export async function POST(req: Request) {
       count: 1,
     })
     if (clarify && drafts.length === 0) {
+      // Charged but produced only a clarifying question, not a draft → refund (§5).
+      if (chargeLedgerId) await refund(session.userId, chargeLedgerId)
       // A generation-time clarification is also a first AI answer — persist it too.
       const askTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: clarify }]
       const historyId = await persistHistory({
@@ -181,7 +188,8 @@ export async function POST(req: Request) {
         messages: askTurns,
         historyId: priorHistoryId,
       })
-      return NextResponse.json({ ask: clarify, voiceName: profile.name, historyId })
+      const creditsLeft = staff ? undefined : await getBalance(session.userId)
+      return NextResponse.json({ ask: clarify, voiceName: profile.name, historyId, creditsLeft })
     }
 
     // ONE entry per chat. Persist the full transcript so the session can be reopened
@@ -200,6 +208,8 @@ export async function POST(req: Request) {
     const creditsLeft = staff ? undefined : await getBalance(session.userId)
     return NextResponse.json({ draft: drafts[0], voiceName: profile.name, historyId, creditsLeft })
   } catch (err) {
+    // Generation failed after we charged → give the credits back (§5).
+    if (chargeLedgerId) await refund(session.userId, chargeLedgerId).catch(() => {})
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
     }

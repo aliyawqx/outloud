@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { isStaff } from '@/lib/appLock'
-import { deduct, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_REPLY } from '@/lib/credits'
+import { deduct, refund, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_REPLY } from '@/lib/credits'
 import { generateReplyVariants } from '@/lib/reply/generate'
 import { VoiceNotReadyError } from '@/lib/voice/generate'
 import { ModelBusyError } from '@/lib/anthropic'
@@ -45,6 +45,8 @@ export async function POST(req: Request) {
     }
   }
 
+  let chargeLedgerId: string | undefined // refund target if anything fails after charging (§5)
+
   try {
     const result = await generateReplyVariants(session.userId, profileId, { text, authorHandle, angle, angleType }, 3)
     if (result.needsVoice) {
@@ -57,7 +59,8 @@ export async function POST(req: Request) {
     // Reply variants produced → charge once (atomic, never negative).
     if (!staff) {
       try {
-        await deduct(session.userId, COST_PER_REPLY, 'reply', { refId: tweetId, metadata: { kind: 'reply' } })
+        const charge = await deduct(session.userId, COST_PER_REPLY, 'reply', { refId: tweetId, metadata: { kind: 'reply' } })
+        chargeLedgerId = charge.ledgerId
       } catch (e) {
         if (e instanceof InsufficientCreditsError)
           return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })
@@ -68,6 +71,7 @@ export async function POST(req: Request) {
     const variants = result.variants.map((d) => d.fullText)
     return NextResponse.json({ variants, tweetId, voiceName: result.voiceName, creditsLeft })
   } catch (err) {
+    if (chargeLedgerId) await refund(session.userId, chargeLedgerId).catch(() => {})
     if (err instanceof VoiceNotReadyError) {
       return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
     }

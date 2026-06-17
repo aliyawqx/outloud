@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { isStaff } from '@/lib/appLock'
-import { deduct, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_REPLY } from '@/lib/credits'
+import { deduct, refund, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_REPLY } from '@/lib/credits'
 import { generateReplyChat } from '@/lib/reply/generate'
 import { ModelBusyError } from '@/lib/anthropic'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
@@ -82,6 +82,8 @@ export async function POST(req: Request) {
   const lastDraft = [...turns].reverse().find((t): t is { role: 'assistant'; draft: DraftPost } => 'draft' in t)?.draft.fullText
   const lastUser = [...turns].reverse().find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text
 
+  let chargeLedgerId: string | undefined // refund target if anything fails after charging (§5)
+
   try {
     const result = await generateReplyChat(
       session.userId,
@@ -96,7 +98,8 @@ export async function POST(req: Request) {
     // A reply draft was produced → charge for it (atomic, never negative).
     if (!staff) {
       try {
-        await deduct(session.userId, COST_PER_REPLY, 'reply', { refId: target.tweetId, metadata: { kind: 'reply' } })
+        const charge = await deduct(session.userId, COST_PER_REPLY, 'reply', { refId: target.tweetId, metadata: { kind: 'reply' } })
+        chargeLedgerId = charge.ledgerId
       } catch (e) {
         if (e instanceof InsufficientCreditsError)
           return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })
@@ -133,6 +136,7 @@ export async function POST(req: Request) {
     const creditsLeft = staff ? undefined : await getBalance(session.userId)
     return NextResponse.json({ draft: result.draft, voiceName: result.voiceName, historyId, creditsLeft })
   } catch (err) {
+    if (chargeLedgerId) await refund(session.userId, chargeLedgerId).catch(() => {})
     if (err instanceof ModelBusyError) {
       return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
     }
