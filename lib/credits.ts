@@ -195,6 +195,36 @@ export async function grantPlan(userId: string, plan: string): Promise<void> {
   }
 }
 
+/** Flat-set the balance to the free trial pool (10k), regardless of which plan the
+ *  user picked for the trial. Called once at trial start (subscription.created +
+ *  status 'trialing'). At conversion, order.paid → grantPlan replaces this with the
+ *  full plan allowance (leftover trial credits vanish, per spec §4). */
+export async function grantTrialPool(userId: string): Promise<void> {
+  await ensureSchema()
+  const amount = PLAN_ALLOWANCE.free
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const { rows } = await client.query<{ credit_balance: number }>(
+      'SELECT credit_balance FROM profiles WHERE user_id = $1 FOR UPDATE',
+      [userId],
+    )
+    if (rows.length === 0) {
+      await client.query('ROLLBACK')
+      return
+    }
+    const prev = rows[0].credit_balance
+    await client.query('UPDATE profiles SET credit_balance = $2, updated_at = now() WHERE user_id = $1', [userId, amount])
+    await ledger(client, userId, amount - prev, 'grant', amount, null, { trial: true, previous: prev })
+    await client.query('COMMIT')
+  } catch (err) {
+    try { await client.query('ROLLBACK') } catch {}
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
 /**
  * Lazy monthly/weekly reset for FREE accounts: when `credits_reset_at` has passed
  * (or is unset), set the balance to the free allowance, stamp the next reset

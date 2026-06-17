@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
 import { setPlan } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
-import { addCredits, grantPlan, packByProductId } from '@/lib/credits'
+import { addCredits, grantPlan, grantTrialPool, packByProductId } from '@/lib/credits'
 
 // POST /api/billing/webhook — Polar's durable activation path (Standard Webhooks).
 // Verifies the signature, then flips the user's plan on subscribe / cancel. Set
@@ -54,23 +54,39 @@ export async function POST(req: Request) {
 
   try {
     const productId = data.product_id as string | undefined
-    // A one-time credit-pack purchase (fires order.paid). Add credits, no plan change.
+    const status = typeof data.status === 'string' ? data.status : undefined
     const pack = packByProductId(productId)
+
     if (type === 'order.paid' && pack) {
+      // One-time credit-pack purchase → add credits, no plan change.
       const userId = await resolveUserId(data)
       if (userId) await addCredits(userId, pack.credits, { pack: pack.id, productId, orderId: data.id })
-    }
-    // Activate on payment / active / re-activated subscription. NOT on
-    // subscription.canceled (that only schedules a cancel — access stays until the
-    // period ends and subscription.revoked fires). order.paid also fires on each
-    // renewal, so granting here refills the monthly credits.
-    else if (type === 'order.paid' || type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled') {
+    } else if (type === 'order.paid') {
+      // A real charge: trial conversion (day 7) OR a renewal → reset to the full plan
+      // allowance. Trial-start does NOT fire order.paid, so the 10k trial pool is only
+      // replaced here, at the first actual payment. order.paid also fires each renewal.
       const userId = await resolveUserId(data)
       const plan = planForProductId(productId)
       if (userId && plan) {
         await setPlan(userId, plan)
-        await grantPlan(userId, plan) // reset (not stack) to the plan's monthly grant
+        await grantPlan(userId, plan) // reset (not stack) to the plan's allowance
       }
+    } else if (type === 'subscription.created' && status === 'trialing') {
+      // Trial start (card added, no charge): set the plan label so the gate is passed,
+      // and grant the 10k trial pool (NOT the full plan allowance).
+      const userId = await resolveUserId(data)
+      const plan = planForProductId(productId)
+      if (userId && plan) {
+        await setPlan(userId, plan)
+        await grantTrialPool(userId)
+      }
+    } else if (type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled') {
+      // Other subscription state changes: keep the plan label in sync. Credits are
+      // granted by order.paid (renewal/conversion) — never re-granted here, so a mid-
+      // trial update can't refill spent credits.
+      const userId = await resolveUserId(data)
+      const plan = planForProductId(productId)
+      if (userId && plan) await setPlan(userId, plan)
     } else if (type === 'subscription.revoked') {
       const userId = await resolveUserId(data)
       if (userId) await setPlan(userId, 'free')
