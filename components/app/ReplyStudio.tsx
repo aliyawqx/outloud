@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import { replyIntentUrl } from '@/lib/x/replyIntent'
+import { useCredits } from '@/components/app/CreditsContext'
 
 type VoiceOption = { id: string; name: string; isActive: boolean }
 type FetchedPost = { id: string; url: string; authorHandle: string; authorName: string; text: string; postedAt: string }
@@ -175,6 +176,7 @@ function ReplyChat({
   onLimit: () => void
   onNeedVoice: () => void
 }) {
+  const { setBalance } = useCredits() // live header balance, reconciled from each response
   const [turns, setTurns] = useState<RTurn[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -203,6 +205,7 @@ function ReplyChat({
       if (res.status === 403 && data.limitReached) { onLimit(); setError(data.error ?? "You've used all your drafts."); return }
       if (!res.ok) { setError(data.error ?? "Couldn't write a reply."); return }
       if (typeof data.draftsLeft === 'number') onDraftsLeft(data.draftsLeft)
+      if (typeof data.creditsLeft === 'number') setBalance(data.creditsLeft)
       if (data.historyId) setHistoryId(data.historyId)
       if (data.ask) setTurns((t) => [...t, { id: nextId(), role: 'assistant', text: data.ask }])
       else if (data.draft) setTurns((t) => [...t, { id: nextId(), role: 'assistant', draft: data.draft }])

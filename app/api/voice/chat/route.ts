@@ -4,7 +4,7 @@ import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import { isStaff } from '@/lib/appLock'
-import { deduct, getBalance, InsufficientCreditsError, POST_COST } from '@/lib/credits'
+import { deduct, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_POST } from '@/lib/credits'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { getPromptText } from '@/lib/prompts/store'
 import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
@@ -110,8 +110,12 @@ export async function POST(req: Request) {
   // Metered by credits (staff are unlimited). Cheap pre-check so we don't run any
   // LLM work for a user who can't afford a post; the real charge is atomic below.
   const staff = isStaff(session.email)
-  if (!staff && (await getBalance(session.userId)) < POST_COST) {
-    return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: POST_COST, balance: await getBalance(session.userId) }, { status: 402 })
+  if (!staff) {
+    await resetIfDue(session.userId) // refill the free allowance if its cycle elapsed
+    const balance = await getBalance(session.userId)
+    if (balance < COST_PER_POST) {
+      return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: COST_PER_POST, balance }, { status: 402 })
+    }
   }
 
   // When iterating on an existing draft, edit THAT draft (keeps the voice and
@@ -149,7 +153,7 @@ export async function POST(req: Request) {
     // Charge for the post atomically, right before generating it.
     if (!staff) {
       try {
-        await deduct(session.userId, POST_COST, 'post', { kind: 'post', command })
+        await deduct(session.userId, COST_PER_POST, 'post', { metadata: { kind: 'post', command } })
       } catch (e) {
         if (e instanceof InsufficientCreditsError)
           return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })

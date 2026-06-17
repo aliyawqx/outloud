@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
+import { useCredits } from '@/components/app/CreditsContext'
 
 export type SidebarProfile = {
   displayName: string
@@ -40,6 +41,7 @@ export function AppSidebar({
   const viewingChat = Boolean(useSearchParams().get('session'))
   const [open, setOpen] = useState(false)
   const items = navItems(voiceCount)
+  const { balance, unlimited } = useCredits()
 
   const isActive = (href: string) =>
     href === '/app' ? pathname === '/app' && !viewingChat : pathname.startsWith(href)
@@ -100,17 +102,20 @@ export function AppSidebar({
             {profile.displayName.slice(0, 1).toUpperCase()}
           </span>
         )}
-        <span className="min-w-0 flex-1 truncate font-body-sm text-body-sm text-on-surface">{profile.displayName}</span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate font-body-sm text-body-sm text-on-surface">{profile.displayName}</span>
+          <span className="truncate font-code-label text-code-label text-on-surface-variant">
+            {unlimited ? 'Unlimited' : `${balance.toLocaleString()} credits`} · <span className="capitalize">{profile.plan}</span>
+          </span>
+        </span>
       </Link>
 
-      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-3 py-2">
-        <span className="font-code-label text-code-label text-on-surface-variant">
-          Plan · <span className="text-on-surface capitalize">{profile.plan}</span>
-        </span>
-        <Link href="/pricing" className="font-code-label text-code-label text-cyber-lime hover:brightness-110">
-          Upgrade
-        </Link>
-      </div>
+      <Link
+        href="/pricing"
+        className="flex items-center justify-center rounded-xl bg-surface-container-low px-3 py-2 font-code-label text-code-label text-cyber-lime transition-colors hover:brightness-110"
+      >
+        Upgrade plan
+      </Link>
 
       <button
         type="button"

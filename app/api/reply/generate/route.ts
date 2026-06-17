@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { isStaff } from '@/lib/appLock'
-import { deduct, getBalance, InsufficientCreditsError, POST_COST } from '@/lib/credits'
+import { deduct, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_REPLY } from '@/lib/credits'
 import { generateReplyVariants } from '@/lib/reply/generate'
 import { VoiceNotReadyError } from '@/lib/voice/generate'
 import { ModelBusyError } from '@/lib/anthropic'
@@ -37,8 +37,12 @@ export async function POST(req: Request) {
 
   // Metered by credits (staff unlimited). Pre-check, then charge after variants.
   const staff = isStaff(session.email)
-  if (!staff && (await getBalance(session.userId)) < POST_COST) {
-    return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: POST_COST, balance: await getBalance(session.userId) }, { status: 402 })
+  if (!staff) {
+    await resetIfDue(session.userId) // refill the free allowance if its cycle elapsed
+    const balance = await getBalance(session.userId)
+    if (balance < COST_PER_REPLY) {
+      return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: COST_PER_REPLY, balance }, { status: 402 })
+    }
   }
 
   try {
@@ -53,7 +57,7 @@ export async function POST(req: Request) {
     // Reply variants produced → charge once (atomic, never negative).
     if (!staff) {
       try {
-        await deduct(session.userId, POST_COST, 'post', { kind: 'reply', tweetId })
+        await deduct(session.userId, COST_PER_REPLY, 'reply', { refId: tweetId, metadata: { kind: 'reply' } })
       } catch (e) {
         if (e instanceof InsufficientCreditsError)
           return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })

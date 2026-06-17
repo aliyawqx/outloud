@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { isStaff } from '@/lib/appLock'
-import { deduct, getBalance, InsufficientCreditsError, POST_COST } from '@/lib/credits'
+import { deduct, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_REPLY } from '@/lib/credits'
 import { generateReplyChat } from '@/lib/reply/generate'
 import { ModelBusyError } from '@/lib/anthropic'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
@@ -70,8 +70,12 @@ export async function POST(req: Request) {
 
   // Metered by credits (staff unlimited). Pre-check, then charge after a draft.
   const staff = isStaff(session.email)
-  if (!staff && (await getBalance(session.userId)) < POST_COST) {
-    return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: POST_COST, balance: await getBalance(session.userId) }, { status: 402 })
+  if (!staff) {
+    await resetIfDue(session.userId) // refill the free allowance if its cycle elapsed
+    const balance = await getBalance(session.userId)
+    if (balance < COST_PER_REPLY) {
+      return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: COST_PER_REPLY, balance }, { status: 402 })
+    }
   }
 
   // Latest draft (to revise) and latest instruction (how to revise it).
@@ -92,7 +96,7 @@ export async function POST(req: Request) {
     // A reply draft was produced → charge for it (atomic, never negative).
     if (!staff) {
       try {
-        await deduct(session.userId, POST_COST, 'post', { kind: 'reply', tweetId: target.tweetId })
+        await deduct(session.userId, COST_PER_REPLY, 'reply', { refId: target.tweetId, metadata: { kind: 'reply' } })
       } catch (e) {
         if (e instanceof InsufficientCreditsError)
           return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })

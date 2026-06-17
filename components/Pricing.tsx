@@ -5,15 +5,13 @@ import { useState } from 'react'
 import { PLANS, ANNUAL_BADGE, PRICING_NOTE, type BillingMode, type Plan } from '@/lib/pricing'
 import { startCheckout } from '@/lib/billing/client'
 import { Spinner } from '@/components/Spinner'
+// Single source of truth — keep marketing copy in sync with real costs/allowances.
+import { COST_PER_POST, COST_PER_REPLY, PLAN_ALLOWANCE } from '@/lib/creditsConfig'
 
-// ── Credit display config (marketing copy only — NO billing/deduction logic) ─────
-// Edit these and the per-plan card labels recompute automatically.
-const POST_COST = 1000 // credits per generated post
-const REPLY_COST = 5000 // credits per reply
-// Monthly credit grant per paid plan. Plans not listed here keep their feature list.
+// Per-plan monthly credit allowance shown on the cards (paid plans only here).
 const PLAN_CREDITS: Record<string, number> = {
-  starter: 200_000, // $15/mo
-  pro: 600_000, // $30/mo
+  starter: PLAN_ALLOWANCE.starter,
+  pro: PLAN_ALLOWANCE.pro,
 }
 
 function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
@@ -89,7 +87,7 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
         <div className="my-8 flex-1">
           <div className="font-headline-lg text-2xl font-bold text-on-surface">{credits / 1000}k credits / mo</div>
           <div className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">
-            ≈ {Math.floor(credits / POST_COST)} posts or {Math.floor(credits / REPLY_COST)} replies
+            ≈ {Math.floor(credits / COST_PER_POST)} posts or {Math.floor(credits / COST_PER_REPLY)} replies
           </div>
           <ul className="mt-6 space-y-3 border-t border-border-muted pt-6">
             {plan.features.map((f) => (
@@ -161,7 +159,7 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
       </div>
 
       <p className="reveal mx-auto mt-6 max-w-xl text-center font-body-sm text-body-sm text-on-surface-variant/70">
-        Credits are shared across actions. Posts ≈ {POST_COST / 1000}k cr · Reply ≈ {REPLY_COST / 1000}k cr.
+        Credits are shared across actions. Post ≈ {COST_PER_POST.toLocaleString()} cr · Reply ≈ {COST_PER_REPLY.toLocaleString()} cr.
       </p>
 
       <p className="reveal mx-auto mt-3 max-w-xl text-center font-code-label text-code-label text-on-surface-variant">

@@ -43,16 +43,21 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS drafts_used INTEGER NOT NULL DEFAU
 -- change also appended to credit_ledger as an audit trail. Deduction is an atomic
 -- conditional UPDATE (balance never goes negative).
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credit_balance INTEGER NOT NULL DEFAULT 0;
+-- When the FREE allowance next auto-resets (lazy, on read). NULL = reset on next read.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credits_reset_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS credit_ledger (
-  id         TEXT PRIMARY KEY,
-  user_id    TEXT NOT NULL,
-  amount     INTEGER NOT NULL,                 -- signed: grants/purchases +, spends -
-  reason     TEXT NOT NULL,                    -- 'grant' | 'post' | 'search' | 'purchase'
-  metadata   JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  id           TEXT PRIMARY KEY,
+  user_id      TEXT NOT NULL,
+  amount       INTEGER NOT NULL,               -- signed delta: grants/purchases +, spends -
+  reason       TEXT NOT NULL,                  -- 'grant'|'post'|'reply'|'search'|'purchase'|'reset'
+  metadata     JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS credit_ledger_user_idx ON credit_ledger (user_id, created_at DESC);
+-- Resulting balance after this entry, and the post/reply id it paid for (nullable).
+ALTER TABLE credit_ledger ADD COLUMN IF NOT EXISTS balance_after INTEGER;
+ALTER TABLE credit_ledger ADD COLUMN IF NOT EXISTS ref_id TEXT;
 
 CREATE TABLE IF NOT EXISTS voice_profiles (
   id TEXT PRIMARY KEY,

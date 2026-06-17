@@ -6,6 +6,7 @@ import { Spinner } from '@/components/Spinner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { PLANS, PRO_PRICE, STARTER_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
 import { startCheckout } from '@/lib/billing/client'
+import { useCredits } from '@/components/app/CreditsContext'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 
 const PRO_PLAN = PLANS.find((p) => p.id === 'pro')
@@ -323,6 +324,7 @@ export function ComposeHome({
   const [activeCommand, setActiveCommand] = useState('')
   const [left, setLeft] = useState<number | null>(draftsLeft)
   const [showUpgrade, setShowUpgrade] = useState(false)
+  const { setBalance } = useCredits() // live header balance, reconciled from each response
   // Highlights the suggested option the user tapped (the input below stays available
   // the whole time — tapping an option is just a shortcut for typing the answer).
   const [pickedOption, setPickedOption] = useState<string | null>(null)
@@ -408,6 +410,7 @@ export function ComposeHome({
         return
       }
       if (typeof data.draftsLeft === 'number') setLeft(data.draftsLeft)
+      if (typeof data.creditsLeft === 'number') setBalance(data.creditsLeft)
       if (data.historyId) setHistoryId(data.historyId)
       // Anchor a brand-new chat in the URL once it has its first AI answer: the
       // sidebar then lists + highlights it (gray), and "New post" (/app) becomes a

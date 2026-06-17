@@ -6,7 +6,6 @@ import { listProfiles } from '@/lib/voice/store'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { judgeReplies, ModelBusyError } from '@/lib/anthropic'
 import { isStaff } from '@/lib/appLock'
-import { deduct, getBalance, InsufficientCreditsError, SEARCH_COST } from '@/lib/credits'
 import { SearchUnavailableError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 
 export const maxDuration = 60
