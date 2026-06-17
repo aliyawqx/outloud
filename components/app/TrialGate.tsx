@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { startCheckout } from '@/lib/billing/client'
 import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
 import { PLAN_ALLOWANCE } from '@/lib/creditsConfig'
@@ -18,8 +19,15 @@ const OPTIONS: { id: PlanId; name: string; price: number; highlight?: boolean }[
 ]
 
 export function TrialGate({ name, trialUsed = false }: { name?: string; trialUsed?: boolean }) {
+  const router = useRouter()
   const [busy, setBusy] = useState<PlanId | null>(null)
   const [error, setError] = useState('')
+
+  async function signOut() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/')
+    router.refresh()
+  }
 
   async function start(plan: PlanId) {
     setError('')
@@ -79,6 +87,15 @@ export function TrialGate({ name, trialUsed = false }: { name?: string; trialUse
       <p className="mt-6 font-code-label text-code-label text-on-surface-variant/60">
         {trialUsed ? 'billed today · cancel anytime' : '$0 today · card required · cancel anytime before day 7'}
       </p>
+
+      <button
+        type="button"
+        onClick={signOut}
+        className="mt-8 inline-flex items-center gap-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
+      >
+        <span aria-hidden="true" className="material-symbols-outlined text-[16px]">logout</span>
+        Log out
+      </button>
     </div>
   )
 }
