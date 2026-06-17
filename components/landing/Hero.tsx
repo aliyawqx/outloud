@@ -2,9 +2,6 @@ import Link from 'next/link'
 import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 import { LampGlow } from '@/components/ui/lamp'
 import { AppShot } from './AppShot'
-import { RotatingWord } from './motion'
-
-const WORDS = ['posts in your voice.', 'replies that grow you.', 'build-in-public gold.', 'never generic AI.']
 
 export function Hero() {
   return (
@@ -32,14 +29,14 @@ export function Hero() {
               </div>
 
               <h1 className="max-w-3xl font-headline-xl text-headline-xl leading-tight">
-                Turn what you ship into
-                <span className="mt-1 block">
-                  <RotatingWord words={WORDS} className="bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent" />
+                Stop sounding like AI.
+                <span className="mt-1 block bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">
+                  Start posting like yourself.
                 </span>
               </h1>
 
               <p className="max-w-xl font-body-md text-body-md text-on-surface-variant">
-                Stop the generic AI slop. Outloud captures how you actually write and turns your commits and build logs into high-signal posts and replies.
+                Outloud captures how you actually write and turns your commits and build logs into high-signal posts and replies — not generic AI slop.
               </p>
 
               <div className="flex flex-col items-center gap-4 sm:flex-row">
