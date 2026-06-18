@@ -1,7 +1,5 @@
 import { ensureSchema, getPool } from '@/lib/db'
 
-export type Incubator = 'yes' | 'no' | null
-
 export type Profile = {
   userId: string
   displayName: string
@@ -9,10 +7,6 @@ export type Profile = {
   avatarUrl: string | null
   email: string | null
   plan: string
-  /** nFactorial incubator participation: null = not asked yet. */
-  incubator: Incubator
-  /** Lifetime drafts generated (counts toward the participant cap). */
-  draftsUsed: number
   /** Plan-allowance credit balance this cycle (resets each cycle). */
   creditBalance: number
   /** Persistent purchased top-up credits (never expire/reset). */
@@ -35,8 +29,6 @@ type Row = {
   avatar_url: string | null
   email: string | null
   plan: string
-  incubator: string | null
-  drafts_used: number
   credit_balance: number
   topup_balance: number
   trialing: boolean
@@ -55,8 +47,6 @@ function mapRow(r: Row): Profile {
     avatarUrl: r.avatar_url,
     email: r.email,
     plan: r.plan,
-    incubator: r.incubator === 'yes' ? 'yes' : r.incubator === 'no' ? 'no' : null,
-    draftsUsed: r.drafts_used ?? 0,
     creditBalance: r.credit_balance ?? 0,
     topupBalance: r.topup_balance ?? 0,
     trialing: r.trialing ?? false,
@@ -68,13 +58,7 @@ function mapRow(r: Row): Profile {
   }
 }
 
-/** Record the user's answer to the incubator-participation question. */
-export async function setIncubator(userId: string, value: 'yes' | 'no'): Promise<void> {
-  await ensureSchema()
-  await getPool().query('UPDATE profiles SET incubator = $1, updated_at = now() WHERE user_id = $2', [value, userId])
-}
-
-/** Set the user's plan (e.g. after a Polar payment). Paid plans skip the cap. */
+/** Set the user's plan (e.g. after a Polar payment). */
 export async function setPlan(userId: string, plan: string): Promise<void> {
   await ensureSchema()
   await getPool().query('UPDATE profiles SET plan = $1, updated_at = now() WHERE user_id = $2', [plan, userId])
@@ -111,16 +95,6 @@ export async function setPolarRefs(
   sets.push('updated_at = now()')
   vals.push(userId)
   await getPool().query(`UPDATE profiles SET ${sets.join(', ')} WHERE user_id = $${i}`, vals)
-}
-
-/** Atomically bump the lifetime draft counter; returns the new total. */
-export async function incrementDraftsUsed(userId: string): Promise<number> {
-  await ensureSchema()
-  const { rows } = await getPool().query<{ drafts_used: number }>(
-    'UPDATE profiles SET drafts_used = drafts_used + 1, updated_at = now() WHERE user_id = $1 RETURNING drafts_used',
-    [userId],
-  )
-  return rows[0]?.drafts_used ?? 0
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {

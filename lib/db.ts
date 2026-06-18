@@ -34,11 +34,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Access gate: nFactorial incubator participation (null = not asked yet) + a
--- lifetime draft cap counter for participants.
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS incubator TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS drafts_used INTEGER NOT NULL DEFAULT 0;
-
 -- Credit system: cached balance on the profile (source of truth), with every
 -- change also appended to credit_ledger as an audit trail. Deduction is an atomic
 -- conditional UPDATE (balance never goes negative).

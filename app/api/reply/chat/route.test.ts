@@ -1,9 +1,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-const { getSessionMock, getProfileMock, incMock, isStaffMock, isPaidMock, chatMock, saveMock, getEntryMock, updateMock } = vi.hoisted(() => ({
+const { getSessionMock, isStaffMock, isPaidMock, chatMock, saveMock, getEntryMock, updateMock } = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
-  getProfileMock: vi.fn(),
-  incMock: vi.fn(),
   isStaffMock: vi.fn(),
   isPaidMock: vi.fn(),
   chatMock: vi.fn(),
@@ -12,8 +10,7 @@ const { getSessionMock, getProfileMock, incMock, isStaffMock, isPaidMock, chatMo
   updateMock: vi.fn(),
 }))
 vi.mock('@/lib/auth/session', () => ({ getSession: getSessionMock }))
-vi.mock('@/lib/profile/store', () => ({ getProfile: getProfileMock, incrementDraftsUsed: incMock }))
-vi.mock('@/lib/appLock', () => ({ DRAFT_LIMIT: 5, isStaff: isStaffMock }))
+vi.mock('@/lib/appLock', () => ({ isStaff: isStaffMock }))
 vi.mock('@/lib/billing/plans', () => ({ isPaidPlan: isPaidMock }))
 vi.mock('@/lib/reply/generate', () => ({ generateReplyChat: chatMock }))
 vi.mock('@/lib/voice/history', () => ({
@@ -29,7 +26,7 @@ const req = (body: unknown) =>
   new Request('http://localhost/api/reply/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) as never
 
 beforeEach(() => {
-  getSessionMock.mockReset(); getProfileMock.mockReset(); incMock.mockReset(); isStaffMock.mockReset()
+  getSessionMock.mockReset(); isStaffMock.mockReset()
   isPaidMock.mockReset(); chatMock.mockReset(); saveMock.mockReset(); getEntryMock.mockReset(); updateMock.mockReset()
   getSessionMock.mockResolvedValue({ userId: 'u1', email: 'a@b.com' })
   isStaffMock.mockReturnValue(true) // staff = unlimited by default
@@ -80,14 +77,5 @@ describe('POST /api/reply/chat', () => {
     expect(res.status).toBe(200)
     expect(chatMock).toHaveBeenCalledWith('u1', undefined, expect.any(Object), { reviseBase: 'first reply', instruction: 'make it shorter' })
     expect(updateMock).toHaveBeenCalled() // updates the existing history entry in place
-  })
-
-  it('403s with limitReached when a capped user is out of drafts', async () => {
-    isStaffMock.mockReturnValue(false)
-    getProfileMock.mockResolvedValue({ draftsUsed: 5 })
-    const res = await POST(req({ target }))
-    expect(res.status).toBe(403)
-    expect((await res.json()).limitReached).toBe(true)
-    expect(chatMock).not.toHaveBeenCalled()
   })
 })

@@ -144,7 +144,7 @@ describe('generation rules', () => {
       content: [{ type: 'text', text: JSON.stringify({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'f' }] }) }],
     })
     await generateDrafts(profile, { input: 'запустил тёмную тему' })
-    expect(createMock.mock.calls[0][0].messages[0].content).toContain('same language as the idea')
+    expect(createMock.mock.calls[0][0].messages[0].content).toContain('same language the user wrote the idea')
   })
 })
 
