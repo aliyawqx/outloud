@@ -43,7 +43,7 @@ const PLAN_META: Record<string, { name: string; price: number; allowance: number
   pro: { name: 'Pro', price: PRO_PRICE, allowance: PLAN_ALLOWANCE.pro },
 }
 
-function UsageTab({ trialing }: { trialing: boolean }) {
+function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
   const [usage, setUsage] = useState<Usage | null>(null)
   const [error, setError] = useState('')
 
@@ -57,8 +57,11 @@ function UsageTab({ trialing }: { trialing: boolean }) {
   if (error) return <p className="font-body-sm text-body-sm text-error">{error}</p>
   if (!usage) return <div className="flex justify-center py-12"><Spinner size={20} className="text-electric-indigo" /></div>
 
-  // Show what's been USED out of the cycle total; the bar fills as credits are spent.
-  const pct = usage.cycleTotal > 0 ? Math.min(100, Math.round((usage.cycleUsed / usage.cycleTotal) * 100)) : 0
+  // Total = plan allowance + persistent top-up. Show what's been USED out of it; the
+  // bar fills as credits are spent.
+  const total = usage.cycleTotal + usage.topupBalance
+  const pct = total > 0 ? Math.min(100, Math.round((usage.cycleUsed / total) * 100)) : 0
+  const planName = (PLAN_META[plan] ?? PLAN_META.free).name
   const maxDay = Math.max(1, ...usage.daily.map((d) => d.used))
 
   return (
@@ -66,17 +69,18 @@ function UsageTab({ trialing }: { trialing: boolean }) {
       {/* Balance header */}
       <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <div className="font-headline-sm text-headline-sm text-on-surface">
-          {kfmt(usage.cycleUsed)} / {kfmt(usage.cycleTotal)} credits used
+          {kfmt(usage.cycleUsed)} / {kfmt(total)} credits used
           <span className="font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
           <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${pct}%` }} />
         </div>
-        {usage.topupBalance > 0 && (
-          <p className="mt-3 font-code-label text-code-label text-cyber-lime">
-            + {kfmt(usage.topupBalance)} top-up credits · never expire
-          </p>
-        )}
+        <p className="mt-3 font-code-label text-code-label text-on-surface-variant">
+          {kfmt(usage.cycleTotal)} from your {planName} plan
+          {usage.topupBalance > 0 && (
+            <> · <span className="text-cyber-lime">{kfmt(usage.topupBalance)} top-up · never expires</span></>
+          )}
+        </p>
       </div>
 
       {/* Daily graph */}
@@ -221,7 +225,7 @@ export function BillingUsage({ plan, trialing, hasBilling }: { plan: string; tri
         <button type="button" className={pill(tab === 'usage')} onClick={() => setTab('usage')}>Usage</button>
         <button type="button" className={pill(tab === 'billing')} onClick={() => setTab('billing')}>Billing</button>
       </div>
-      {tab === 'usage' ? <UsageTab trialing={trialing} /> : <BillingTab plan={plan} hasBilling={hasBilling} />}
+      {tab === 'usage' ? <UsageTab trialing={trialing} plan={plan} /> : <BillingTab plan={plan} hasBilling={hasBilling} />}
     </div>
   )
 }
