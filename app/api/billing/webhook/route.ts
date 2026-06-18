@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
-import { setPlan, setTrialing, markTrialStarted } from '@/lib/profile/store'
+import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
 import { addCredits, grantPlan, grantTrialPool, packByProductId } from '@/lib/credits'
 
@@ -56,6 +56,11 @@ export async function POST(req: Request) {
     const productId = data.product_id as string | undefined
     const status = typeof data.status === 'string' ? data.status : undefined
     const pack = packByProductId(productId)
+    // Polar references carried on the event (subscription object on subscription.*,
+    // order object on order.*). Used to power the customer-portal link + exact reset.
+    const customerId =
+      (typeof data.customer_id === 'string' ? data.customer_id : (data.customer as { id?: string } | undefined)?.id) ?? undefined
+    const periodEnd = typeof data.current_period_end === 'string' ? new Date(data.current_period_end) : undefined
 
     if (type === 'order.paid' && pack) {
       // One-time credit-pack purchase → add credits, no plan change.
@@ -71,6 +76,7 @@ export async function POST(req: Request) {
         await setPlan(userId, plan)
         await setTrialing(userId, false) // a real charge means the trial converted
         await grantPlan(userId, plan) // reset (not stack) to the plan's allowance
+        await setPolarRefs(userId, { customerId, subscriptionId: (data.subscription_id as string) ?? undefined })
       }
     } else if (type === 'subscription.created' && status === 'trialing') {
       // Trial start (card added, no charge): set the plan label so the gate is passed,
@@ -81,19 +87,24 @@ export async function POST(req: Request) {
         await setPlan(userId, plan)
         await markTrialStarted(userId) // trialing now + trial_used forever
         await grantTrialPool(userId)
+        await setPolarRefs(userId, { customerId, subscriptionId: (data.id as string) ?? undefined, periodEnd })
       }
-    } else if (type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled') {
-      // Other subscription state changes: keep the plan label in sync. Credits are
-      // granted by order.paid (renewal/conversion) — never re-granted here, so a mid-
-      // trial update can't refill spent credits.
+    } else if (type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled' || type === 'subscription.updated') {
+      // Other subscription state changes: keep the plan label + Polar refs + exact
+      // reset date in sync. Credits are granted by order.paid (renewal/conversion) —
+      // never re-granted here, so a mid-trial update can't refill spent credits.
       const userId = await resolveUserId(data)
       const plan = planForProductId(productId)
-      if (userId && plan) await setPlan(userId, plan)
+      if (userId && plan) {
+        await setPlan(userId, plan)
+        await setPolarRefs(userId, { customerId, subscriptionId: (data.id as string) ?? undefined, periodEnd })
+      }
     } else if (type === 'subscription.revoked') {
       const userId = await resolveUserId(data)
       if (userId) {
         await setPlan(userId, 'free')
         await setTrialing(userId, false)
+        await setPolarRefs(userId, { subscriptionId: null }) // keep customer id for the portal
       }
     }
   } catch (err) {

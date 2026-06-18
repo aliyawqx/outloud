@@ -19,6 +19,9 @@ export type Profile = {
   trialing: boolean
   /** True once the user has ever started a trial (repeat checkouts skip the trial). */
   trialUsed: boolean
+  /** Polar customer id — powers the customer-portal link. Null until first checkout. */
+  polarCustomerId: string | null
+  polarSubscriptionId: string | null
   createdAt: string
   updatedAt: string
 }
@@ -35,6 +38,8 @@ type Row = {
   credit_balance: number
   trialing: boolean
   trial_used: boolean
+  polar_customer_id: string | null
+  polar_subscription_id: string | null
   created_at: Date
   updated_at: Date
 }
@@ -52,6 +57,8 @@ function mapRow(r: Row): Profile {
     creditBalance: r.credit_balance ?? 0,
     trialing: r.trialing ?? false,
     trialUsed: r.trial_used ?? false,
+    polarCustomerId: r.polar_customer_id ?? null,
+    polarSubscriptionId: r.polar_subscription_id ?? null,
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
   }
@@ -80,6 +87,26 @@ export async function setTrialing(userId: string, value: boolean): Promise<void>
 export async function markTrialStarted(userId: string): Promise<void> {
   await ensureSchema()
   await getPool().query('UPDATE profiles SET trialing = true, trial_used = true, updated_at = now() WHERE user_id = $1', [userId])
+}
+
+/** Store Polar references from the billing webhook. When `periodEnd` is given it also
+ *  becomes the exact reset date (overriding the ~30d approximation). Each field is
+ *  only written when provided, so partial events don't wipe existing values. */
+export async function setPolarRefs(
+  userId: string,
+  refs: { customerId?: string | null; subscriptionId?: string | null; periodEnd?: Date | null },
+): Promise<void> {
+  await ensureSchema()
+  const sets: string[] = []
+  const vals: unknown[] = []
+  let i = 1
+  if (refs.customerId !== undefined) { sets.push(`polar_customer_id = $${i++}`); vals.push(refs.customerId) }
+  if (refs.subscriptionId !== undefined) { sets.push(`polar_subscription_id = $${i++}`); vals.push(refs.subscriptionId) }
+  if (refs.periodEnd) { sets.push(`credits_reset_at = $${i++}`); vals.push(refs.periodEnd) }
+  if (sets.length === 0) return
+  sets.push('updated_at = now()')
+  vals.push(userId)
+  await getPool().query(`UPDATE profiles SET ${sets.join(', ')} WHERE user_id = $${i}`, vals)
 }
 
 /** Atomically bump the lifetime draft counter; returns the new total. */

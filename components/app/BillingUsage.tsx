@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import { AddCredits } from '@/components/app/AddCredits'
-import { startCheckout } from '@/lib/billing/client'
+import { startCheckout, openBillingPortal } from '@/lib/billing/client'
 import { PLAN_ALLOWANCE } from '@/lib/creditsConfig'
 import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
 
@@ -110,7 +110,7 @@ function UsageTab({ trialing }: { trialing: boolean }) {
   )
 }
 
-function BillingTab({ plan }: { plan: string }) {
+function BillingTab({ plan, hasBilling }: { plan: string; hasBilling: boolean }) {
   const meta = PLAN_META[plan] ?? PLAN_META.free
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -122,6 +122,17 @@ function BillingTab({ plan }: { plan: string }) {
       await startCheckout(target, 'monthly')
     } catch (e) {
       setError((e as Error).message || "Couldn't open checkout.")
+      setBusy(null)
+    }
+  }
+
+  async function manage() {
+    setError('')
+    setBusy('portal')
+    try {
+      await openBillingPortal()
+    } catch (e) {
+      setError((e as Error).message || "Couldn't open the billing portal.")
       setBusy(null)
     }
   }
@@ -159,19 +170,31 @@ function BillingTab({ plan }: { plan: string }) {
         {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
 
-      {/* Payment method + invoices — managed in Polar (needs stored Polar ids to wire). */}
+      {/* Payment method, invoices, change/cancel — all via the Polar customer portal. */}
       <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <span className="font-code-label text-code-label uppercase text-on-surface-variant">Payment & invoices</span>
         <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
-          Your payment method, invoice history, and plan changes are managed securely in Polar. Manage-in-Polar links
-          are being wired up.
+          Manage your payment method, download invoices, and change or cancel your plan in the secure Polar portal.
         </p>
+        {hasBilling ? (
+          <button
+            type="button"
+            onClick={manage}
+            disabled={busy !== null}
+            className="mt-3 inline-flex items-center gap-2 self-start rounded-full border border-border-muted px-5 py-2 font-code-label text-code-label text-on-surface transition-colors hover:border-electric-indigo disabled:opacity-60"
+          >
+            {busy === 'portal' ? <Spinner size={14} /> : null}
+            Manage billing in Polar
+          </button>
+        ) : (
+          <p className="mt-2 font-code-label text-code-label text-on-surface-variant/60">Starts once you begin a plan.</p>
+        )}
       </div>
     </div>
   )
 }
 
-export function BillingUsage({ plan, trialing }: { plan: string; trialing: boolean }) {
+export function BillingUsage({ plan, trialing, hasBilling }: { plan: string; trialing: boolean; hasBilling: boolean }) {
   const [tab, setTab] = useState<'usage' | 'billing'>('usage')
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
@@ -185,7 +208,7 @@ export function BillingUsage({ plan, trialing }: { plan: string; trialing: boole
         <button type="button" className={pill(tab === 'usage')} onClick={() => setTab('usage')}>Usage</button>
         <button type="button" className={pill(tab === 'billing')} onClick={() => setTab('billing')}>Billing</button>
       </div>
-      {tab === 'usage' ? <UsageTab trialing={trialing} /> : <BillingTab plan={plan} />}
+      {tab === 'usage' ? <UsageTab trialing={trialing} /> : <BillingTab plan={plan} hasBilling={hasBilling} />}
     </div>
   )
 }

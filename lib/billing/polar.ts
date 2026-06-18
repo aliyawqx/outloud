@@ -91,6 +91,23 @@ export async function getCheckout(id: string): Promise<CheckoutInfo | null> {
   }
 }
 
+/** Create a Customer Portal session for a Polar customer and return the portal URL.
+ *  The portal lets the customer manage their payment method, view/download invoices,
+ *  and change/cancel their subscription — all on Polar. */
+export async function createCustomerSession(customerId: string): Promise<{ url: string }> {
+  const res = await polar('/v1/customer-sessions', {
+    method: 'POST',
+    body: JSON.stringify({ customer_id: customerId }),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Polar customer session failed: ${res.status} ${body.slice(0, 300)}`)
+  }
+  const d = (await res.json()) as { customer_portal_url?: string }
+  if (!d.customer_portal_url) throw new Error('Polar customer session: no portal url in response')
+  return { url: d.customer_portal_url }
+}
+
 /** Cancel a subscription at period end (used by the in-app "Cancel" button). */
 export async function cancelSubscription(subscriptionId: string): Promise<boolean> {
   const res = await polar(`/v1/subscriptions/${subscriptionId}`, {

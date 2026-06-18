@@ -50,6 +50,10 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trialing BOOLEAN NOT NULL DEFAULT 
 -- True once the customer has ever started a trial — repeat checkouts skip the trial
 -- (allow_trial=false), since Polar allows a trial only once per customer.
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trial_used BOOLEAN NOT NULL DEFAULT false;
+-- Polar references (set from the billing webhook): the customer id powers the
+-- customer-portal link (payment method, invoices, cancel); subscription id for ops.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS polar_customer_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS polar_subscription_id TEXT;
 
 CREATE TABLE IF NOT EXISTS credit_ledger (
   id           TEXT PRIMARY KEY,

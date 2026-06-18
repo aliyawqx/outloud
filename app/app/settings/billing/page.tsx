@@ -10,5 +10,11 @@ export default async function BillingPage() {
   if (!session) return null
   await resetIfDue(session.userId) // keep the free cycle fresh before reading usage
   const profile = await getProfile(session.userId)
-  return <BillingUsage plan={profile?.plan ?? 'free'} trialing={Boolean(profile?.trialing)} />
+  return (
+    <BillingUsage
+      plan={profile?.plan ?? 'free'}
+      trialing={Boolean(profile?.trialing)}
+      hasBilling={Boolean(profile?.polarCustomerId)}
+    />
+  )
 }
