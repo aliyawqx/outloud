@@ -10,6 +10,7 @@ import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
 type Feature = { key: string; label: string; cost: number; count: number; total: number }
 type Usage = {
   balance: number
+  topupBalance: number
   cycleTotal: number
   cycleUsed: number
   resetAt: string | null
@@ -71,6 +72,11 @@ function UsageTab({ trialing }: { trialing: boolean }) {
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
           <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${pct}%` }} />
         </div>
+        {usage.topupBalance > 0 && (
+          <p className="mt-3 font-code-label text-code-label text-cyber-lime">
+            + {kfmt(usage.topupBalance)} top-up credits · never expire
+          </p>
+        )}
       </div>
 
       {/* Daily graph */}

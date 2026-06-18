@@ -13,8 +13,10 @@ export type Profile = {
   incubator: Incubator
   /** Lifetime drafts generated (counts toward the participant cap). */
   draftsUsed: number
-  /** Metered-action credit balance (see lib/credits). */
+  /** Plan-allowance credit balance this cycle (resets each cycle). */
   creditBalance: number
+  /** Persistent purchased top-up credits (never expire/reset). */
+  topupBalance: number
   /** True while a subscription is in its 7-day trial (top-ups are blocked then). */
   trialing: boolean
   /** True once the user has ever started a trial (repeat checkouts skip the trial). */
@@ -36,6 +38,7 @@ type Row = {
   incubator: string | null
   drafts_used: number
   credit_balance: number
+  topup_balance: number
   trialing: boolean
   trial_used: boolean
   polar_customer_id: string | null
@@ -55,6 +58,7 @@ function mapRow(r: Row): Profile {
     incubator: r.incubator === 'yes' ? 'yes' : r.incubator === 'no' ? 'no' : null,
     draftsUsed: r.drafts_used ?? 0,
     creditBalance: r.credit_balance ?? 0,
+    topupBalance: r.topup_balance ?? 0,
     trialing: r.trialing ?? false,
     trialUsed: r.trial_used ?? false,
     polarCustomerId: r.polar_customer_id ?? null,

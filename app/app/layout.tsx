@@ -50,10 +50,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Live credit balance for the header. Run the lazy free-allowance reset so a
   // returning free user sees a refilled balance immediately (no-op for paid/staff).
   const unlimited = isStaff(session.email)
-  let creditBalance = profile?.creditBalance ?? 0
+  const topup = profile?.topupBalance ?? 0
+  let creditBalance = (profile?.creditBalance ?? 0) + topup // plan + persistent top-up
   if (!unlimited) {
-    const reset = await resetIfDue(session.userId)
-    if (reset != null) creditBalance = reset
+    const reset = await resetIfDue(session.userId) // returns the new plan balance (top-up untouched)
+    if (reset != null) creditBalance = reset + topup
   }
 
   return (

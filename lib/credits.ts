@@ -50,11 +50,11 @@ export class InsufficientCreditsError extends Error {
 
 export async function getBalance(userId: string): Promise<number> {
   await ensureSchema()
-  const { rows } = await getPool().query<{ credit_balance: number }>(
-    'SELECT credit_balance FROM profiles WHERE user_id = $1',
+  const { rows } = await getPool().query<{ total: number }>(
+    'SELECT (credit_balance + topup_balance) AS total FROM profiles WHERE user_id = $1',
     [userId],
   )
-  return rows[0]?.credit_balance ?? 0
+  return rows[0]?.total ?? 0
 }
 
 /** Append an audit row. `balanceAfter` is the resulting balance; `refId` ties the
@@ -92,16 +92,24 @@ export async function deduct(
   const client = await getPool().connect()
   try {
     await client.query('BEGIN')
-    const { rows } = await client.query<{ credit_balance: number }>(
-      'UPDATE profiles SET credit_balance = credit_balance - $2, updated_at = now() WHERE user_id = $1 AND credit_balance >= $2 RETURNING credit_balance',
+    // Spend the plan allowance first, then top-up credits. Both SET expressions read
+    // the OLD credit_balance, so the split is computed atomically; the WHERE on the
+    // combined total keeps either bucket from going negative.
+    const { rows } = await client.query<{ credit_balance: number; topup_balance: number }>(
+      `UPDATE profiles
+          SET credit_balance = GREATEST(0, credit_balance - $2),
+              topup_balance = topup_balance - GREATEST(0, $2 - credit_balance),
+              updated_at = now()
+        WHERE user_id = $1 AND (credit_balance + topup_balance) >= $2
+        RETURNING credit_balance, topup_balance`,
       [userId, cost],
     )
     if (rows.length === 0) {
       await client.query('ROLLBACK')
-      const { rows: b } = await client.query<{ credit_balance: number }>('SELECT credit_balance FROM profiles WHERE user_id = $1', [userId])
-      throw new InsufficientCreditsError(cost, b[0]?.credit_balance ?? 0)
+      const { rows: b } = await client.query<{ total: number }>('SELECT (credit_balance + topup_balance) AS total FROM profiles WHERE user_id = $1', [userId])
+      throw new InsufficientCreditsError(cost, b[0]?.total ?? 0)
     }
-    const balanceAfter = rows[0].credit_balance
+    const balanceAfter = rows[0].credit_balance + rows[0].topup_balance
     const ledgerId = await ledger(client, userId, -cost, reason, balanceAfter, opts.refId ?? null, opts.metadata ?? {})
     await client.query('COMMIT')
     return { balance: balanceAfter, ledgerId }
@@ -147,15 +155,17 @@ export async function refund(userId: string, ledgerId: string): Promise<number |
       return null
     }
     const refundAmount = -o.amount // positive credit-back
-    const { rows: upd } = await client.query<{ credit_balance: number }>(
-      'UPDATE profiles SET credit_balance = credit_balance + $2, updated_at = now() WHERE user_id = $1 RETURNING credit_balance',
+    // Refund into the plan bucket (failed actions are rare; exact bucket split isn't
+    // worth tracking). Never reduces, so no paid credit is ever lost.
+    const { rows: upd } = await client.query<{ credit_balance: number; topup_balance: number }>(
+      'UPDATE profiles SET credit_balance = credit_balance + $2, updated_at = now() WHERE user_id = $1 RETURNING credit_balance, topup_balance',
       [userId, refundAmount],
     )
     if (upd.length === 0) {
       await client.query('ROLLBACK')
       return null
     }
-    const balanceAfter = upd[0].credit_balance
+    const balanceAfter = upd[0].credit_balance + upd[0].topup_balance
     await ledger(client, userId, refundAmount, 'refund', balanceAfter, null, { refundOf: ledgerId })
     await client.query('COMMIT')
     return balanceAfter
@@ -279,22 +289,36 @@ export async function resetIfDue(userId: string): Promise<number | null> {
   }
 }
 
-/** Add purchased credits (overage packs). Stacks on top of the current balance. */
-export async function addCredits(userId: string, credits: number, metadata: Record<string, unknown> = {}): Promise<number> {
+/** Add purchased credits to the PERSISTENT top-up bucket (never expires/resets).
+ *  `idempotencyKey` (the Polar order id) dedupes the success-redirect grant and the
+ *  webhook grant so a purchase is credited exactly once. Returns the new total. */
+export async function addCredits(
+  userId: string,
+  credits: number,
+  opts: { idempotencyKey?: string | null; metadata?: Record<string, unknown> } = {},
+): Promise<number> {
   await ensureSchema()
   const client = await getPool().connect()
   try {
     await client.query('BEGIN')
-    const { rows } = await client.query<{ credit_balance: number }>(
-      'UPDATE profiles SET credit_balance = credit_balance + $2, updated_at = now() WHERE user_id = $1 RETURNING credit_balance',
+    if (opts.idempotencyKey) {
+      const { rows: dup } = await client.query("SELECT 1 FROM credit_ledger WHERE reason = 'purchase' AND ref_id = $1 LIMIT 1", [opts.idempotencyKey])
+      if (dup.length > 0) {
+        const { rows: cur } = await client.query<{ total: number }>('SELECT (credit_balance + topup_balance) AS total FROM profiles WHERE user_id = $1', [userId])
+        await client.query('ROLLBACK')
+        return cur[0]?.total ?? 0
+      }
+    }
+    const { rows } = await client.query<{ credit_balance: number; topup_balance: number }>(
+      'UPDATE profiles SET topup_balance = topup_balance + $2, updated_at = now() WHERE user_id = $1 RETURNING credit_balance, topup_balance',
       [userId, credits],
     )
     if (rows.length === 0) {
       await client.query('ROLLBACK')
       return 0
     }
-    const balanceAfter = rows[0].credit_balance
-    await ledger(client, userId, credits, 'purchase', balanceAfter, null, metadata)
+    const balanceAfter = rows[0].credit_balance + rows[0].topup_balance
+    await ledger(client, userId, credits, 'purchase', balanceAfter, opts.idempotencyKey ?? null, opts.metadata ?? {})
     await client.query('COMMIT')
     return balanceAfter
   } catch (err) {
@@ -307,7 +331,10 @@ export async function addCredits(userId: string, credits: number, metadata: Reco
 
 export type UsageFeature = { key: string; label: string; cost: number; count: number; total: number }
 export type UsageSummary = {
+  /** Total spendable = remaining plan allowance + persistent top-up credits. */
   balance: number
+  /** Persistent purchased credits that never expire/reset. */
+  topupBalance: number
   /** Plan allowance for the cycle (== `allowance`, kept for the header total). */
   cycleTotal: number
   allowance: number
@@ -331,12 +358,13 @@ const dayKey = (d: Date) =>
 export async function getUsage(userId: string): Promise<UsageSummary> {
   await ensureSchema()
   const pool = getPool()
-  const { rows: pr } = await pool.query<{ plan: string; credit_balance: number; credits_reset_at: Date | null }>(
-    'SELECT plan, credit_balance, credits_reset_at FROM profiles WHERE user_id = $1',
+  const { rows: pr } = await pool.query<{ plan: string; credit_balance: number; topup_balance: number; credits_reset_at: Date | null }>(
+    'SELECT plan, credit_balance, topup_balance, credits_reset_at FROM profiles WHERE user_id = $1',
     [userId],
   )
   const plan = pr[0]?.plan ?? 'free'
-  const balance = pr[0]?.credit_balance ?? 0
+  const topupBalance = pr[0]?.topup_balance ?? 0
+  const balance = (pr[0]?.credit_balance ?? 0) + topupBalance
   const cycleTotal = planAllowance(plan)
   const resetAt = pr[0]?.credits_reset_at ? pr[0].credits_reset_at.toISOString() : null
 
@@ -393,6 +421,7 @@ export async function getUsage(userId: string): Promise<UsageSummary> {
 
   return {
     balance,
+    topupBalance,
     cycleTotal,
     allowance: cycleTotal,
     cycleUsed,

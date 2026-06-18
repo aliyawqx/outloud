@@ -63,9 +63,11 @@ export async function POST(req: Request) {
     const periodEnd = typeof data.current_period_end === 'string' ? new Date(data.current_period_end) : undefined
 
     if (type === 'order.paid' && pack) {
-      // One-time credit-pack purchase → add credits, no plan change.
+      // One-time credit-pack purchase → add to the persistent top-up bucket. Keyed by
+      // checkout id so the success-redirect grant and this webhook credit it once.
       const userId = await resolveUserId(data)
-      if (userId) await addCredits(userId, pack.credits, { pack: pack.id, productId, orderId: data.id })
+      const key = (data.checkout_id as string) ?? (data.id as string)
+      if (userId) await addCredits(userId, pack.credits, { idempotencyKey: key, metadata: { pack: pack.id, productId, orderId: data.id } })
     } else if (type === 'order.paid') {
       // A real charge: trial conversion (day 7) OR a renewal → reset to the full plan
       // allowance. Trial-start does NOT fire order.paid, so the 10k trial pool is only

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCheckout } from '@/lib/billing/polar'
 import { isPaidPlanId } from '@/lib/billing/plans'
 import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
-import { grantPlan, grantTrialPool } from '@/lib/credits'
+import { grantPlan, grantTrialPool, addCredits, packById } from '@/lib/credits'
 
 // GET /api/billing/success?checkout_id=... — where Polar redirects after checkout.
 // We activate immediately (plan + credits) so it works even before the webhook lands
@@ -18,6 +18,16 @@ export async function GET(req: Request) {
       const checkout = await getCheckout(checkoutId)
       const userId = checkout?.metadata?.userId
       const plan = checkout?.metadata?.plan
+      const packId = typeof checkout?.metadata?.pack === 'string' ? checkout.metadata.pack : undefined
+      const pack = packId ? packById(packId) : null
+
+      // One-time credit-pack top-up → add to the persistent bucket (idempotent by
+      // checkout id, so the webhook won't double it). Land back on the usage page.
+      if (checkout?.completed && typeof userId === 'string' && pack) {
+        await addCredits(userId, pack.credits, { idempotencyKey: checkoutId, metadata: { pack: pack.id } })
+        return NextResponse.redirect(new URL('/app/settings/billing?topup=success', req.url))
+      }
+
       if (checkout?.completed && typeof userId === 'string' && isPaidPlanId(plan)) {
         await setPlan(userId, plan)
         await setPolarRefs(userId, { customerId: checkout.customerId, subscriptionId: checkout.subscriptionId })

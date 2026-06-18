@@ -37,7 +37,9 @@ export async function POST(req: Request) {
   }
 
   const origin = new URL(req.url).origin
-  const successUrl = `${origin}/app/profile?topup=success`
+  // Route through the success handler so the top-up is credited immediately (and
+  // locally, where the webhook can't reach). Idempotent, so the webhook won't double it.
+  const successUrl = `${origin}/api/billing/success?checkout_id={CHECKOUT_ID}`
   try {
     const { url } = await createCheckout({
       productId,
