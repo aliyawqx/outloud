@@ -33,7 +33,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <div className="mt-8 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className="font-code-label text-code-label uppercase text-on-surface-variant">Credits</span>
-          <Link href="/app/profile/usage" className="font-code-label text-code-label text-electric-indigo hover:underline">
+          <Link href="/app/settings/billing" className="font-code-label text-code-label text-electric-indigo hover:underline">
             View usage →
           </Link>
         </div>

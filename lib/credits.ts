@@ -16,6 +16,7 @@ import {
   CREDIT_PACKS,
   packById,
   packByProductId,
+  SPEND_FEATURES,
   type CreditReason,
 } from '@/lib/creditsConfig'
 
@@ -184,7 +185,10 @@ export async function grantPlan(userId: string, plan: string): Promise<void> {
       return
     }
     const prev = rows[0].credit_balance
-    await client.query('UPDATE profiles SET credit_balance = $2, updated_at = now() WHERE user_id = $1', [userId, amount])
+    // Approximate the monthly reset date (~30d). Exact Polar period would require
+    // storing the subscription's current_period_end from the webhook.
+    const next = new Date(Date.now() + 30 * 86_400_000)
+    await client.query('UPDATE profiles SET credit_balance = $2, credits_reset_at = $3, updated_at = now() WHERE user_id = $1', [userId, amount, next])
     await ledger(client, userId, amount - prev, 'grant', amount, null, { plan, reset: true, previous: prev })
     await client.query('COMMIT')
   } catch (err) {
@@ -301,47 +305,100 @@ export async function addCredits(userId: string, credits: number, metadata: Reco
   }
 }
 
+export type UsageFeature = { key: string; label: string; cost: number; count: number; total: number }
 export type UsageSummary = {
   balance: number
+  /** Plan allowance for the cycle (== `allowance`, kept for the header total). */
+  cycleTotal: number
   allowance: number
+  /** Credits spent this cycle. `monthUsed` kept as an alias for older callers. */
+  cycleUsed: number
   monthUsed: number
+  /** ISO reset date (next cycle boundary), or null if unknown. */
+  resetAt: string | null
   daily: { date: string; used: number }[]
+  byFeature: UsageFeature[]
 }
 
-/** Aggregate the user's credit usage for the Usage page / API. */
+const dayKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+/**
+ * Aggregate credit usage for the Usage page — all from the ledger (single source of
+ * truth), scoped to the CURRENT cycle. The cycle starts at the last allowance refill
+ * ('grant'/'reset' row) and the balance/total/reset come straight from the profile.
+ */
 export async function getUsage(userId: string): Promise<UsageSummary> {
   await ensureSchema()
   const pool = getPool()
-  const { rows: pr } = await pool.query<{ plan: string; credit_balance: number }>(
-    'SELECT plan, credit_balance FROM profiles WHERE user_id = $1',
+  const { rows: pr } = await pool.query<{ plan: string; credit_balance: number; credits_reset_at: Date | null }>(
+    'SELECT plan, credit_balance, credits_reset_at FROM profiles WHERE user_id = $1',
     [userId],
   )
   const plan = pr[0]?.plan ?? 'free'
   const balance = pr[0]?.credit_balance ?? 0
-  const allowance = planAllowance(plan)
+  const cycleTotal = planAllowance(plan)
+  const resetAt = pr[0]?.credits_reset_at ? pr[0].credits_reset_at.toISOString() : null
 
-  const { rows: m } = await pool.query<{ used: number }>(
-    "SELECT COALESCE(-SUM(amount), 0)::int AS used FROM credit_ledger WHERE user_id = $1 AND amount < 0 AND created_at >= date_trunc('month', now())",
+  // Cycle start = the most recent allowance refill (grant/reset). Fall back to the
+  // start of the current calendar month if there isn't one yet.
+  const { rows: cs } = await pool.query<{ started: Date | null }>(
+    "SELECT max(created_at) AS started FROM credit_ledger WHERE user_id = $1 AND reason IN ('grant', 'reset')",
     [userId],
   )
-  const monthUsed = m[0]?.used ?? 0
+  const cycleStart = cs[0]?.started ?? null
+  const cycleClause = cycleStart ? 'created_at >= $2' : "created_at >= date_trunc('month', now())"
+  const params = cycleStart ? [userId, cycleStart] : [userId]
 
-  // Spent-per-day over the last 7 calendar days (negative deltas only).
+  const { rows: u } = await pool.query<{ used: number }>(
+    `SELECT COALESCE(-SUM(amount), 0)::int AS used FROM credit_ledger WHERE user_id = $1 AND amount < 0 AND ${cycleClause}`,
+    params,
+  )
+  const cycleUsed = u[0]?.used ?? 0
+
+  // Per-feature counts + totals this cycle, keyed by ledger reason.
+  const { rows: fr } = await pool.query<{ reason: string; cnt: number; total: number }>(
+    `SELECT reason, count(*)::int AS cnt, COALESCE(-SUM(amount), 0)::int AS total
+       FROM credit_ledger WHERE user_id = $1 AND amount < 0 AND ${cycleClause} GROUP BY reason`,
+    params,
+  )
+  const byReason = new Map(fr.map((r) => [r.reason, r]))
+  const byFeature: UsageFeature[] = SPEND_FEATURES.map((f) => ({
+    key: f.key,
+    label: f.label,
+    cost: f.cost,
+    count: byReason.get(f.reason)?.cnt ?? 0,
+    total: byReason.get(f.reason)?.total ?? 0,
+  }))
+
+  // One bar per day from cycle start to today (empty days = 0).
   const { rows: d } = await pool.query<{ date: string; used: number }>(
     `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS date, COALESCE(-SUM(amount), 0)::int AS used
-       FROM credit_ledger
-      WHERE user_id = $1 AND amount < 0 AND created_at >= (now() - interval '6 days')::date
-      GROUP BY 1`,
-    [userId],
+       FROM credit_ledger WHERE user_id = $1 AND amount < 0 AND ${cycleClause} GROUP BY 1`,
+    params,
   )
   const byDay = new Map(d.map((row) => [row.date, row.used]))
-  const daily: { date: string; used: number }[] = []
   const today = new Date()
-  for (let i = 6; i >= 0; i--) {
+  const start = cycleStart ? new Date(cycleStart) : new Date(today.getFullYear(), today.getMonth(), 1)
+  // Cap the graph at ~31 bars so a long/odd cycle can't explode the axis.
+  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+  const maxBars = 31
+  const spanDays = Math.min(maxBars, Math.max(1, Math.round((today.getTime() - startDay.getTime()) / 86_400_000) + 1))
+  const daily: { date: string; used: number }[] = []
+  for (let i = spanDays - 1; i >= 0; i--) {
     const dt = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
-    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+    const key = dayKey(dt)
     daily.push({ date: key, used: byDay.get(key) ?? 0 })
   }
 
-  return { balance, allowance, monthUsed, daily }
+  return {
+    balance,
+    cycleTotal,
+    allowance: cycleTotal,
+    cycleUsed,
+    monthUsed: cycleUsed,
+    resetAt,
+    daily,
+    byFeature,
+  }
 }

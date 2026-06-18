@@ -6,13 +6,16 @@
 // monetization spec (§1). Searches are ALL-IN: the bundled draft is not charged
 // again on top of the search.
 export const COST_PER_POST = 1_000
-export const COST_PER_REPLY = 1_000
-export const COST_PER_LINK_SEARCH = 5_000 // fetch one link's context → draft (all-in)
+export const COST_PER_REPLY = 5_000
 export const COST_PER_TOPIC_SEARCH = 10_000 // scan a topic → draft (all-in)
 // Image actions (config only for now; wiring lands with outloud-image-actions-spec).
-export const COST_PER_AI_PHOTO = 2_000 // stacks on a draft
-export const COST_PER_GOOGLE_PHOTO = 1_000 // licensed stock image, stacks on a draft
+export const COST_PER_AI_PHOTO = 2_000 // AI-generated image, stacks on a draft
+export const COST_PER_PHOTO_SEARCH = 1_000 // photo search for post (licensed stock), stacks on a draft
 export const COST_UPLOAD_PHOTO = 0 // user's own file
+
+// Kept as aliases so existing importers don't break.
+export const COST_PER_LINK_SEARCH = 5_000 // fetch one link's context → draft (all-in)
+export const COST_PER_GOOGLE_PHOTO = COST_PER_PHOTO_SEARCH
 
 /** Credit allowance per plan. On reset the balance is set to this (NOT stacked).
  *  `free` is the 7-day trial pool (10k); proper trial mechanics are a later phase. */
@@ -42,7 +45,27 @@ export const CREDIT_PACKS = [
   { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 70, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
 ] as const
 
-export type CreditReason = 'grant' | 'post' | 'reply' | 'search' | 'purchase' | 'reset' | 'refund'
+export type CreditReason =
+  | 'grant'
+  | 'post'
+  | 'reply'
+  | 'search' // search by topic
+  | 'ai_image'
+  | 'photo_search' // photo search for post
+  | 'purchase'
+  | 'reset'
+  | 'refund'
+
+/** Per-feature spend rows for the Usage breakdown. `reason` is the ledger reason a
+ *  feature's deduction is logged under; `cost` is its per-action price. Some are not
+ *  wired to deduct yet (images) — they simply show 0 until they are. */
+export const SPEND_FEATURES: { key: string; label: string; reason: CreditReason; cost: number }[] = [
+  { key: 'post', label: 'post', reason: 'post', cost: COST_PER_POST },
+  { key: 'photo_search', label: 'photo search for post', reason: 'photo_search', cost: COST_PER_PHOTO_SEARCH },
+  { key: 'ai_image', label: 'ai image', reason: 'ai_image', cost: COST_PER_AI_PHOTO },
+  { key: 'reply', label: 'reply', reason: 'reply', cost: COST_PER_REPLY },
+  { key: 'search', label: 'search by topic', reason: 'search', cost: COST_PER_TOPIC_SEARCH },
+]
 
 export function packById(id: string) {
   return CREDIT_PACKS.find((p) => p.id === id) ?? null

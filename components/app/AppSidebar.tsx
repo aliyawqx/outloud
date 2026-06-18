@@ -111,6 +111,15 @@ export function AppSidebar({
       </Link>
 
       <Link
+        href="/app/settings/billing"
+        onClick={() => setOpen(false)}
+        className="flex items-center gap-2 rounded-xl px-3 py-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:bg-white/[0.04] hover:text-on-surface"
+      >
+        <span aria-hidden="true" className="material-symbols-outlined text-[18px]">receipt_long</span>
+        Billing &amp; usage
+      </Link>
+
+      <Link
         href="/pricing"
         className="flex items-center justify-center rounded-xl bg-surface-container-low px-3 py-2 font-code-label text-code-label text-cyber-lime transition-colors hover:brightness-110"
       >

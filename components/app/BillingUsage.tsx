@@ -1,0 +1,191 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Spinner } from '@/components/Spinner'
+import { AddCredits } from '@/components/app/AddCredits'
+import { startCheckout } from '@/lib/billing/client'
+import { PLAN_ALLOWANCE } from '@/lib/creditsConfig'
+import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
+
+type Feature = { key: string; label: string; cost: number; count: number; total: number }
+type Usage = {
+  balance: number
+  cycleTotal: number
+  cycleUsed: number
+  resetAt: string | null
+  daily: { date: string; used: number }[]
+  byFeature: Feature[]
+}
+
+const fmt = (n: number) => n.toLocaleString()
+const kEach = (cost: number) => (cost >= 1000 ? `${cost / 1000}k each` : `${cost} each`)
+function resetLabel(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return ` · resets ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+}
+function dayLabel(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(y, (m ?? 1) - 1, d ?? 1).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+const PLAN_META: Record<string, { name: string; price: number; allowance: number }> = {
+  free: { name: 'Free trial', price: 0, allowance: PLAN_ALLOWANCE.free },
+  starter: { name: 'Starter', price: STARTER_PRICE, allowance: PLAN_ALLOWANCE.starter },
+  pro: { name: 'Pro', price: PRO_PRICE, allowance: PLAN_ALLOWANCE.pro },
+}
+
+function UsageTab({ trialing }: { trialing: boolean }) {
+  const [usage, setUsage] = useState<Usage | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/credits/usage')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
+      .then(setUsage)
+      .catch(() => setError('Could not load usage right now.'))
+  }, [])
+
+  if (error) return <p className="font-body-sm text-body-sm text-error">{error}</p>
+  if (!usage) return <div className="flex justify-center py-12"><Spinner size={20} className="text-electric-indigo" /></div>
+
+  const pct = usage.cycleTotal > 0 ? Math.min(100, Math.round((usage.balance / usage.cycleTotal) * 100)) : 0
+  const maxDay = Math.max(1, ...usage.daily.map((d) => d.used))
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Balance header */}
+      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+        <div className="font-headline-sm text-headline-sm text-on-surface">
+          {fmt(usage.balance)} / {fmt(usage.cycleTotal)} credits
+          <span className="font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
+        </div>
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
+          <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
+      {/* Daily graph */}
+      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+        <h2 className="mb-4 font-code-label text-code-label uppercase text-on-surface-variant">this cycle</h2>
+        <div className="flex items-end justify-between gap-1" style={{ height: 120 }}>
+          {usage.daily.map((d) => (
+            <div key={d.date} className="flex flex-1 flex-col items-center justify-end gap-2" title={`${dayLabel(d.date)}: ${fmt(d.used)} credits`}>
+              <div
+                className="w-full rounded-t bg-electric-indigo/80"
+                style={{ height: `${Math.round((d.used / maxDay) * 100)}%`, minHeight: d.used > 0 ? 4 : 2, opacity: d.used > 0 ? 1 : 0.25 }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex justify-between font-code-label text-[10px] text-on-surface-variant/60">
+          <span>{usage.daily[0] ? dayLabel(usage.daily[0].date) : ''}</span>
+          <span>{usage.daily.length ? dayLabel(usage.daily[usage.daily.length - 1].date) : ''}</span>
+        </div>
+      </div>
+
+      {/* Spend breakdown */}
+      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+        <h2 className="mb-3 font-code-label text-code-label uppercase text-on-surface-variant">spend this cycle</h2>
+        <div className="flex flex-col divide-y divide-border-muted">
+          {usage.byFeature.map((f) => (
+            <div key={f.key} className="flex items-center justify-between py-2.5 font-body-sm text-body-sm">
+              <span className="text-on-surface">{f.label}</span>
+              <span className="flex items-center gap-3 text-on-surface-variant">
+                <span className="hidden sm:inline">{kEach(f.cost)}</span>
+                <span className="w-10 text-right tabular-nums">{f.count}</span>
+                <span className="w-16 text-right tabular-nums text-on-surface">{fmt(f.total)}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Buy more credits */}
+      <div>
+        <AddCredits trialing={trialing} />
+      </div>
+    </div>
+  )
+}
+
+function BillingTab({ plan }: { plan: string }) {
+  const meta = PLAN_META[plan] ?? PLAN_META.free
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState('')
+
+  async function upgrade(target: 'starter' | 'pro') {
+    setError('')
+    setBusy(target)
+    try {
+      await startCheckout(target, 'monthly')
+    } catch (e) {
+      setError((e as Error).message || "Couldn't open checkout.")
+      setBusy(null)
+    }
+  }
+
+  // Plans the user can move up to.
+  const upgrades = (['starter', 'pro'] as const).filter((p) => PLAN_META[p].allowance > meta.allowance)
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Current plan */}
+      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+        <span className="font-code-label text-code-label uppercase text-on-surface-variant">Current plan</span>
+        <div className="mt-2 flex items-baseline justify-between">
+          <span className="font-headline-sm text-headline-sm text-on-surface">{meta.name}</span>
+          <span className="font-body-sm text-body-sm text-on-surface-variant">
+            {meta.price > 0 ? `$${meta.price}/mo` : 'no card'} · {fmt(meta.allowance)} credits/mo
+          </span>
+        </div>
+        {upgrades.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {upgrades.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => upgrade(p)}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+              >
+                {busy === p ? <Spinner size={14} /> : null}
+                Upgrade to {PLAN_META[p].name}
+              </button>
+            ))}
+          </div>
+        )}
+        {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
+      </div>
+
+      {/* Payment method + invoices — managed in Polar (needs stored Polar ids to wire). */}
+      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+        <span className="font-code-label text-code-label uppercase text-on-surface-variant">Payment & invoices</span>
+        <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
+          Your payment method, invoice history, and plan changes are managed securely in Polar. Manage-in-Polar links
+          are being wired up.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export function BillingUsage({ plan, trialing }: { plan: string; trialing: boolean }) {
+  const [tab, setTab] = useState<'usage' | 'billing'>('usage')
+  const pill = (active: boolean) =>
+    `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
+      active ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
+    }`
+
+  return (
+    <div className="mx-auto max-w-xl">
+      <h1 className="mb-4 font-headline-xl text-headline-xl">Billing &amp; usage</h1>
+      <div className="mb-6 inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
+        <button type="button" className={pill(tab === 'usage')} onClick={() => setTab('usage')}>Usage</button>
+        <button type="button" className={pill(tab === 'billing')} onClick={() => setTab('billing')}>Billing</button>
+      </div>
+      {tab === 'usage' ? <UsageTab trialing={trialing} /> : <BillingTab plan={plan} />}
+    </div>
+  )
+}
