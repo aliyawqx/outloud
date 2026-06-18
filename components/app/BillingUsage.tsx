@@ -18,6 +18,12 @@ type Usage = {
 }
 
 const fmt = (n: number) => n.toLocaleString()
+// 1000 → "1k", 600000 → "600k", 1500 → "1.5k", 250 → "250"
+function kfmt(n: number): string {
+  if (n < 1000) return String(n)
+  const v = n / 1000
+  return `${Number.isInteger(v) ? v : Math.round(v * 10) / 10}k`
+}
 const kEach = (cost: number) => (cost >= 1000 ? `${cost / 1000}k each` : `${cost} each`)
 function resetLabel(iso: string | null): string {
   if (!iso) return ''
@@ -50,7 +56,8 @@ function UsageTab({ trialing }: { trialing: boolean }) {
   if (error) return <p className="font-body-sm text-body-sm text-error">{error}</p>
   if (!usage) return <div className="flex justify-center py-12"><Spinner size={20} className="text-electric-indigo" /></div>
 
-  const pct = usage.cycleTotal > 0 ? Math.min(100, Math.round((usage.balance / usage.cycleTotal) * 100)) : 0
+  // Show what's been USED out of the cycle total; the bar fills as credits are spent.
+  const pct = usage.cycleTotal > 0 ? Math.min(100, Math.round((usage.cycleUsed / usage.cycleTotal) * 100)) : 0
   const maxDay = Math.max(1, ...usage.daily.map((d) => d.used))
 
   return (
@@ -58,7 +65,7 @@ function UsageTab({ trialing }: { trialing: boolean }) {
       {/* Balance header */}
       <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <div className="font-headline-sm text-headline-sm text-on-surface">
-          {fmt(usage.balance)} / {fmt(usage.cycleTotal)} credits
+          {kfmt(usage.cycleUsed)} / {kfmt(usage.cycleTotal)} credits used
           <span className="font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
