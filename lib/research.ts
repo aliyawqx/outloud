@@ -7,7 +7,10 @@
 // must never block or error a post.
 
 const TAVILY_URL = 'https://api.tavily.com/search'
-const TIMEOUT_MS = 5_000
+// Advanced search typically takes ~3-4s but spikes past 5s under load. Give it
+// real headroom so results actually come back (the post writer waits on this);
+// the route's maxDuration (60s) comfortably covers up to two research rounds.
+const TIMEOUT_MS = 12_000
 
 export type ResearchResult = {
   answer: string
@@ -33,10 +36,14 @@ export async function research(query: string): Promise<ResearchResult | null> {
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
-  } catch {
+  } catch (e) {
+    console.warn('[research] tavily request failed:', (e as Error).message)
     return null // network error or timeout → write without research
   }
-  if (!res.ok) return null
+  if (!res.ok) {
+    console.warn('[research] tavily non-ok status:', res.status)
+    return null
+  }
 
   const data = (await res.json().catch(() => null)) as
     | { answer?: string; results?: Array<{ title?: string; url?: string; content?: string }> }
