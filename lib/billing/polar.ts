@@ -64,30 +64,42 @@ export async function createCheckout(opts: {
 
 export type CheckoutInfo = {
   status: string
-  paid: boolean
+  /** Completed checkout (confirmed/succeeded). For a trial this is true with amount 0. */
+  completed: boolean
+  /** Amount actually charged (minor units). 0 = trial (card saved, no charge yet). */
+  amount: number
   metadata: Record<string, unknown>
   customerEmail?: string
   productId?: string
+  customerId?: string
+  subscriptionId?: string
 }
 
-/** Read a checkout (used by the success redirect to confirm payment + find the
- *  user from metadata). */
+/** Read a checkout (used by the success redirect to activate the plan + grant credits
+ *  immediately; the webhook is the durable backstop). */
 export async function getCheckout(id: string): Promise<CheckoutInfo | null> {
   const res = await polar(`/v1/checkouts/${id}`)
   if (!res.ok) return null
   const d = (await res.json()) as {
     status?: string
+    total_amount?: number
+    amount?: number
     metadata?: Record<string, unknown>
     customer_email?: string
     product_id?: string
+    customer_id?: string
+    subscription_id?: string
   }
   const status = d.status ?? ''
   return {
     status,
-    paid: status === 'confirmed' || status === 'succeeded',
+    completed: status === 'confirmed' || status === 'succeeded',
+    amount: d.total_amount ?? d.amount ?? 0,
     metadata: d.metadata ?? {},
     customerEmail: d.customer_email,
     productId: d.product_id,
+    customerId: d.customer_id,
+    subscriptionId: d.subscription_id,
   }
 }
 

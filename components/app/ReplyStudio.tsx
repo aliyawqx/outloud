@@ -166,14 +166,10 @@ type RTurn =
 function ReplyChat({
   target,
   voiceId,
-  onDraftsLeft,
-  onLimit,
   onNeedVoice,
 }: {
   target: Target
   voiceId: string
-  onDraftsLeft: (n: number) => void
-  onLimit: () => void
   onNeedVoice: () => void
 }) {
   const { setBalance } = useCredits() // live header balance, reconciled from each response
@@ -202,9 +198,8 @@ function ReplyChat({
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 409 && data.needsVoice) { onNeedVoice(); return }
-      if (res.status === 403 && data.limitReached) { onLimit(); setError(data.error ?? "You've used all your drafts."); return }
+      if (res.status === 402 && data.insufficientCredits) { setError(data.error ?? "You're out of credits. Upgrade your plan to keep replying."); return }
       if (!res.ok) { setError(data.error ?? "Couldn't write a reply."); return }
-      if (typeof data.draftsLeft === 'number') onDraftsLeft(data.draftsLeft)
       if (typeof data.creditsLeft === 'number') setBalance(data.creditsLeft)
       if (data.historyId) setHistoryId(data.historyId)
       if (data.ask) setTurns((t) => [...t, { id: nextId(), role: 'assistant', text: data.ask }])
@@ -292,18 +287,15 @@ export function ReplyStudio({
   voices,
   xConnected,
   threadsConnected,
-  draftsLeft,
 }: {
   voices: VoiceOption[]
   xConnected: boolean
   threadsConnected: boolean
-  draftsLeft: number | null
 }) {
   const router = useRouter()
   const active = voices.find((v) => v.isActive) ?? voices[0]
   const [voiceId, setVoiceId] = useState(active?.id ?? '')
   const [mode, setMode] = useState<'link' | 'discover'>('link')
-  const [left, setLeft] = useState<number | null>(draftsLeft)
 
   // Mode A
   const [url, setUrl] = useState('')
@@ -472,8 +464,6 @@ export function ReplyStudio({
       key={target.id}
       target={target}
       voiceId={voiceId}
-      onDraftsLeft={setLeft}
-      onLimit={() => setLeft(0)}
       onNeedVoice={() => router.push('/app/onboarding')}
     />
   )
@@ -504,11 +494,6 @@ export function ReplyStudio({
               ))}
             </select>
           </label>
-        )}
-        {left !== null && (
-          <span className={`font-code-label text-code-label ${left > 0 ? 'text-on-surface-variant/70' : 'text-error'}`}>
-            {left > 0 ? `${left} of 5 drafts left` : 'No drafts left'}
-          </span>
         )}
       </div>
 

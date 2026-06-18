@@ -7,7 +7,6 @@ import { getAccount as getThreadsAccount } from '@/lib/threads/store'
 import { getComposeEntry } from '@/lib/voice/history'
 import { listPrompts } from '@/lib/prompts/store'
 import { SEED_PROMPTS } from '@/lib/prompts/seeds'
-import { DRAFT_LIMIT, isStaff } from '@/lib/appLock'
 import { hasReadyVoice, isVoiceReady } from '@/lib/voice/ready'
 import { ComposeHome, type ComposeSession } from '@/components/app/ComposeHome'
 
@@ -37,9 +36,6 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
     ...SEED_PROMPTS.map((s) => ({ command: s.command, title: s.title })),
     ...custom.map((p) => ({ command: p.command, title: p.title })),
   ]
-  // Remaining drafts for participants (null = unlimited / staff).
-  const draftsLeft = isStaff(session.email) ? null : Math.max(0, DRAFT_LIMIT - (profile?.draftsUsed ?? 0))
-
   // Reopening a past chat from History (?session=<id>) → restore the transcript.
   const { session: sessionId } = await searchParams
   let initialSession: ComposeSession | undefined
@@ -63,7 +59,6 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
       name={firstName}
       voices={readyVoices.map((v) => ({ id: v.id, name: v.name, isActive: v.isActive }))}
       commands={commands}
-      draftsLeft={draftsLeft}
       initialSession={initialSession}
       xConnected={Boolean(xAccount)}
       threadsConnected={Boolean(threadsAccount)}

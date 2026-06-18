@@ -70,7 +70,9 @@ export function ProfileForm({ initial }: { initial: Initial }) {
         <span className="font-code-label text-code-label text-on-surface-variant">
           Plan · <span className="capitalize text-on-surface">{initial.plan}</span>
         </span>
-        <span className="font-code-label text-code-label text-on-surface-variant/60">billing later</span>
+        <a href="/app/settings/billing" className="font-code-label text-code-label text-electric-indigo hover:underline">
+          Billing &amp; usage →
+        </a>
       </div>
 
       {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}

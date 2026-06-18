@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { PLANS, PRO_PRICE, STARTER_PRICE, TRIAL_DRAFTS } from '@/lib/pricing'
+import { PLANS, PRO_PRICE, STARTER_PRICE } from '@/lib/pricing'
 import { startCheckout } from '@/lib/billing/client'
 import { useCredits } from '@/components/app/CreditsContext'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
@@ -52,7 +52,7 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
         </button>
 
         <span className="rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-3 py-1 font-code-label text-code-label uppercase tracking-widest text-cyber-lime">
-          You’ve used all {TRIAL_DRAFTS} free drafts
+          You’re out of credits
         </span>
         <h2 className="font-headline-xl text-headline-xl">Do you want to subscribe?</h2>
         <p className="max-w-md font-body-md text-body-md text-on-surface-variant">
@@ -294,7 +294,6 @@ export function ComposeHome({
   name,
   voices,
   commands = [],
-  draftsLeft = null,
   initialSession,
   xConnected = false,
   threadsConnected = false,
@@ -302,7 +301,6 @@ export function ComposeHome({
   name: string
   voices: VoiceOption[]
   commands?: CommandOption[]
-  draftsLeft?: number | null
   initialSession?: ComposeSession
   xConnected?: boolean
   threadsConnected?: boolean
@@ -322,7 +320,6 @@ export function ComposeHome({
   const [error, setError] = useState('')
   const [historyId, setHistoryId] = useState<string | undefined>(initialSession?.historyId)
   const [activeCommand, setActiveCommand] = useState('')
-  const [left, setLeft] = useState<number | null>(draftsLeft)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const { setBalance } = useCredits() // live header balance, reconciled from each response
   // Highlights the suggested option the user tapped (the input below stays available
@@ -400,16 +397,14 @@ export function ComposeHome({
         router.push('/app/onboarding')
         return
       }
-      if (res.status === 403 && data.limitReached) {
-        setLeft(0)
-        setShowUpgrade(true) // offer the Pro upgrade instead of a dead-end error
+      if (res.status === 402 && data.insufficientCredits) {
+        setShowUpgrade(true) // out of credits → offer a plan instead of a dead-end error
         return
       }
       if (!res.ok) {
         setError(data.error ?? "Couldn't write that. Try again.")
         return
       }
-      if (typeof data.draftsLeft === 'number') setLeft(data.draftsLeft)
       if (typeof data.creditsLeft === 'number') setBalance(data.creditsLeft)
       if (data.historyId) setHistoryId(data.historyId)
       // Anchor a brand-new chat in the URL once it has its first AI answer: the
@@ -507,22 +502,6 @@ export function ComposeHome({
     </DropdownMenu>
   )
 
-  const draftsBadge =
-    left !== null &&
-    (left > 0 ? (
-      <span className="font-code-label text-code-label text-on-surface-variant/70">
-        {left} of {TRIAL_DRAFTS} drafts left
-      </span>
-    ) : (
-      <button
-        type="button"
-        onClick={() => setShowUpgrade(true)}
-        className="font-code-label text-code-label text-error underline-offset-2 transition-colors hover:underline"
-      >
-        No drafts left · Upgrade
-      </button>
-    ))
-
   const composer = (
     <div className="relative">
       {/* slash command menu */}
@@ -553,13 +532,12 @@ export function ComposeHome({
           placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?  (type / for formats)'}
           className="max-h-[50vh] min-h-[60px] w-full resize-none overflow-y-auto rounded-2xl rounded-b-none bg-transparent px-4 pb-2 pt-4 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
         />
-        {/* toolbar: mode + voice dropdowns, drafts, send */}
+        {/* toolbar: mode + voice dropdowns, send */}
         <div className="flex items-center gap-1 px-2.5 pb-2.5">
           {modeDropdown}
           {modeDropdown && voiceDropdown && <div className="mx-0.5 h-4 w-px bg-white/10" />}
           {voiceDropdown}
           <div className="ml-auto flex items-center gap-3">
-            {draftsBadge}
             <button
               type="button"
               onClick={() => send()}
