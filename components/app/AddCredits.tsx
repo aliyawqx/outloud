@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CREDIT_PACKS } from '@/lib/creditsConfig'
+import { CREDIT_PACKS, fmtCredits } from '@/lib/creditsConfig'
 import { startPackCheckout } from '@/lib/billing/client'
 import { Spinner } from '@/components/Spinner'
 
@@ -45,7 +45,7 @@ export function AddCredits({ trialing = false }: { trialing?: boolean }) {
               </span>
             )}
             <span className="font-body-sm text-body-sm font-bold text-on-surface">
-              {p.credits.toLocaleString()}
+              {fmtCredits(p.credits)}
             </span>
             <span className="font-code-label text-code-label text-on-surface-variant">credits</span>
             <span className="mt-1 inline-flex items-center gap-1.5 font-code-label text-code-label text-electric-indigo">

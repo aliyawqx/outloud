@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
 import { useCredits } from '@/components/app/CreditsContext'
+import { fmtCredits } from '@/lib/creditsConfig'
 
 export type SidebarProfile = {
   displayName: string
@@ -105,7 +106,7 @@ export function AppSidebar({
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-body-sm text-body-sm text-on-surface">{profile.displayName}</span>
           <span className="truncate font-code-label text-code-label text-on-surface-variant">
-            {unlimited ? 'Unlimited' : `${balance.toLocaleString()} credits`} · <span className="capitalize">{profile.plan}</span>
+            {unlimited ? 'Unlimited' : `${fmtCredits(balance)} credits`} · <span className="capitalize">{profile.plan}</span>
           </span>
         </span>
       </Link>

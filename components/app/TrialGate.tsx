@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { startCheckout } from '@/lib/billing/client'
 import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
-import { PLAN_ALLOWANCE } from '@/lib/creditsConfig'
+import { PLAN_ALLOWANCE, fmtCredits } from '@/lib/creditsConfig'
 import { Spinner } from '@/components/Spinner'
 
 // Shown after signup/verify and BEFORE voice capture: pick a plan + add a card to
@@ -49,7 +49,7 @@ export function TrialGate({ name, trialUsed = false }: { name?: string; trialUse
         {trialUsed ? (
           <>You've already used your free trial. Pick a plan to keep posting — you'll be billed today.</>
         ) : (
-          <>Pick a plan and add your card. You get <span className="text-on-surface">{PLAN_ALLOWANCE.free.toLocaleString()} credits free for 7 days</span> — cancel anytime before day 7 and you won't be charged.</>
+          <>Pick a plan and add your card. You get <span className="text-on-surface">{fmtCredits(PLAN_ALLOWANCE.free)} credits free for 7 days</span> — cancel anytime before day 7 and you won't be charged.</>
         )}
       </p>
 
@@ -63,7 +63,7 @@ export function TrialGate({ name, trialUsed = false }: { name?: string; trialUse
           >
             <span className="font-headline-sm text-headline-sm text-on-surface">{o.name}</span>
             <span className="font-body-sm text-body-sm text-on-surface-variant">
-              {PLAN_ALLOWANCE[o.id].toLocaleString()} credits / mo
+              {fmtCredits(PLAN_ALLOWANCE[o.id])} credits / mo
             </span>
             <span className="mt-1 font-code-label text-code-label text-on-surface-variant">
               ${o.price}/mo after trial

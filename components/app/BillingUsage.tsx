@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import { AddCredits } from '@/components/app/AddCredits'
 import { startCheckout, openBillingPortal } from '@/lib/billing/client'
-import { PLAN_ALLOWANCE } from '@/lib/creditsConfig'
+import { PLAN_ALLOWANCE, fmtCredits } from '@/lib/creditsConfig'
 import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
 
 type Feature = { key: string; label: string; cost: number; count: number; total: number }
@@ -18,14 +18,7 @@ type Usage = {
   byFeature: Feature[]
 }
 
-const fmt = (n: number) => n.toLocaleString()
-// 1000 → "1k", 600000 → "600k", 1500 → "1.5k", 250 → "250"
-function kfmt(n: number): string {
-  if (n < 1000) return String(n)
-  const v = n / 1000
-  return `${Number.isInteger(v) ? v : Math.round(v * 10) / 10}k`
-}
-const kEach = (cost: number) => (cost >= 1000 ? `${cost / 1000}k each` : `${cost} each`)
+const kEach = (cost: number) => `${fmtCredits(cost)} each`
 function resetLabel(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -69,16 +62,16 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
       {/* Balance header */}
       <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <div className="font-headline-sm text-headline-sm text-on-surface">
-          {kfmt(usage.cycleUsed)} / {kfmt(total)} credits used
+          {fmtCredits(usage.cycleUsed)} / {fmtCredits(total)} credits used
           <span className="font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
           <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-3 font-code-label text-code-label text-on-surface-variant">
-          {kfmt(usage.cycleTotal)} from your {planName} plan
+          {fmtCredits(usage.cycleTotal)} from your {planName} plan
           {usage.topupBalance > 0 && (
-            <> · <span className="text-cyber-lime">{kfmt(usage.topupBalance)} top-up · never expires</span></>
+            <> · <span className="text-cyber-lime">{fmtCredits(usage.topupBalance)} top-up · never expires</span></>
           )}
         </p>
       </div>
@@ -88,7 +81,7 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
         <h2 className="mb-4 font-code-label text-code-label uppercase text-on-surface-variant">this cycle</h2>
         <div className="flex items-end justify-between gap-1" style={{ height: 120 }}>
           {usage.daily.map((d) => (
-            <div key={d.date} className="flex flex-1 flex-col items-center justify-end gap-2" title={`${dayLabel(d.date)}: ${fmt(d.used)} credits`}>
+            <div key={d.date} className="flex flex-1 flex-col items-center justify-end gap-2" title={`${dayLabel(d.date)}: ${fmtCredits(d.used)} credits`}>
               <div
                 className="w-full rounded-t bg-electric-indigo/80"
                 style={{ height: `${Math.round((d.used / maxDay) * 100)}%`, minHeight: d.used > 0 ? 4 : 2, opacity: d.used > 0 ? 1 : 0.25 }}
@@ -112,7 +105,7 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
               <span className="flex items-center gap-3 text-on-surface-variant">
                 <span className="hidden sm:inline">{kEach(f.cost)}</span>
                 <span className="w-10 text-right tabular-nums">{f.count}</span>
-                <span className="w-16 text-right tabular-nums text-on-surface">{fmt(f.total)}</span>
+                <span className="w-16 text-right tabular-nums text-on-surface">{fmtCredits(f.total)}</span>
               </span>
             </div>
           ))}
@@ -165,7 +158,7 @@ function BillingTab({ plan, hasBilling }: { plan: string; hasBilling: boolean })
         <div className="mt-2 flex items-baseline justify-between">
           <span className="font-headline-sm text-headline-sm text-on-surface">{meta.name}</span>
           <span className="font-body-sm text-body-sm text-on-surface-variant">
-            {meta.price > 0 ? `$${meta.price}/mo` : 'no card'} · {fmt(meta.allowance)} credits/mo
+            {meta.price > 0 ? `$${meta.price}/mo` : 'no card'} · {fmtCredits(meta.allowance)} credits/mo
           </span>
         </div>
         {upgrades.length > 0 && (

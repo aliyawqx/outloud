@@ -36,6 +36,14 @@ export function planAllowance(plan: string): number {
   return PLAN_ALLOWANCE[plan] ?? PLAN_ALLOWANCE.free
 }
 
+/** Compact credit display used everywhere: 1000→"1k", 600000→"600k", 1500→"1.5k",
+ *  250→"250". One source so the sidebar, usage page, packs, and plan cards match. */
+export function fmtCredits(n: number): string {
+  if (Math.abs(n) < 1000) return String(n)
+  const v = n / 1000
+  return `${Number.isInteger(v) ? v : Math.round(v * 10) / 10}k`
+}
+
 /** Overage credit packs — one-time Polar checkout. `productEnv` names the Polar
  *  product id env var. priceUsd is display-only (Polar holds the real charge).
  *  TODO: confirm final prices. */

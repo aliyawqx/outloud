@@ -6,7 +6,7 @@ import { PLANS, ANNUAL_BADGE, PRICING_NOTE, type BillingMode, type Plan } from '
 import { startCheckout } from '@/lib/billing/client'
 import { Spinner } from '@/components/Spinner'
 // Single source of truth — keep marketing copy in sync with real costs/allowances.
-import { COST_PER_POST, COST_PER_REPLY, PLAN_ALLOWANCE } from '@/lib/creditsConfig'
+import { COST_PER_POST, COST_PER_REPLY, PLAN_ALLOWANCE, fmtCredits } from '@/lib/creditsConfig'
 
 // Per-plan monthly credit allowance shown on the cards (paid plans only here).
 const PLAN_CREDITS: Record<string, number> = {
@@ -85,7 +85,7 @@ function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
         // Credit-based display: total monthly credits + an approximate breakdown,
         // then the plan's perks listed like the free plan.
         <div className="my-8 flex-1">
-          <div className="font-headline-lg text-2xl font-bold text-on-surface">{credits / 1000}k credits / mo</div>
+          <div className="font-headline-lg text-2xl font-bold text-on-surface">{fmtCredits(credits)} credits / mo</div>
           <div className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">
             ≈ {Math.floor(credits / COST_PER_POST)} posts or {Math.floor(credits / COST_PER_REPLY)} replies
           </div>
@@ -159,7 +159,7 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
       </div>
 
       <p className="reveal mx-auto mt-6 max-w-xl text-center font-body-sm text-body-sm text-on-surface-variant/70">
-        Credits are shared across actions. Post ≈ {COST_PER_POST.toLocaleString()} cr · Reply ≈ {COST_PER_REPLY.toLocaleString()} cr.
+        Credits are shared across actions. Post ≈ {fmtCredits(COST_PER_POST)} cr · Reply ≈ {fmtCredits(COST_PER_REPLY)} cr.
       </p>
 
       <p className="reveal mx-auto mt-3 max-w-xl text-center font-code-label text-code-label text-on-surface-variant">
