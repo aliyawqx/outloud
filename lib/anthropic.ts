@@ -4,6 +4,7 @@ import { BASE_PROMPT } from './basePrompt'
 import { STYLE_ANALYSIS_PROMPT } from './stylePrompt'
 import { INTAKE_PROMPT } from './intakePrompt'
 import { REPLY_JUDGE_PROMPT } from './replyJudgePrompt'
+import { research, formatKnowledge } from './research'
 
 // Default: Sonnet 4.6 (quality at low cost). Override with ANTHROPIC_MODEL —
 // e.g. 'claude-haiku-4-5' (~3x cheaper, lower nuance) or 'claude-opus-4-8' (best).
@@ -505,6 +506,32 @@ export async function findTweetUrlsViaWeb(topic: string, max = 18): Promise<stri
   return [...new Set([...matches].map((m) => m[0]))].slice(0, max)
 }
 
+// Optional, model-chosen web research. Declared only when TAVILY_API_KEY is set.
+// The model calls it when it judges the topic needs current facts; we run Tavily
+// and hand the result back as background knowledge (see lib/research.ts).
+const WEB_RESEARCH_TOOL: Anthropic.Tool = {
+  name: 'web_research',
+  description:
+    'Look up current, real-world context when the post depends on recent events, news, product ' +
+    'launches, prices, statistics, or anything that may have changed lately and you are NOT confident ' +
+    'about. Do NOT use for timeless, personal, or opinion topics you can already write well. Returns ' +
+    'background knowledge for your understanding only — not text to quote.',
+  input_schema: {
+    type: 'object',
+    properties: { query: { type: 'string', description: 'A focused search query for the topic.' } },
+    required: ['query'],
+  },
+}
+
+// Appended to the system prompt only when research is available, so the model knows
+// when (and when NOT) to research and that results are invisible background knowledge.
+const RESEARCH_RULES = `RESEARCH (web_research tool):
+- You MAY call web_research at most twice, and ONLY when the post depends on current facts you're unsure of (recent news, launches, numbers, events). For timeless, personal, or opinion posts, do NOT research — just write.
+- Research is BACKGROUND KNOWLEDGE so you're accurate and current. NEVER quote it, never paste links or stats verbatim, never turn the post into a news recap. Write in the user's voice as if you simply knew this.
+- If research returns nothing useful, write the best post you can without it. Research must never block the post or change its format.`
+
+const MAX_RESEARCH_ROUNDS = 2
+
 /**
  * Generate X content in a per-user voice. The voice is ALWAYS captured per user:
  * their own Style Guide/samples, or a chosen preset's summary/samples. There is
@@ -524,25 +551,63 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   // from the FORMAT (slash command), the tone from the voice (no global humor rule).
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: BASE_PROMPT }]
 
+  // Web research is opt-in via TAVILY_API_KEY and entirely model-chosen. When off,
+  // generation behaves exactly as before (single call, no tools).
+  const researchOn = Boolean(process.env.TAVILY_API_KEY)
+  if (researchOn) system.push({ type: 'text', text: RESEARCH_RULES })
+
+  // Cache breakpoint on the voice block (the largest static prefix incl. RESEARCH_RULES).
   system.push({ type: 'text', text: buildVoiceBlock(profile) })
   system[system.length - 1].cache_control = { type: 'ephemeral' }
 
   const model = getModel()
   const effort = supportsEffort(model)
 
-  const msg = await createMessage({
-    model,
-    max_tokens: 8000,
-    system,
-    ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
-    output_config: effort ? { effort: 'medium', format: DRAFTS_FORMAT } : { format: DRAFTS_FORMAT },
-    messages: [
-      {
-        role: 'user',
-        content: `LANGUAGE: write the post in the exact same language the user wrote the idea below in (if they mix languages, use their dominant one). Mirror the user - never default to English, Russian, or any language other than the idea's own. Do not translate the idea. The voice samples may be in another language; that sets tone, never the output language.\n\n${hookGuidance(hookIntensity)}\n\n${buildTask(opts, count)}`,
-      },
-    ],
-  })
+  const messages: Anthropic.MessageParam[] = [
+    {
+      role: 'user',
+      content: `LANGUAGE: write the post in the exact same language the user wrote the idea below in (if they mix languages, use their dominant one). Mirror the user - never default to English, Russian, or any language other than the idea's own. Do not translate the idea. The voice samples may be in another language; that sets tone, never the output language.\n\n${hookGuidance(hookIntensity)}\n\n${buildTask(opts, count)}`,
+    },
+  ]
+
+  // Tool-use loop: the model may research a few times, then writes the final post.
+  // output_config.format keeps the FINAL answer constrained to DRAFTS_FORMAT JSON
+  // even alongside tools (verified). Research failures degrade silently — the model
+  // gets "no research available" and writes anyway, so a post is never blocked.
+  let msg: Anthropic.Message
+  let rounds = 0
+  for (;;) {
+    const offerTools = researchOn && rounds < MAX_RESEARCH_ROUNDS
+    msg = await createMessage({
+      model,
+      max_tokens: 8000,
+      system,
+      ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
+      ...(offerTools ? { tools: [WEB_RESEARCH_TOOL] } : {}),
+      output_config: effort ? { effort: 'medium', format: DRAFTS_FORMAT } : { format: DRAFTS_FORMAT },
+      messages,
+    })
+
+    if (msg.stop_reason !== 'tool_use') break
+
+    // Preserve the full assistant turn (incl. thinking blocks) for interleaved thinking.
+    messages.push({ role: 'assistant', content: msg.content })
+    const toolResults: Anthropic.ToolResultBlockParam[] = []
+    for (const block of msg.content) {
+      if (block.type !== 'tool_use') continue
+      let out = 'No research available — write the post without it.'
+      if (block.name === 'web_research') {
+        const query = typeof (block.input as { query?: unknown })?.query === 'string'
+          ? (block.input as { query: string }).query
+          : ''
+        const r = await research(query)
+        if (r) out = formatKnowledge(r)
+      }
+      toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: out })
+    }
+    messages.push({ role: 'user', content: toolResults })
+    rounds++
+  }
 
   const text = msg.content.find((b) => b.type === 'text')
   if (!text || text.type !== 'text') throw new Error('No content returned')
