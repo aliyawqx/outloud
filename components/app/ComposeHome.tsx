@@ -7,10 +7,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { PLANS, PRO_PRICE, STARTER_PRICE } from '@/lib/pricing'
 import { startCheckout } from '@/lib/billing/client'
 import { useCredits } from '@/components/app/CreditsContext'
+import { GenerationStatus, type FeedStep } from '@/components/app/GenerationStatus'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
+import type { ComposeEvent, DoneEvent } from '@/lib/compose/stream'
 
 const PRO_PLAN = PLANS.find((p) => p.id === 'pro')
 const STARTER_PLAN = PLANS.find((p) => p.id === 'starter')
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 // Full-screen subscribe wall, shown when a trial user runs out of drafts. Pro is
 // the default; a small switcher drops to the cheaper Starter. Checkout is a hosted
@@ -317,6 +321,8 @@ export function ComposeHome({
   const [turns, setTurns] = useState<Turn[]>(initialTurns)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [genSteps, setGenSteps] = useState<FeedStep[]>([])
+  const stepCounter = useRef(0)
   const [error, setError] = useState('')
   const [historyId, setHistoryId] = useState<string | undefined>(initialSession?.historyId)
   const [activeCommand, setActiveCommand] = useState('')
@@ -386,42 +392,99 @@ export function ComposeHome({
     setTurns((t) => [...t, userTurn])
     setInput('')
     setLoading(true)
+    setGenSteps([]) // fresh feed each generation (also resets a prior error line)
     try {
       const res = await fetch('/api/voice/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ turns: turnsPayload, profileId: voiceId || undefined, historyId, command }),
       })
-      const data = await res.json().catch(() => ({}))
-      if (res.status === 409 && data.needsVoice) {
-        router.push('/app/onboarding')
-        return
-      }
-      if (res.status === 402 && data.insufficientCredits) {
-        setShowUpgrade(true) // out of credits → offer a plan instead of a dead-end error
-        return
-      }
-      if (!res.ok) {
+
+      // Pre-stream failures (auth/credits/voice) arrive as plain JSON with a code.
+      const contentType = res.headers.get('content-type') ?? ''
+      if (!contentType.includes('text/event-stream')) {
+        const data = await res.json().catch(() => ({}))
+        if (res.status === 409 && data.needsVoice) return void router.push('/app/onboarding')
+        if (res.status === 402 && data.insufficientCredits) return void setShowUpgrade(true)
         setError(data.error ?? "Couldn't write that. Try again.")
         return
       }
-      if (typeof data.creditsLeft === 'number') setBalance(data.creditsLeft)
-      if (data.historyId) setHistoryId(data.historyId)
+
+      // Live status stream. Pace steps so each stays visible ≥250ms (no flicker),
+      // then a terminal `done` reveals the post (or `error` turns the last line red).
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      let lastShown = 0
+      const pace = async () => {
+        const wait = 250 - (Date.now() - lastShown)
+        if (lastShown && wait > 0) await sleep(wait)
+        lastShown = Date.now()
+      }
+      const pushStep = (step: FeedStep['step'], label: string, tag: string | undefined, state: FeedStep['state']) =>
+        setGenSteps((prev) => [
+          ...prev.map((s) => (s.state === 'active' ? { ...s, state: 'done' as const } : s)),
+          { id: String(++stepCounter.current), step, label, tag, state },
+        ])
+
+      let done: DoneEvent | null = null
+      for (;;) {
+        const { value, done: streamDone } = await reader.read()
+        if (streamDone) break
+        buf += decoder.decode(value, { stream: true })
+        const parts = buf.split('\n\n')
+        buf = parts.pop() ?? ''
+        for (const part of parts) {
+          const line = part.trim()
+          if (!line.startsWith('data:')) continue
+          let ev: ComposeEvent
+          try {
+            ev = JSON.parse(line.slice(5).trim()) as ComposeEvent
+          } catch {
+            continue
+          }
+          if (ev.type === 'status') {
+            await pace()
+            pushStep(ev.step, ev.label, ev.tag, 'active')
+          } else if (ev.type === 'done') {
+            done = ev
+          } else if (ev.type === 'error') {
+            await pace()
+            pushStep('error', ev.error, undefined, 'error') // last line turns red, persists
+            if (ev.needsVoice) return void router.push('/app/onboarding')
+            if (ev.insufficientCredits) return void setShowUpgrade(true)
+            return
+          }
+        }
+      }
+
+      if (!done) {
+        setGenSteps([])
+        setError("Couldn't write that. Try again.")
+        return
+      }
+
+      // Let the final step breathe, then collapse the feed and reveal the answer.
+      await sleep(280)
+      setGenSteps([])
+      if (typeof done.creditsLeft === 'number') setBalance(done.creditsLeft)
+      if (done.historyId) setHistoryId(done.historyId)
       // Anchor a brand-new chat in the URL once it has its first AI answer: the
       // sidebar then lists + highlights it (gray), and "New post" (/app) becomes a
       // clean, separate action that always opens a fresh chat. The remount restores
       // the full transcript (options included) from the server, so nothing is lost.
-      if (data.historyId && !initialSession && !historyId) {
-        router.replace(`/app?session=${data.historyId}`, { scroll: false })
+      if (done.historyId && !initialSession && !historyId) {
+        router.replace(`/app?session=${done.historyId}`, { scroll: false })
       }
-      if (data.ask) {
-        const options = Array.isArray(data.options) ? (data.options as string[]) : []
+      if (done.ask) {
+        const options = Array.isArray(done.options) ? done.options : []
         setPickedOption(null)
-        setTurns((t) => [...t, { id: id(), role: 'assistant', text: data.ask, options }])
-      } else if (data.draft) {
-        setTurns((t) => [...t, { id: id(), role: 'assistant', draft: data.draft }])
+        setTurns((t) => [...t, { id: id(), role: 'assistant', text: done.ask!, options }])
+      } else if (done.draft) {
+        setTurns((t) => [...t, { id: id(), role: 'assistant', draft: done.draft! }])
       }
     } catch {
+      setGenSteps([])
       setError('Network error. Try again.')
     } finally {
       setLoading(false)
@@ -628,11 +691,17 @@ export function ComposeHome({
             </div>
           )
         })}
-        {loading && (
-          <div className="flex items-center gap-2 self-start rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-2.5 font-code-label text-code-label text-on-surface-variant">
-            <Spinner size={16} className="text-electric-indigo" />
-            writing in your voice…
-          </div>
+        {/* Live "under the hood" feed once real status events arrive; the static
+            line is only a fallback for the brief moment before the first event. */}
+        {genSteps.length > 0 ? (
+          <GenerationStatus steps={genSteps} />
+        ) : (
+          loading && (
+            <div className="flex items-center gap-2 self-start rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-2.5 font-code-label text-code-label text-on-surface-variant">
+              <Spinner size={16} className="text-electric-indigo" />
+              writing in your voice…
+            </div>
+          )
         )}
       </div>
 

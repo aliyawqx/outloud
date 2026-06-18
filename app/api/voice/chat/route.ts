@@ -11,6 +11,7 @@ import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
 import { runIntake, ModelBusyError, type ChatTurn } from '@/lib/anthropic'
 import { generatePost, VoiceNotReadyError } from '@/lib/voice/generate'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
+import { statusEvent, type ComposeEvent } from '@/lib/compose/stream'
 
 // Generation can take longer than the 10s default; allow up to 60s (Hobby max).
 export const maxDuration = 60
@@ -132,91 +133,121 @@ export async function POST(req: Request) {
   const firstIdea = turns.find((t): t is { role: 'user'; text: string } => t.role === 'user' && 'text' in t)?.text || lastUserMessage
   const priorHistoryId = typeof b.historyId === 'string' && b.historyId ? b.historyId : undefined
 
-  // The deduction's ledger id, so we can refund if generation fails (spec §5).
-  let chargeLedgerId: string | undefined
-
-  try {
-    const intake = await runIntake(messages, formatText ?? undefined)
-    if (intake.action === 'ask') {
-      // A question IS the first AI answer — persist the chat now so it shows up in
-      // History even before any draft exists.
-      const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: intake.question, options: intake.options }]
-      const allDrafts = fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : []))
-      const historyId = await persistHistory({
-        ownerKey: session.userId,
-        voiceProfileId: profile.id,
-        voiceName: profile.name,
-        idea: firstIdea || intake.question,
-        drafts: allDrafts,
-        messages: fullTurns,
-        historyId: priorHistoryId,
-      })
-      return NextResponse.json({ ask: intake.question, options: intake.options, voiceName: profile.name, historyId })
-    }
-    // Charge for the post atomically, right before generating it. Keep the ledger
-    // id so a failed/empty generation below can be refunded.
-    if (!staff) {
+  // From here on we stream Server-Sent Events: live status lines as each real
+  // pipeline stage runs, then a terminal `done` (or `error`) event carrying the
+  // same payload the route used to return as JSON. Pre-stream failures above stay
+  // plain JSON with their status codes; the client branches on content-type.
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (ev: ComposeEvent) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`))
+      // The deduction's ledger id, so we can refund if generation fails (spec §5).
+      let chargeLedgerId: string | undefined
       try {
-        const charge = await deduct(session.userId, COST_PER_POST, 'post', { metadata: { kind: 'post', command } })
-        chargeLedgerId = charge.ledgerId
-      } catch (e) {
-        if (e instanceof InsufficientCreditsError)
-          return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance }, { status: 402 })
-        throw e
-      }
-    }
-    const samples = await listEnabledTexts(session.userId, profile.id, 5)
-    const { drafts, clarify } = await generatePost({
-      idea: lastDraft ? lastUserMessage : intake.brief,
-      reviseBase: lastDraft,
-      formatText,
-      voiceProfile: profile,
-      samples,
-      count: 1,
-    })
-    if (clarify && drafts.length === 0) {
-      // Charged but produced only a clarifying question, not a draft → refund (§5).
-      if (chargeLedgerId) await refund(session.userId, chargeLedgerId)
-      // A generation-time clarification is also a first AI answer — persist it too.
-      const askTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: clarify }]
-      const historyId = await persistHistory({
-        ownerKey: session.userId,
-        voiceProfileId: profile.id,
-        voiceName: profile.name,
-        idea: firstIdea || clarify,
-        drafts: askTurns.flatMap((t) => ('draft' in t ? [t.draft] : [])),
-        messages: askTurns,
-        historyId: priorHistoryId,
-      })
-      const creditsLeft = staff ? undefined : await getBalance(session.userId)
-      return NextResponse.json({ ask: clarify, voiceName: profile.name, historyId, creditsLeft })
-    }
+        // Stage 1 — parse: interpret what the user actually wants (intake).
+        send(statusEvent('parse'))
+        const intake = await runIntake(messages, formatText ?? undefined)
+        if (intake.action === 'ask') {
+          // A question IS the first AI answer — persist so it shows in History now.
+          const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: intake.question, options: intake.options }]
+          const historyId = await persistHistory({
+            ownerKey: session.userId,
+            voiceProfileId: profile.id,
+            voiceName: profile.name,
+            idea: firstIdea || intake.question,
+            drafts: fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : [])),
+            messages: fullTurns,
+            historyId: priorHistoryId,
+          })
+          send({ type: 'done', ask: intake.question, options: intake.options, voiceName: profile.name, historyId })
+          return
+        }
 
-    // ONE entry per chat. Persist the full transcript so the session can be reopened
-    // and continued. drafts = every draft in the transcript.
-    const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', draft: drafts[0] }]
-    const allDrafts = fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : []))
-    const historyId = await persistHistory({
-      ownerKey: session.userId,
-      voiceProfileId: profile.id,
-      voiceName: profile.name,
-      idea: firstIdea || intake.brief,
-      drafts: allDrafts,
-      messages: fullTurns,
-      historyId: priorHistoryId,
-    })
-    const creditsLeft = staff ? undefined : await getBalance(session.userId)
-    return NextResponse.json({ draft: drafts[0], voiceName: profile.name, historyId, creditsLeft })
-  } catch (err) {
-    // Generation failed after we charged → give the credits back (§5).
-    if (chargeLedgerId) await refund(session.userId, chargeLedgerId).catch(() => {})
-    if (err instanceof VoiceNotReadyError) {
-      return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
-    }
-    if (err instanceof ModelBusyError) {
-      return NextResponse.json({ error: err.message, retryable: true }, { status: 503 })
-    }
-    console.error('[voice/chat] failed:', err)
-    return NextResponse.json({ error: "Couldn't write that. Try again." }, { status: 500 })
-  }
+        // Stage 2 — voice: pull the profile's writing samples.
+        send(statusEvent('voice'))
+        const samples = await listEnabledTexts(session.userId, profile.id, 5)
+
+        // Charge atomically right before generating; keep the ledger id to refund
+        // a failed/empty generation below.
+        if (!staff) {
+          try {
+            const charge = await deduct(session.userId, COST_PER_POST, 'post', { metadata: { kind: 'post', command } })
+            chargeLedgerId = charge.ledgerId
+          } catch (e) {
+            if (e instanceof InsufficientCreditsError) {
+              send({ type: 'error', error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance })
+              return
+            }
+            throw e
+          }
+        }
+
+        // Stages 3-5 — context (only if the model researches), draft, polish —
+        // are emitted from inside generation via onStatus, in real order.
+        const { drafts, clarify } = await generatePost({
+          idea: lastDraft ? lastUserMessage : intake.brief,
+          reviseBase: lastDraft,
+          formatText,
+          voiceProfile: profile,
+          samples,
+          count: 1,
+          onStatus: (e) => send(statusEvent(e.step, e.topic)),
+        })
+
+        if (clarify && drafts.length === 0) {
+          // Charged but produced only a clarifying question, not a draft → refund (§5).
+          if (chargeLedgerId) await refund(session.userId, chargeLedgerId)
+          const askTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: clarify }]
+          const historyId = await persistHistory({
+            ownerKey: session.userId,
+            voiceProfileId: profile.id,
+            voiceName: profile.name,
+            idea: firstIdea || clarify,
+            drafts: askTurns.flatMap((t) => ('draft' in t ? [t.draft] : [])),
+            messages: askTurns,
+            historyId: priorHistoryId,
+          })
+          const creditsLeft = staff ? undefined : await getBalance(session.userId)
+          send({ type: 'done', ask: clarify, voiceName: profile.name, historyId, creditsLeft })
+          return
+        }
+
+        // ONE entry per chat — persist the full transcript so it can be reopened.
+        const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', draft: drafts[0] }]
+        const historyId = await persistHistory({
+          ownerKey: session.userId,
+          voiceProfileId: profile.id,
+          voiceName: profile.name,
+          idea: firstIdea || intake.brief,
+          drafts: fullTurns.flatMap((t) => ('draft' in t ? [t.draft] : [])),
+          messages: fullTurns,
+          historyId: priorHistoryId,
+        })
+        const creditsLeft = staff ? undefined : await getBalance(session.userId)
+        send({ type: 'done', draft: drafts[0], voiceName: profile.name, historyId, creditsLeft })
+      } catch (err) {
+        // Generation failed after we charged → give the credits back (§5).
+        if (chargeLedgerId) await refund(session.userId, chargeLedgerId).catch(() => {})
+        if (err instanceof VoiceNotReadyError) {
+          send({ type: 'error', error: 'Create a voice first.', needsVoice: true })
+        } else if (err instanceof ModelBusyError) {
+          send({ type: 'error', error: err.message, retryable: true })
+        } else {
+          console.error('[voice/chat] failed:', err)
+          send({ type: 'error', error: "Couldn't write that. Try again." })
+        }
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no', // disable proxy buffering so events arrive live
+    },
+  })
 }

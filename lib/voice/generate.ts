@@ -78,5 +78,6 @@ export async function generatePost(
     progressDay: input.progressDay,
     progressTotal: input.progressTotal,
     followerCount: input.followerCount,
+    onStatus: input.onStatus,
   })
 }

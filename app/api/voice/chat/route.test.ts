@@ -30,6 +30,23 @@ const readyVoice = { id: 'p1', kind: 'own', name: 'My voice', styleGuide: '## g'
 const json = (b: unknown) =>
   new Request('http://localhost/x', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) })
 
+// The success path streams Server-Sent Events. Drain the stream and pull out the
+// status lines + terminal done/error event the client would act on.
+async function collect(res: Response) {
+  const text = await res.text()
+  const events = text
+    .split('\n\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((p) => JSON.parse(p.replace(/^data:\s*/, '')))
+  return {
+    events,
+    statuses: events.filter((e) => e.type === 'status'),
+    done: events.find((e) => e.type === 'done'),
+    error: events.find((e) => e.type === 'error'),
+  }
+}
+
 beforeEach(() => {
   sessionMock.mockReset(); getProfileMock.mockReset(); listProfilesMock.mockReset(); enabledMock.mockReset(); intakeMock.mockReset(); genMock.mockReset(); saveMock.mockReset(); updateMock.mockReset(); getEntryMock.mockReset(); isStaffMock.mockReset()
   saveMock.mockResolvedValue({ id: 'h1' })
@@ -58,13 +75,13 @@ describe('POST /api/voice/chat', () => {
     intakeMock.mockResolvedValue({ action: 'ask', question: 'x or linkedin?', options: ['X', 'LinkedIn', 'Both'] })
     const res = await POST(json({ turns: [{ role: 'user', text: 'launched my app' }], profileId: 'p1' }))
     expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.ask).toBe('x or linkedin?')
-    expect(body.options).toEqual(['X', 'LinkedIn', 'Both'])
+    const { done } = await collect(res)
+    expect(done.ask).toBe('x or linkedin?')
+    expect(done.options).toEqual(['X', 'LinkedIn', 'Both'])
     expect(genMock).not.toHaveBeenCalled()
     // A question is the first AI answer → the chat is saved to History right away,
     // with the question stored as an assistant turn and no drafts yet.
-    expect(body.historyId).toBe('h1')
+    expect(done.historyId).toBe('h1')
     expect(saveMock).toHaveBeenCalledWith(expect.objectContaining({
       idea: 'launched my app',
       drafts: [],
@@ -75,15 +92,17 @@ describe('POST /api/voice/chat', () => {
     }))
   })
 
-  it('writes a draft, saves ONE history entry with the transcript', async () => {
+  it('streams status events then a draft, saving ONE history entry', async () => {
     intakeMock.mockResolvedValue({ action: 'write', brief: 'shipped billing on x' })
     genMock.mockResolvedValue({ drafts: [{ angle: 'a', hook: 'h', story: 's', offer: 'o', fullText: 'the post' }], clarify: '' })
     const res = await POST(json({ turns: [{ role: 'user', text: 'shipped billing for x' }], profileId: 'p1' }))
     expect(res.status).toBe(200)
+    const { statuses, done } = await collect(res) // drain first — generation runs inside the stream
     expect(genMock).toHaveBeenCalledWith(expect.objectContaining({ idea: 'shipped billing on x', reviseBase: undefined, samples: ['a sample'] }))
-    const body = await res.json()
-    expect(body.draft.fullText).toBe('the post')
-    expect(body.historyId).toBe('h1')
+    // real stages were announced before the draft (parse → voice)
+    expect(statuses.map((s) => s.step)).toEqual(['parse', 'voice'])
+    expect(done.draft.fullText).toBe('the post')
+    expect(done.historyId).toBe('h1')
     // transcript persisted = the user turn + the new draft turn
     expect(saveMock).toHaveBeenCalledWith(expect.objectContaining({
       idea: 'shipped billing for x',
@@ -105,6 +124,7 @@ describe('POST /api/voice/chat', () => {
       historyId: 'h1',
     }))
     expect(res.status).toBe(200)
+    await collect(res) // drain the stream
     expect(genMock).toHaveBeenCalledWith(expect.objectContaining({
       reviseBase: 'first draft in elon voice',
       idea: 'add that it was zero budget',

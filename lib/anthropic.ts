@@ -51,6 +51,11 @@ export type GenerateInput = {
   followerCount?: number
   /** How many drafts to return. Defaults to 1. */
   count?: number
+  /** Progress hook for the live "under the hood" feed. Called as real stages run:
+   *  'context' when the model researches the web (topic = its search query),
+   *  'draft' right before it starts writing, and 'polish' before the de-AI pass.
+   *  Never faked — if a stage doesn't happen (e.g. no research), it's never emitted. */
+  onStatus?: (e: { step: 'context' | 'draft' | 'polish'; topic?: string }) => void
 }
 
 /** Thrown when generation is attempted without any captured voice. There is no
@@ -576,8 +581,16 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   // gets "no research available" and writes anyway, so a post is never blocked.
   let msg: Anthropic.Message
   let rounds = 0
+  let draftAnnounced = false
   for (;;) {
     const offerTools = researchOn && rounds < MAX_RESEARCH_ROUNDS
+    // Announce 'draft' before the call that will WRITE the post: either tools aren't
+    // offered, or a prior round already researched (so this call is the writing one).
+    // This keeps the real order context → draft when research runs.
+    if (!draftAnnounced && (!offerTools || rounds > 0)) {
+      opts.onStatus?.({ step: 'draft' })
+      draftAnnounced = true
+    }
     msg = await createMessage({
       model,
       max_tokens: 8000,
@@ -600,6 +613,7 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
         const query = typeof (block.input as { query?: unknown })?.query === 'string'
           ? (block.input as { query: string }).query
           : ''
+        opts.onStatus?.({ step: 'context', topic: query }) // real research is happening now
         const r = await research(query)
         if (r) out = formatKnowledge(r)
       }
@@ -608,6 +622,9 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
     messages.push({ role: 'user', content: toolResults })
     rounds++
   }
+  // Research was available but the model wrote on the first call without it — the
+  // post is already written; flash 'draft' so the feed still records the stage.
+  if (!draftAnnounced) opts.onStatus?.({ step: 'draft' })
 
   const text = msg.content.find((b) => b.type === 'text')
   if (!text || text.type !== 'text') throw new Error('No content returned')
@@ -624,6 +641,7 @@ export async function generateDrafts(profile: VoiceProfile, opts: GenerateInput)
   const clarify = noEmDashes((result.clarify ?? '').trim())
   if (clarify && result.drafts.length === 0) return { drafts: [], clarify }
 
+  opts.onStatus?.({ step: 'polish' }) // de-AI pass: strip em-dashes and ai tells
   const header = progressHeader(opts.progressDay, opts.progressTotal, opts.followerCount)
   const drafts = result.drafts.map((d) => {
     const clean = sanitizeDraft(d)

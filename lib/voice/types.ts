@@ -136,4 +136,6 @@ export type GeneratePostInput = {
   progressDay?: number
   progressTotal?: number
   followerCount?: number
+  /** Progress hook for the live status feed — forwarded to the generation core. */
+  onStatus?: (e: { step: 'context' | 'draft' | 'polish'; topic?: string }) => void
 }

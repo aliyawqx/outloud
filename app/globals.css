@@ -130,6 +130,33 @@ body {
   .cycle-in { animation: none; }
 }
 
+/* live generation status — animated gradient sweep on the active step's text */
+.shimmer-text {
+  background: linear-gradient(100deg, #c7c4d7 0%, #c7c4d7 30%, #b06bff 50%, #c7c4d7 70%, #c7c4d7 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer-sweep 1.5s linear infinite;
+}
+@keyframes shimmer-sweep { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+/* each new feed step slides in */
+@keyframes step-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.step-in { animation: step-in 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* drop the sweep — just make the active line solid + bold */
+  .shimmer-text {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: #e2e2e8;
+    color: #e2e2e8;
+    font-weight: 700;
+  }
+  .step-in { animation: none; }
+}
+
 .glow-sphere {
   position: absolute;
   width: 600px;
