@@ -5,6 +5,7 @@ import { Spinner } from '@/components/Spinner'
 import { AddCredits } from '@/components/app/AddCredits'
 import { startCheckout, openBillingPortal } from '@/lib/billing/client'
 import { PLAN_ALLOWANCE, fmtCredits } from '@/lib/creditsConfig'
+import { isPaidPlan } from '@/lib/billing/plans'
 import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
 
 type Feature = { key: string; label: string; cost: number; count: number; total: number }
@@ -112,9 +113,16 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
         </div>
       </div>
 
-      {/* Buy more credits */}
+      {/* Buy more credits — only on an active paid plan (not free, not in trial) */}
       <div>
-        <AddCredits trialing={trialing} />
+        <AddCredits
+          eligible={isPaidPlan(plan) && !trialing}
+          reason={
+            trialing
+              ? 'Top-ups unlock once your plan starts, after your free trial.'
+              : 'Top-ups are available on a paid plan. Upgrade to add credits.'
+          }
+        />
       </div>
     </div>
   )

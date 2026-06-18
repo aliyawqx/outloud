@@ -5,7 +5,9 @@ import { CREDIT_PACKS, fmtCredits } from '@/lib/creditsConfig'
 import { startPackCheckout } from '@/lib/billing/client'
 import { Spinner } from '@/components/Spinner'
 
-export function AddCredits({ trialing = false }: { trialing?: boolean }) {
+// Top-ups are only for users on an active paid plan. When not eligible (free user
+// or in trial) the packs are shown disabled with a short reason.
+export function AddCredits({ eligible = true, reason }: { eligible?: boolean; reason?: string }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -23,18 +25,16 @@ export function AddCredits({ trialing = false }: { trialing?: boolean }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border-muted bg-surface-container-low p-4">
       <span className="font-code-label text-code-label uppercase text-on-surface-variant">Add credits</span>
-      {trialing && (
-        <p className="font-body-sm text-body-sm text-on-surface-variant">
-          Top-ups aren't available during your free trial — they unlock once your plan starts.
-        </p>
+      {!eligible && reason && (
+        <p className="font-body-sm text-body-sm text-on-surface-variant">{reason}</p>
       )}
-      <div className={`grid gap-2 sm:grid-cols-3 ${trialing ? 'pointer-events-none opacity-50' : ''}`}>
+      <div className={`grid gap-2 sm:grid-cols-3 ${!eligible ? 'pointer-events-none opacity-50' : ''}`}>
         {CREDIT_PACKS.map((p) => (
           <button
             key={p.id}
             type="button"
             onClick={() => buy(p.id)}
-            disabled={busy !== null || trialing}
+            disabled={busy !== null || !eligible}
             className={`relative flex flex-col items-center gap-1 rounded-xl border px-4 py-3 transition-colors hover:border-electric-indigo disabled:opacity-60 ${
               p.bestValue ? 'border-electric-indigo' : 'border-border-muted'
             }`}

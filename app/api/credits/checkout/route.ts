@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { createCheckout } from '@/lib/billing/polar'
 import { packById } from '@/lib/credits'
 import { getProfile } from '@/lib/profile/store'
+import { isPaidPlan } from '@/lib/billing/plans'
 
 // POST /api/credits/checkout — start a Polar checkout for a one-time credit pack.
 // The webhook (order.paid → addCredits) is the durable path that actually credits
@@ -21,13 +22,14 @@ export async function POST(req: Request) {
   const pack = typeof packId === 'string' ? packById(packId) : null
   if (!pack) return NextResponse.json({ error: 'Unknown credit pack.' }, { status: 400 })
 
-  // No top-ups during the trial (spec §4) — the path forward is to start the plan.
+  // Top-ups are only for users on an active PAID plan — not free users and not
+  // during the free trial. The path forward for them is to start/convert a plan.
   const profile = await getProfile(session.userId)
-  if (profile?.trialing) {
-    return NextResponse.json(
-      { error: "Top-ups aren't available during your free trial.", trialing: true },
-      { status: 409 },
-    )
+  if (!isPaidPlan(profile?.plan) || profile?.trialing) {
+    const error = profile?.trialing
+      ? "Top-ups unlock once your plan starts, after your free trial."
+      : 'Top-ups are available on a paid plan. Upgrade to add credits.'
+    return NextResponse.json({ error, ineligible: true }, { status: 409 })
   }
 
   const productId = process.env[pack.productEnv]
