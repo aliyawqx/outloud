@@ -6,9 +6,7 @@ import { listComposeHistory } from '@/lib/voice/history'
 import { isEmailVerified } from '@/lib/auth/verify'
 import { AppSidebar } from '@/components/app/AppSidebar'
 import { CreditsProvider } from '@/components/app/CreditsContext'
-import { AccessGate } from '@/components/app/AccessGate'
 import { TrialGate } from '@/components/app/TrialGate'
-import { Unavailable } from '@/components/app/Unavailable'
 import { VerifyEmail } from '@/components/app/VerifyEmail'
 import { isStaff } from '@/lib/appLock'
 import { resetIfDue } from '@/lib/credits'
@@ -25,14 +23,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ])
 
   // Email verification comes first: a freshly signed-up user must enter the code
-  // we emailed before anything else (including the incubator question).
+  // we emailed before anything else.
   if (!verified) return <VerifyEmail email={session.email} />
-
-  // Access gate: staff skip it. Everyone else answers the incubator question once.
-  if (!isStaff(session.email)) {
-    if (profile?.incubator == null) return <AccessGate /> // not asked yet
-    if (profile.incubator === 'no') return <Unavailable />
-  }
 
   // Trial gate (TRIAL_GATE flag): after registration, BEFORE voice capture, a
   // not-yet-subscribed user adds a card to start the 7-day trial. Staff skip it;
