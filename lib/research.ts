@@ -14,7 +14,7 @@ const TIMEOUT_MS = 12_000
 
 export type ResearchResult = {
   answer: string
-  snippets: { title: string; url: string; content: string }[]
+  snippets: { title: string; url: string; content: string; date: string }[]
 }
 
 export async function research(query: string): Promise<ResearchResult | null> {
@@ -46,7 +46,7 @@ export async function research(query: string): Promise<ResearchResult | null> {
   }
 
   const data = (await res.json().catch(() => null)) as
-    | { answer?: string; results?: Array<{ title?: string; url?: string; content?: string }> }
+    | { answer?: string; results?: Array<{ title?: string; url?: string; content?: string; published_date?: string }> }
     | null
   if (!data) return null
 
@@ -56,18 +56,28 @@ export async function research(query: string): Promise<ResearchResult | null> {
       title: r.title ?? '',
       url: r.url ?? '',
       content: r.content ?? '',
+      date: typeof r.published_date === 'string' ? r.published_date : '',
     })),
   }
 }
 
-/** Render research as a tool result clearly labeled background-knowledge-only. */
+/** A short, human "today" so the model can reason about recency ("this week" etc.)
+ *  against each source's publish date. Server-local date is fine for this purpose. */
+function todayLabel(): string {
+  return new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+/** Render research as a tool result clearly labeled background-knowledge-only.
+ *  Each source carries its publish date so the model anchors recency correctly and
+ *  doesn't invent or mis-state when something happened. */
 export function formatKnowledge(r: ResearchResult): string {
   const snippets = r.snippets
     .filter((s) => s.content || s.title)
-    .map((s) => `- ${s.title}: ${s.content}`)
+    .map((s) => `- (${s.date || 'undated'}) ${s.title}: ${s.content}`)
     .join('\n')
   return [
     '[BACKGROUND KNOWLEDGE — for your understanding only, do not quote or inject]',
+    `Today is ${todayLabel()}. Use the source dates below to judge what is recent; never state a date you can't see here.`,
     r.answer,
     snippets,
     '[END KNOWLEDGE]',
