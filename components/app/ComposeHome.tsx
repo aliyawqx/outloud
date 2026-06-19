@@ -128,12 +128,14 @@ function DraftCard({
   xConnected,
   threadsConnected,
   onInsufficient,
+  onImageChange,
 }: {
   draft: DraftPost
   index: number
   xConnected: boolean
   threadsConnected: boolean
   onInsufficient: () => void
+  onImageChange?: (img: DraftImage | null) => void
 }) {
   const [text, setText] = useState(draft.fullText)
   const [editing, setEditing] = useState(false)
@@ -144,6 +146,12 @@ function DraftCard({
   const [image, setImage] = useState<DraftImage | null>(
     draft.imageUrl ? { url: draft.imageUrl, source: draft.imageSource ?? 'upload', alt: draft.imageAlt } : null,
   )
+  // Update local state AND lift to the parent so the image is persisted to history
+  // (survives reload) and isn't wiped by a later full re-save of the chat.
+  function changeImage(img: DraftImage | null) {
+    setImage(img)
+    onImageChange?.(img)
+  }
   // Per-platform outcome after a publish attempt (url on success, error on failure).
   const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string; note?: string }>>>({})
 
@@ -226,7 +234,7 @@ function DraftCard({
       )}
 
       {/* Image: AI / stock search / upload — one per draft, sent with the post. */}
-      <DraftImageControls draftText={text} image={image} onChange={setImage} onInsufficient={onInsufficient} />
+      <DraftImageControls draftText={text} image={image} onChange={changeImage} onInsufficient={onInsufficient} />
 
       {/* Destination selector: same text to each selected, connected platform. */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -653,13 +661,38 @@ export function ComposeHome({
     )
   }
 
+  // Persist an attached/removed image: set it on the matching draft in `turns` (so a
+  // later re-save keeps it) and save it to the chat's history entry (so it survives a
+  // reload). draftIndex is the Nth draft turn, matching the server's transcript order.
+  function persistDraftImage(draftIndex: number, img: DraftImage | null) {
+    setTurns((prev) => {
+      let n = 0
+      return prev.map((t) => {
+        if ('draft' in t) {
+          const here = n === draftIndex
+          n++
+          if (here) return { ...t, draft: { ...t.draft, imageUrl: img?.url, imageSource: img?.source, imageAlt: img?.alt } }
+        }
+        return t
+      })
+    })
+    if (historyId) {
+      fetch('/api/voice/history/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ historyId, draftIndex, image: img }),
+      }).catch(() => {})
+    }
+  }
+
   let draftN = 0
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-3xl flex-col">
       <div className="flex flex-1 flex-col gap-4 pb-4">
         {turns.map((t) => {
           if ('draft' in t) {
-            return <DraftCard key={t.id} draft={t.draft} index={draftN++} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} />
+            const di = draftN++
+            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} onImageChange={(img) => persistDraftImage(di, img)} />
           }
           if (t.role === 'user') {
             return (
