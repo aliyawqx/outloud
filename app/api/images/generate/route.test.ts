@@ -1,12 +1,12 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-const { getSessionMock, isStaffMock, balanceMock, deductMock, resetMock, falMock, storeMock } = vi.hoisted(() => ({
+const { getSessionMock, isStaffMock, balanceMock, deductMock, resetMock, genMock, storeMock } = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
   isStaffMock: vi.fn(),
   balanceMock: vi.fn(),
   deductMock: vi.fn(),
   resetMock: vi.fn(),
-  falMock: vi.fn(),
+  genMock: vi.fn(),
   storeMock: vi.fn(),
 }))
 vi.mock('@/lib/auth/session', () => ({ getSession: getSessionMock }))
@@ -18,7 +18,7 @@ vi.mock('@/lib/credits', () => ({
   COST_PER_AI_PHOTO: 2000,
 }))
 vi.mock('@/lib/images/blob', () => ({ storeImageFromUrl: storeMock }))
-vi.mock('@fal-ai/client', () => ({ fal: { config: vi.fn(), subscribe: falMock } }))
+vi.mock('@/lib/images/kie', () => ({ generateImage: genMock }))
 
 import { POST } from '@/app/api/images/generate/route'
 
@@ -26,24 +26,24 @@ const req = (body: unknown) =>
   new Request('http://localhost/api/images/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) as never
 
 beforeEach(() => {
-  getSessionMock.mockReset(); isStaffMock.mockReset(); balanceMock.mockReset(); deductMock.mockReset(); resetMock.mockReset(); falMock.mockReset(); storeMock.mockReset()
-  process.env.FAL_KEY = 'test-key'
+  getSessionMock.mockReset(); isStaffMock.mockReset(); balanceMock.mockReset(); deductMock.mockReset(); resetMock.mockReset(); genMock.mockReset(); storeMock.mockReset()
+  process.env.KIE_API_KEY = 'test-key'
   getSessionMock.mockResolvedValue({ userId: 'u1', email: 'a@b.com' })
   isStaffMock.mockReturnValue(false)
   resetMock.mockResolvedValue(null)
   balanceMock.mockResolvedValue(5000)
-  falMock.mockResolvedValue({ data: { images: [{ url: 'https://fal/out.png' }] } })
+  genMock.mockResolvedValue('https://kie/out.png')
   storeMock.mockResolvedValue({ url: 'https://blob/img.png', contentType: 'image/png' })
   deductMock.mockResolvedValue({ balance: 3000, ledgerId: 'l1' })
 })
 
 describe('POST /api/images/generate', () => {
-  it('402s and never calls fal or deduct when credits are short', async () => {
+  it('402s and never calls kie or deduct when credits are short', async () => {
     balanceMock.mockResolvedValue(100) // < 2000
     const res = await POST(req({ prompt: 'a cat' }))
     expect(res.status).toBe(402)
     expect((await res.json()).insufficientCredits).toBe(true)
-    expect(falMock).not.toHaveBeenCalled()
+    expect(genMock).not.toHaveBeenCalled()
     expect(deductMock).not.toHaveBeenCalled()
   })
 
@@ -58,7 +58,7 @@ describe('POST /api/images/generate', () => {
   })
 
   it('does NOT charge when generation fails', async () => {
-    falMock.mockRejectedValue(new Error('fal down'))
+    genMock.mockRejectedValue(new Error('kie down'))
     const res = await POST(req({ prompt: 'a cat' }))
     expect(res.status).toBe(502)
     expect(deductMock).not.toHaveBeenCalled()

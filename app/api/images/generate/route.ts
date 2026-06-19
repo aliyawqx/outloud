@@ -1,21 +1,21 @@
 import { NextResponse } from 'next/server'
-import { fal } from '@fal-ai/client'
 import { getSession } from '@/lib/auth/session'
 import { isStaff } from '@/lib/appLock'
 import { deduct, getBalance, resetIfDue, COST_PER_AI_PHOTO } from '@/lib/credits'
 import { storeImageFromUrl } from '@/lib/images/blob'
+import { generateImage } from '@/lib/images/kie'
 
 export const maxDuration = 60
 
 const PROMPT_MAX = 1500
 
-// POST /api/images/generate — generate an image with fal.ai Flux (schnell) and store
-// it in Blob. Per spec: pre-CHECK the balance (don't deduct), generate, and only
-// deduct COST_PER_AI_PHOTO after a successful generation — so a failed render is free.
+// POST /api/images/generate — generate an image with kie.ai (Flux) and store it in
+// Blob. Per spec: pre-CHECK the balance (don't deduct), generate, and only deduct
+// COST_PER_AI_PHOTO after a successful generation — so a failed render is free.
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
-  if (!process.env.FAL_KEY) return NextResponse.json({ error: 'AI images are not available.' }, { status: 503 })
+  if (!process.env.KIE_API_KEY) return NextResponse.json({ error: 'AI images are not available.' }, { status: 503 })
 
   let body: unknown
   try {
@@ -41,13 +41,8 @@ export async function POST(req: Request) {
 
   let imageUrl: string
   try {
-    fal.config({ credentials: process.env.FAL_KEY })
-    const result = await fal.subscribe('fal-ai/flux/schnell', {
-      input: { prompt, image_size: 'square_hd', num_images: 1 },
-    })
-    const out = (result.data as { images?: Array<{ url?: string }> })?.images?.[0]?.url
-    if (!out) throw new Error('no image returned')
-    // Copy off fal's temporary URL into our own Blob so the link is durable + public.
+    const out = await generateImage(prompt)
+    // Copy off kie's temporary URL into our own Blob so the link is durable + public.
     imageUrl = (await storeImageFromUrl(out, 'draft-images/ai')).url
   } catch (err) {
     console.error('[images/generate] failed:', err) // generation failed → user not charged
