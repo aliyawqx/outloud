@@ -3,11 +3,11 @@ import { XAuthError } from './errors'
 
 const AUTHORIZE_URL = 'https://x.com/i/oauth2/authorize'
 const TOKEN_URL = 'https://api.x.com/2/oauth2/token'
-// NOTE: media.write (for v2 media upload) is intentionally NOT requested here. It
-// caused X's OAuth consent to fail ("couldn't give access to the App") for this
-// app, breaking all X connect/login. Re-add it ONLY once the X app is confirmed to
-// allow the media.write scope. Without it, X posts go out text-only.
-export const X_SCOPES = 'tweet.read tweet.write users.read offline.access'
+// media.write enables v2 media upload so we can attach images to tweets. The X app
+// must allow this scope (User authentication settings) or consent fails — it's been
+// enabled. Users who connected earlier must reconnect X once to get it on their token;
+// until then x/publish falls back to a text-only post (never hard-fails).
+export const X_SCOPES = 'tweet.read tweet.write users.read media.write offline.access'
 
 export type TokenResponse = {
   access_token: string
