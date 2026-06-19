@@ -38,14 +38,14 @@ describe('POST /api/x/publish', () => {
   it('publishes and returns the tweet url', async () => {
     const res = await POST(json({ text: 'shipped dark mode' }))
     expect(res.status).toBe(200)
-    expect(postMock).toHaveBeenCalledWith('tok', 'shipped dark mode', undefined)
+    expect(postMock).toHaveBeenCalledWith('tok', 'shipped dark mode', undefined, undefined)
     expect((await res.json()).url).toBe('https://x.com/ada/status/999')
   })
 
   it('publishes as a reply when inReplyTo is given', async () => {
     const res = await POST(json({ text: 'agreed, the numbers prove it', inReplyTo: '1234567890' }))
     expect(res.status).toBe(200)
-    expect(postMock).toHaveBeenCalledWith('tok', 'agreed, the numbers prove it', '1234567890')
+    expect(postMock).toHaveBeenCalledWith('tok', 'agreed, the numbers prove it', '1234567890', undefined)
   })
 
   it('409 when not connected', async () => {

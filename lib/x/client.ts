@@ -1,4 +1,4 @@
-import { ImportNotAvailableError, PostTooLongError, PublishError, ReplyNotAllowedError, XAuthError } from './errors'
+import { ImportNotAvailableError, MediaScopeError, PostTooLongError, PublishError, ReplyNotAllowedError, XAuthError } from './errors'
 
 const API = 'https://api.x.com/2'
 
@@ -22,13 +22,49 @@ export async function getMe(accessToken: string): Promise<{ id: string; username
 
 /** Publish a tweet. Pass `replyToTweetId` to post it as a reply to that tweet —
  *  same endpoint/scope as a normal post, just with the reply field set. */
+/** Upload an image to X (v2 media upload, simple/one-shot for files <5MB) and return
+ *  its media id to attach when creating a tweet. Needs the `media.write` scope — a
+ *  403 here means the user's token predates image support → MediaScopeError. */
+export async function uploadImage(accessToken: string, bytes: ArrayBuffer, contentType: string): Promise<string> {
+  const form = new FormData()
+  form.append('media', new Blob([bytes], { type: contentType }))
+  form.append('media_category', 'tweet_image')
+  const res = await fetch(`${API}/media/upload`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${accessToken}` },
+    body: form,
+  })
+  const data = (await readJson(res)) as { data?: { id?: string }; id?: string; detail?: string; title?: string } | null
+  const mediaId = data?.data?.id ?? data?.id
+  if (!res.ok || !mediaId) {
+    const reason = `${data?.detail || data?.title || ''}`
+    if (res.status === 401 || res.status === 403) {
+      // Missing media.write scope (older token) vs a genuinely expired token.
+      if (/scope|permission|unsupported|media\.write/i.test(reason) || res.status === 403) throw new MediaScopeError()
+      throw new XAuthError()
+    }
+    throw new PublishError(reason || 'Could not upload the image to X.')
+  }
+  return mediaId
+}
+
+/** Fetch an image (our Blob URL) and upload it to X, returning the media id. */
+export async function uploadImageFromUrl(accessToken: string, url: string): Promise<string> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
+  if (!res.ok) throw new PublishError('Could not read the image to attach.')
+  const contentType = res.headers.get('content-type')?.split(';')[0]?.trim() || 'image/jpeg'
+  return uploadImage(accessToken, await res.arrayBuffer(), contentType)
+}
+
 export async function postTweet(
   accessToken: string,
   text: string,
   replyToTweetId?: string,
+  mediaIds?: string[],
 ): Promise<{ id: string }> {
   const payload: Record<string, unknown> = { text }
   if (replyToTweetId) payload.reply = { in_reply_to_tweet_id: replyToTweetId }
+  if (mediaIds?.length) payload.media = { media_ids: mediaIds }
   const res = await fetch(`${API}/tweets`, {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },

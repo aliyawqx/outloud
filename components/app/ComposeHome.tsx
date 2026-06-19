@@ -8,6 +8,7 @@ import { PLANS, PRO_PRICE, STARTER_PRICE } from '@/lib/pricing'
 import { startCheckout } from '@/lib/billing/client'
 import { useCredits } from '@/components/app/CreditsContext'
 import { GenerationStatus, type FeedStep } from '@/components/app/GenerationStatus'
+import { DraftImageControls, type DraftImage } from '@/components/app/DraftImageControls'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 import type { ComposeEvent, DoneEvent } from '@/lib/compose/stream'
 
@@ -126,16 +127,23 @@ function DraftCard({
   index,
   xConnected,
   threadsConnected,
+  onInsufficient,
 }: {
   draft: DraftPost
   index: number
   xConnected: boolean
   threadsConnected: boolean
+  onInsufficient: () => void
 }) {
   const [text, setText] = useState(draft.fullText)
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  // One optional image per draft (AI / stock / upload), attached client-side and
+  // sent to the publishers. Seeded from the draft in case it was ever persisted.
+  const [image, setImage] = useState<DraftImage | null>(
+    draft.imageUrl ? { url: draft.imageUrl, source: draft.imageSource ?? 'upload', alt: draft.imageAlt } : null,
+  )
   // Per-platform outcome after a publish attempt (url on success, error on failure).
   const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string }>>>({})
 
@@ -159,11 +167,11 @@ function DraftCard({
       const res = await fetch(d.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, imageUrl: image?.url, imageAlt: image?.alt }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const error = res.status === 409 ? `Connect your ${d.label} account in Profile first.` : data.error ?? 'Could not publish.'
+        const error = res.status === 409 ? (data.error ?? `Connect your ${d.label} account in Profile first.`) : data.error ?? 'Could not publish.'
         return [d.key, { error }]
       }
       return [d.key, { url: data.url }]
@@ -214,6 +222,9 @@ function DraftCard({
       ) : (
         <p className="whitespace-pre-wrap font-body-md leading-relaxed text-on-surface">{text}</p>
       )}
+
+      {/* Image: AI / stock search / upload — one per draft, sent with the post. */}
+      <DraftImageControls draftText={text} image={image} onChange={setImage} onInsufficient={onInsufficient} />
 
       {/* Destination selector: same text to each selected, connected platform. */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -643,7 +654,7 @@ export function ComposeHome({
       <div className="flex flex-1 flex-col gap-4 pb-4">
         {turns.map((t) => {
           if ('draft' in t) {
-            return <DraftCard key={t.id} draft={t.draft} index={draftN++} xConnected={xConnected} threadsConnected={threadsConnected} />
+            return <DraftCard key={t.id} draft={t.draft} index={draftN++} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} />
           }
           if (t.role === 'user') {
             return (

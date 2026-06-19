@@ -59,6 +59,8 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 export type PublishOptions = {
   replyToId?: string
+  // Public image URL (our Blob URL) — when set, publishes an IMAGE post instead of TEXT.
+  imageUrl?: string
   // Injectable for tests; defaults to real backoff delays.
   maxAttempts?: number
   sleep?: (ms: number) => Promise<void>
@@ -120,7 +122,11 @@ export async function publishThread(
   if (text.length > THREADS_TEXT_LIMIT) throw new ThreadsPostTooLongError(THREADS_TEXT_LIMIT)
   const opts = { maxAttempts: options.maxAttempts ?? 4, sleep: options.sleep ?? sleep }
 
-  const containerParams: Record<string, string> = { media_type: 'TEXT', text }
+  // An attached image makes this an IMAGE post; Threads fetches the (public) image_url
+  // when building the container. No image → text-only, exactly as before.
+  const containerParams: Record<string, string> = options.imageUrl
+    ? { media_type: 'IMAGE', image_url: options.imageUrl, text }
+    : { media_type: 'TEXT', text }
   if (options.replyToId) containerParams.reply_to_id = options.replyToId
   const { id: creationId } = await postForm(`/${userId}/threads`, containerParams, accessToken, opts)
 

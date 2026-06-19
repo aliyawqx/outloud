@@ -3,7 +3,9 @@ import { XAuthError } from './errors'
 
 const AUTHORIZE_URL = 'https://x.com/i/oauth2/authorize'
 const TOKEN_URL = 'https://api.x.com/2/oauth2/token'
-export const X_SCOPES = 'tweet.read tweet.write users.read offline.access'
+// media.write lets us upload images for tweets (added with image support). Users
+// who connected before this was added must reconnect to attach images.
+export const X_SCOPES = 'tweet.read tweet.write users.read media.write offline.access'
 
 export type TokenResponse = {
   access_token: string

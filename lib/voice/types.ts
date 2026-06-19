@@ -85,6 +85,12 @@ export type DraftPost = {
   story: string
   offer: string
   fullText: string
+  /** Optional attached image (one per draft). Stored in Vercel Blob; the public URL
+   *  rides on the draft and is sent to the publishers. `imageSource` records how it
+   *  was added; `imageAlt` is attribution (stock) or alt text. */
+  imageUrl?: string
+  imageSource?: 'ai' | 'stock' | 'upload'
+  imageAlt?: string
 }
 
 /** One turn of the composer chat, in restorable form (persisted with history). */

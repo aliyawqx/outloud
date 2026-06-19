@@ -54,6 +54,16 @@ export class PublishError extends Error {
   }
 }
 
+// Attaching an image needs the `media.write` scope, added after some users first
+// connected X. Those tokens can't upload media until the user reconnects. Text
+// posting is unaffected — only image posts hit this.
+export class MediaScopeError extends Error {
+  constructor() {
+    super('Reconnect your X account in Profile to post images (we added image support).')
+    this.name = 'MediaScopeError'
+  }
+}
+
 // Non-premium X accounts can't post longer than the free character limit. This
 // is a policy limit, not a transient failure, so it gets its own clear message.
 export class PostTooLongError extends Error {

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getAccount, getValidAccessToken } from '@/lib/x/store'
-import { postTweet } from '@/lib/x/client'
-import { PostTooLongError, PublishError, ReplyNotAllowedError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
+import { postTweet, uploadImageFromUrl } from '@/lib/x/client'
+import { MediaScopeError, PostTooLongError, PublishError, ReplyNotAllowedError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 
 const TEXT_MAX = 25000 // X long-post ceiling; account tier enforces the real limit.
 
@@ -22,10 +22,13 @@ export async function POST(req: Request) {
   // Optional: when set, publish as a reply to this tweet (Reply Studio).
   const rawReplyTo = (body as { inReplyTo?: unknown }).inReplyTo
   const inReplyTo = typeof rawReplyTo === 'string' && /^\d{1,25}$/.test(rawReplyTo) ? rawReplyTo : undefined
+  // Optional attached image (our public Blob URL). Uploaded to X as media first.
+  const imageUrl = typeof (body as { imageUrl?: unknown }).imageUrl === 'string' ? (body as { imageUrl: string }).imageUrl : ''
 
   try {
     const token = await getValidAccessToken(session.userId)
-    const { id } = await postTweet(token, text, inReplyTo)
+    const mediaIds = imageUrl ? [await uploadImageFromUrl(token, imageUrl)] : undefined
+    const { id } = await postTweet(token, text, inReplyTo, mediaIds)
     const account = await getAccount(session.userId)
     const url = account ? `https://x.com/${account.username}/status/${id}` : `https://x.com/i/web/status/${id}`
     return NextResponse.json({ id, url })
@@ -33,6 +36,8 @@ export async function POST(req: Request) {
     if (err instanceof XNotConnectedError) return NextResponse.json({ error: err.message }, { status: 409 })
     if (err instanceof XAuthError)
       return NextResponse.json({ error: 'Your X connection expired. Reconnect your X account.', needsReconnect: true }, { status: 409 })
+    if (err instanceof MediaScopeError)
+      return NextResponse.json({ error: err.message, needsReconnect: true }, { status: 409 })
     if (err instanceof ReplyNotAllowedError) {
       return NextResponse.json({ error: err.message, replyBlocked: true }, { status: 422 })
     }

@@ -7,6 +7,7 @@ import {
   COST_PER_LINK_SEARCH,
   COST_PER_TOPIC_SEARCH,
   COST_PER_AI_PHOTO,
+  COST_PER_PHOTO_SEARCH,
   COST_PER_GOOGLE_PHOTO,
   COST_UPLOAD_PHOTO,
   PLAN_ALLOWANCE,
@@ -27,6 +28,7 @@ export {
   COST_PER_LINK_SEARCH,
   COST_PER_TOPIC_SEARCH,
   COST_PER_AI_PHOTO,
+  COST_PER_PHOTO_SEARCH,
   COST_PER_GOOGLE_PHOTO,
   COST_UPLOAD_PHOTO,
   PLAN_ALLOWANCE,
@@ -85,7 +87,7 @@ async function ledger(
 export async function deduct(
   userId: string,
   cost: number,
-  reason: 'post' | 'reply' | 'search',
+  reason: CreditReason,
   opts: { refId?: string | null; metadata?: Record<string, unknown> } = {},
 ): Promise<{ balance: number; ledgerId: string }> {
   await ensureSchema()
