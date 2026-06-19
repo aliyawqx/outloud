@@ -25,7 +25,7 @@ export async function generateImage(prompt: string): Promise<string> {
   const createRes = await fetch(`${BASE}/createTask`, {
     method: 'POST',
     headers: { ...auth, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, input: { prompt, aspect_ratio: '1:1' } }),
+    body: JSON.stringify({ model: MODEL, input: { prompt, aspect_ratio: '1:1', resolution: '1K' } }),
     signal: AbortSignal.timeout(15_000),
   })
   const created = (await createRes.json().catch(() => null)) as { data?: { taskId?: string }; msg?: string } | null

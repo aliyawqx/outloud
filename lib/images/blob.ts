@@ -4,6 +4,12 @@ import { put } from '@vercel/blob'
 // ends here: bytes in → a public, immutable URL out that gets stored on the draft
 // and handed to the publishers. BLOB_READ_WRITE_TOKEN is read from env by @vercel/blob.
 
+/** Whether Vercel Blob is configured. Writes throw without this token, so routes
+ *  guard on it up front and return a clear "not set up" instead of a generic 502. */
+export function blobConfigured(): boolean {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+}
+
 const EXT: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',

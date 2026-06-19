@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { storeImage } from '@/lib/images/blob'
+import { storeImage, blobConfigured } from '@/lib/images/blob'
 
 export const maxDuration = 30
 
@@ -12,6 +12,7 @@ const ALLOWED = new Set(['image/png', 'image/jpeg', 'image/webp'])
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
+  if (!blobConfigured()) return NextResponse.json({ error: 'Image storage isn’t set up yet.' }, { status: 503 })
 
   let form: FormData
   try {
