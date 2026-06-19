@@ -20,3 +20,5 @@ site_*.png
 *.mp4
 *.mov
 *.MOV
+.env*
+!.env.example
