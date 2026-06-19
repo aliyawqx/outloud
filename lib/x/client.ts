@@ -22,27 +22,27 @@ export async function getMe(accessToken: string): Promise<{ id: string; username
 
 /** Publish a tweet. Pass `replyToTweetId` to post it as a reply to that tweet —
  *  same endpoint/scope as a normal post, just with the reply field set. */
-/** Upload an image to X (v2 media upload, simple/one-shot for files <5MB) and return
- *  its media id to attach when creating a tweet. Needs the `media.write` scope — a
- *  403 here means the user's token predates image support → MediaScopeError. */
+// Media still goes through the LEGACY v1.1 upload host, even with an OAuth2 user
+// token — the v2 /2/tweets endpoint only accepts a media_id produced here. Requires
+// the `media.write` scope; a 401/403 means the token lacks it → MediaScopeError.
+const MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json'
+
+/** Upload an image to X (v1.1 simple upload, for files <5MB) and return its
+ *  media_id_string to attach when creating a tweet via POST /2/tweets. */
 export async function uploadImage(accessToken: string, bytes: ArrayBuffer, contentType: string): Promise<string> {
   const form = new FormData()
   form.append('media', new Blob([bytes], { type: contentType }))
   form.append('media_category', 'tweet_image')
-  const res = await fetch(`${API}/media/upload`, {
+  const res = await fetch(MEDIA_UPLOAD_URL, {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}` },
     body: form,
   })
-  const data = (await readJson(res)) as { data?: { id?: string }; id?: string; detail?: string; title?: string } | null
-  const mediaId = data?.data?.id ?? data?.id
+  const data = (await readJson(res)) as { media_id_string?: string; errors?: Array<{ message?: string }>; error?: string } | null
+  const mediaId = data?.media_id_string
   if (!res.ok || !mediaId) {
-    const reason = `${data?.detail || data?.title || ''}`
-    if (res.status === 401 || res.status === 403) {
-      // Missing media.write scope (older token) vs a genuinely expired token.
-      if (/scope|permission|unsupported|media\.write/i.test(reason) || res.status === 403) throw new MediaScopeError()
-      throw new XAuthError()
-    }
+    const reason = data?.errors?.[0]?.message || data?.error || ''
+    if (res.status === 401 || res.status === 403) throw new MediaScopeError()
     throw new PublishError(reason || 'Could not upload the image to X.')
   }
   return mediaId
