@@ -144,9 +144,10 @@ export async function POST(req: Request) {
       // The deduction's ledger id, so we can refund if generation fails (spec §5).
       let chargeLedgerId: string | undefined
       try {
-        // Stage 1 — parse: interpret what the user actually wants (intake).
+        // Stage 1 — parse: interpret what the user actually wants (intake). Intake
+        // may research a recent topic to sharpen its question → emits 'context'.
         send(statusEvent('parse'))
-        const intake = await runIntake(messages, formatText ?? undefined)
+        const intake = await runIntake(messages, formatText ?? undefined, (e) => send(statusEvent(e.step, e.topic)))
         if (intake.action === 'ask') {
           // A question IS the first AI answer — persist so it shows in History now.
           const fullTurns: ChatTurnRecord[] = [...turns, { role: 'assistant', text: intake.question, options: intake.options }]

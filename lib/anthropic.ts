@@ -270,7 +270,11 @@ const INTAKE_FORMAT = {
  * write (returning a consolidated, facts-only brief for the post writer). The
  * multi-turn version of the "unclear input → ask, don't guess" rule.
  */
-export async function runIntake(messages: ChatTurn[], format?: string): Promise<IntakeResult> {
+export async function runIntake(
+  messages: ChatTurn[],
+  format?: string,
+  onStatus?: (e: { step: 'context'; topic?: string }) => void,
+): Promise<IntakeResult> {
   const model = getModel()
   const effort = supportsEffort(model)
   const system: Anthropic.TextBlockParam[] = [{ type: 'text', text: INTAKE_PROMPT, cache_control: { type: 'ephemeral' } }]
@@ -289,14 +293,45 @@ export async function runIntake(messages: ChatTurn[], format?: string): Promise<
       text: `The user has already chosen this OUTPUT FORMAT. Do NOT ask which format, platform, or channel to use - that is decided. Ask only for missing CONTENT facts this specific format needs, and if you already have enough, WRITE.\n\nFORMAT:\n${format.trim()}`,
     })
   }
-  const msg = await createMessage({
-    model,
-    max_tokens: 1500,
-    system,
-    ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
-    output_config: effort ? { effort: 'low', format: INTAKE_FORMAT } : { format: INTAKE_FORMAT },
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  })
+  // Optional, model-chosen research — same tool as drafting, but far more tightly
+  // gated: intake should only look things up when the topic CLEARLY hinges on recent
+  // external events and that changes whether to ask or what to ask.
+  const researchOn = Boolean(process.env.TAVILY_API_KEY)
+  if (researchOn) system.push({ type: 'text', text: INTAKE_RESEARCH_RULES })
+
+  const convo: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }))
+  let msg: Anthropic.Message
+  let rounds = 0
+  for (;;) {
+    const offerTools = researchOn && rounds < MAX_INTAKE_RESEARCH_ROUNDS
+    msg = await createMessage({
+      model,
+      max_tokens: 1500,
+      system,
+      ...(effort ? { thinking: { type: 'adaptive' as const } } : {}),
+      ...(offerTools ? { tools: [WEB_RESEARCH_TOOL] } : {}),
+      output_config: effort ? { effort: 'low', format: INTAKE_FORMAT } : { format: INTAKE_FORMAT },
+      messages: convo,
+    })
+    if (msg.stop_reason !== 'tool_use') break
+    convo.push({ role: 'assistant', content: msg.content })
+    const toolResults: Anthropic.ToolResultBlockParam[] = []
+    for (const block of msg.content) {
+      if (block.type !== 'tool_use') continue
+      let out = 'No research available — decide without it.'
+      if (block.name === 'web_research') {
+        const query = typeof (block.input as { query?: unknown })?.query === 'string'
+          ? (block.input as { query: string }).query
+          : ''
+        onStatus?.({ step: 'context', topic: query })
+        const r = await research(query)
+        if (r) out = formatKnowledge(r)
+      }
+      toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: out })
+    }
+    convo.push({ role: 'user', content: toolResults })
+    rounds++
+  }
   const text = msg.content.find((b) => b.type === 'text')
   if (!text || text.type !== 'text') throw new Error('No content returned')
   let parsed: unknown
@@ -536,6 +571,16 @@ const RESEARCH_RULES = `RESEARCH (web_research tool):
 - If research returns nothing useful, write the best post you can without it. Research must never block the post or change its format.`
 
 const MAX_RESEARCH_ROUNDS = 2
+
+// Intake runs on EVERY message and must stay fast, so research here is far more
+// tightly gated than during drafting: at most one lookup, only for clearly recent
+// external topics, purely to sharpen the decision (ask vs write) and the question.
+const INTAKE_RESEARCH_RULES = `RESEARCH (web_research tool) — use rarely:
+- Call web_research AT MOST ONCE, and ONLY when the user's topic clearly hinges on RECENT EXTERNAL events (breaking news, a launch, a result, a number) AND knowing the current facts would change whether you ask a question or what you ask. For personal updates, opinions, or anything timeless, do NOT research.
+- Use it only to decide: ask a sharper question, or judge that there's enough context to write. Never quote it or turn your question into a news summary.
+- If nothing useful comes back, just proceed. Research must never block or slow the simple cases.`
+
+const MAX_INTAKE_RESEARCH_ROUNDS = 1
 
 /**
  * Generate X content in a per-user voice. The voice is ALWAYS captured per user:
