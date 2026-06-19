@@ -27,16 +27,10 @@ export async function POST(req: Request) {
 
   try {
     const token = await getValidAccessToken(session.userId)
-    // Try to attach the image; if media upload isn't available (e.g. the app lacks
-    // the media.write scope), fall back to a text-only post instead of failing.
-    let mediaIds: string[] | undefined
-    if (imageUrl) {
-      try {
-        mediaIds = [await uploadImageFromUrl(token, imageUrl)]
-      } catch (e) {
-        console.warn('[x/publish] image skipped, posting text-only:', (e as Error).message)
-      }
-    }
+    // Upload the image first. If the token predates the media.write scope, this throws
+    // MediaScopeError → we surface a clear "reconnect X" instead of silently dropping
+    // the image (which confused users who saw their post go out text-only).
+    const mediaIds = imageUrl ? [await uploadImageFromUrl(token, imageUrl)] : undefined
     const { id } = await postTweet(token, text, inReplyTo, mediaIds)
     const account = await getAccount(session.userId)
     const url = account ? `https://x.com/${account.username}/status/${id}` : `https://x.com/i/web/status/${id}`
