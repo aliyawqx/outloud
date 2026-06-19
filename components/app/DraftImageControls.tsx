@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
+import { ImageLightbox } from '@/components/app/ImageLightbox'
 import { useCredits } from '@/components/app/CreditsContext'
 import { COST_PER_AI_PHOTO, COST_PER_PHOTO_SEARCH, fmtCredits } from '@/lib/creditsConfig'
 
@@ -35,6 +36,7 @@ export function DraftImageControls({
 }) {
   const { setBalance } = useCredits()
   const [pane, setPane] = useState<Pane>(null)
+  const [zoomed, setZoomed] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
 
   // Close the open popover on an outside click or Escape.
@@ -63,7 +65,13 @@ export function DraftImageControls({
       {image && (
         <div className="relative mb-2 inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image.url} alt={image.alt || ''} className="max-h-32 rounded-xl border border-border-muted object-cover" />
+          <img
+            src={image.url}
+            alt={image.alt || ''}
+            onClick={() => setZoomed(true)}
+            title="Click to view full screen"
+            className="max-h-32 cursor-zoom-in rounded-xl border border-border-muted object-cover transition-opacity hover:opacity-90"
+          />
           <button
             type="button"
             onClick={() => onChange(null)}
@@ -75,6 +83,7 @@ export function DraftImageControls({
           {image.alt && <p className="mt-1 max-w-[12rem] truncate font-code-label text-[10px] text-on-surface-variant/60">{image.alt}</p>}
         </div>
       )}
+      {zoomed && image && <ImageLightbox src={image.url} alt={image.alt} onClose={() => setZoomed(false)} />}
 
       <div ref={wrapRef} className="relative flex justify-end gap-1.5">
         <IconButton icon="auto_awesome" label="AI image" active={pane === 'ai'} onClick={() => setPane((p) => (p === 'ai' ? null : 'ai'))} />
