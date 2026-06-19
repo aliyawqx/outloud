@@ -59,8 +59,8 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 export type PublishOptions = {
   replyToId?: string
-  // Public image URL (our Blob URL) — when set, publishes an IMAGE post instead of TEXT.
-  imageUrl?: string
+  // Public image URLs (our Blob URLs). 1 → IMAGE post, 2+ → CAROUSEL, none → TEXT.
+  imageUrls?: string[]
   // Injectable for tests; defaults to real backoff delays.
   maxAttempts?: number
   sleep?: (ms: number) => Promise<void>
@@ -122,13 +122,28 @@ export async function publishThread(
   if (text.length > THREADS_TEXT_LIMIT) throw new ThreadsPostTooLongError(THREADS_TEXT_LIMIT)
   const opts = { maxAttempts: options.maxAttempts ?? 4, sleep: options.sleep ?? sleep }
 
-  // An attached image makes this an IMAGE post; Threads fetches the (public) image_url
-  // when building the container. No image → text-only, exactly as before.
-  const containerParams: Record<string, string> = options.imageUrl
-    ? { media_type: 'IMAGE', image_url: options.imageUrl, text }
-    : { media_type: 'TEXT', text }
-  if (options.replyToId) containerParams.reply_to_id = options.replyToId
-  const { id: creationId } = await postForm(`/${userId}/threads`, containerParams, accessToken, opts)
+  const imageUrls = (options.imageUrls ?? []).filter(Boolean)
+
+  // Build the container: TEXT (no images), IMAGE (one), or CAROUSEL (2+). Threads
+  // fetches each public image_url when building the container.
+  let creationId: string
+  if (imageUrls.length >= 2) {
+    // Carousel: a child IMAGE container per photo, then a CAROUSEL parent over them.
+    const childIds: string[] = []
+    for (const url of imageUrls) {
+      const child = await postForm(`/${userId}/threads`, { media_type: 'IMAGE', image_url: url, is_carousel_item: 'true' }, accessToken, opts)
+      childIds.push(child.id)
+    }
+    const parent: Record<string, string> = { media_type: 'CAROUSEL', children: childIds.join(','), text }
+    if (options.replyToId) parent.reply_to_id = options.replyToId
+    creationId = (await postForm(`/${userId}/threads`, parent, accessToken, opts)).id
+  } else {
+    const params: Record<string, string> = imageUrls.length === 1
+      ? { media_type: 'IMAGE', image_url: imageUrls[0], text }
+      : { media_type: 'TEXT', text }
+    if (options.replyToId) params.reply_to_id = options.replyToId
+    creationId = (await postForm(`/${userId}/threads`, params, accessToken, opts)).id
+  }
 
   return postForm(`/${userId}/threads_publish`, { creation_id: creationId }, accessToken, opts)
 }

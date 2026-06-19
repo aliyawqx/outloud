@@ -23,20 +23,27 @@ export async function POST(req: Request) {
   // Optional: when set, publish as a reply to this tweet (Reply Studio).
   const rawReplyTo = (body as { inReplyTo?: unknown }).inReplyTo
   const inReplyTo = typeof rawReplyTo === 'string' && /^\d{1,25}$/.test(rawReplyTo) ? rawReplyTo : undefined
-  // Optional attached image (our public Blob URL). Uploaded to X as media first.
-  const imageUrl = typeof (body as { imageUrl?: unknown }).imageUrl === 'string' ? (body as { imageUrl: string }).imageUrl : ''
+  // Optional attached images (our public Blob URLs). Uploaded to X as media first.
+  // X allows up to 4 per post. Back-compat: also accept a single `imageUrl`.
+  const rawUrls = Array.isArray((body as { imageUrls?: unknown }).imageUrls)
+    ? ((body as { imageUrls: unknown[] }).imageUrls.filter((u): u is string => typeof u === 'string'))
+    : typeof (body as { imageUrl?: unknown }).imageUrl === 'string'
+      ? [(body as { imageUrl: string }).imageUrl]
+      : []
+  const imageUrls = rawUrls.filter(Boolean).slice(0, 4)
 
   try {
     const token = await getValidAccessToken(session.userId)
-    // Attach the image only when the media.write scope is enabled (paid X tier). When
-    // it's off, X can't accept media — post text-only and tell the client the image was
+    // Attach images only when the media.write scope is enabled (paid X tier). When
+    // it's off, X can't accept media — post text-only and tell the client images were
     // skipped (honest, not silent). When on, a stale token without the scope surfaces a
-    // clear "reconnect X" via MediaScopeError.
+    // clear "reconnect X" via MediaScopeError. Upload sequentially → ordered media_ids.
     let mediaIds: string[] | undefined
     let imageSkipped = false
-    if (imageUrl && X_MEDIA_SCOPE_ENABLED) {
-      mediaIds = [await uploadImageFromUrl(token, imageUrl)]
-    } else if (imageUrl) {
+    if (imageUrls.length && X_MEDIA_SCOPE_ENABLED) {
+      mediaIds = []
+      for (const url of imageUrls) mediaIds.push(await uploadImageFromUrl(token, url))
+    } else if (imageUrls.length) {
       imageSkipped = true
     }
     const { id } = await postTweet(token, text, inReplyTo, mediaIds)

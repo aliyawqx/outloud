@@ -79,15 +79,17 @@ export type WritingSample = {
 export type HookIntensity = 'safe' | 'bold' | 'spicy' | 'funny'
 
 /** A generated post draft. Mirrors the structure the generation core produces. */
+export type DraftImage = { url: string; source: 'ai' | 'stock' | 'upload'; alt?: string }
+
 export type DraftPost = {
   angle: string
   hook: string
   story: string
   offer: string
   fullText: string
-  /** Optional attached image (one per draft). Stored in Vercel Blob; the public URL
-   *  rides on the draft and is sent to the publishers. `imageSource` records how it
-   *  was added; `imageAlt` is attribution (stock) or alt text. */
+  /** Attached images (up to 4), stored in Vercel Blob and sent to the publishers. */
+  images?: DraftImage[]
+  /** Legacy single-image fields — kept so drafts saved before multi-image still load. */
   imageUrl?: string
   imageSource?: 'ai' | 'stock' | 'upload'
   imageAlt?: string

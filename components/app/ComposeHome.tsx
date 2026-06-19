@@ -128,14 +128,14 @@ function DraftCard({
   xConnected,
   threadsConnected,
   onInsufficient,
-  onImageChange,
+  onImagesChange,
 }: {
   draft: DraftPost
   index: number
   xConnected: boolean
   threadsConnected: boolean
   onInsufficient: () => void
-  onImageChange?: (img: DraftImage | null) => void
+  onImagesChange?: (imgs: DraftImage[]) => void
 }) {
   const [text, setText] = useState(draft.fullText)
   const [editing, setEditing] = useState(false)
@@ -143,14 +143,18 @@ function DraftCard({
   const [publishing, setPublishing] = useState(false)
   // One optional image per draft (AI / stock / upload), attached client-side and
   // sent to the publishers. Seeded from the draft in case it was ever persisted.
-  const [image, setImage] = useState<DraftImage | null>(
-    draft.imageUrl ? { url: draft.imageUrl, source: draft.imageSource ?? 'upload', alt: draft.imageAlt } : null,
+  const [images, setImages] = useState<DraftImage[]>(
+    draft.images && draft.images.length
+      ? draft.images
+      : draft.imageUrl // migrate a legacy single-image draft
+        ? [{ url: draft.imageUrl, source: draft.imageSource ?? 'upload', alt: draft.imageAlt }]
+        : [],
   )
-  // Update local state AND lift to the parent so the image is persisted to history
-  // (survives reload) and isn't wiped by a later full re-save of the chat.
-  function changeImage(img: DraftImage | null) {
-    setImage(img)
-    onImageChange?.(img)
+  // Update local state AND lift to the parent so the images persist to history
+  // (survive reload) and aren't wiped by a later full re-save of the chat.
+  function changeImages(imgs: DraftImage[]) {
+    setImages(imgs)
+    onImagesChange?.(imgs)
   }
   // Per-platform outcome after a publish attempt (url on success, error on failure).
   const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string; note?: string }>>>({})
@@ -175,7 +179,7 @@ function DraftCard({
       const res = await fetch(d.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, imageUrl: image?.url, imageAlt: image?.alt }),
+        body: JSON.stringify({ text, imageUrls: images.map((i) => i.url), imageAlts: images.map((i) => i.alt ?? '') }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -183,7 +187,7 @@ function DraftCard({
         return [d.key, { error }]
       }
       // Posted, but the image couldn't go to X (image posting needs a paid X tier).
-      const note = image && data.imageSkipped ? 'image not added — X image posting isn’t enabled' : undefined
+      const note = images.length && data.imageSkipped ? 'image not added — X image posting isn’t enabled' : undefined
       return [d.key, { url: data.url, note }]
     } catch {
       return [d.key, { error: 'Network error. Try again.' }]
@@ -233,8 +237,8 @@ function DraftCard({
         <p className="whitespace-pre-wrap font-body-md leading-relaxed text-on-surface">{text}</p>
       )}
 
-      {/* Image: AI / stock search / upload — one per draft, sent with the post. */}
-      <DraftImageControls draftText={text} image={image} onChange={changeImage} onInsufficient={onInsufficient} />
+      {/* Images: AI / stock search / upload — up to 4 per draft, sent with the post. */}
+      <DraftImageControls draftText={text} images={images} onChange={changeImages} onInsufficient={onInsufficient} />
 
       {/* Destination selector: same text to each selected, connected platform. */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -661,17 +665,17 @@ export function ComposeHome({
     )
   }
 
-  // Persist an attached/removed image: set it on the matching draft in `turns` (so a
-  // later re-save keeps it) and save it to the chat's history entry (so it survives a
+  // Persist attached/removed images: set them on the matching draft in `turns` (so a
+  // later re-save keeps them) and save to the chat's history entry (so they survive a
   // reload). draftIndex is the Nth draft turn, matching the server's transcript order.
-  function persistDraftImage(draftIndex: number, img: DraftImage | null) {
+  function persistDraftImages(draftIndex: number, imgs: DraftImage[]) {
     setTurns((prev) => {
       let n = 0
       return prev.map((t) => {
         if ('draft' in t) {
           const here = n === draftIndex
           n++
-          if (here) return { ...t, draft: { ...t.draft, imageUrl: img?.url, imageSource: img?.source, imageAlt: img?.alt } }
+          if (here) return { ...t, draft: { ...t.draft, images: imgs } }
         }
         return t
       })
@@ -680,7 +684,7 @@ export function ComposeHome({
       fetch('/api/voice/history/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ historyId, draftIndex, image: img }),
+        body: JSON.stringify({ historyId, draftIndex, images: imgs }),
       }).catch(() => {})
     }
   }
@@ -692,7 +696,7 @@ export function ComposeHome({
         {turns.map((t) => {
           if ('draft' in t) {
             const di = draftN++
-            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} onImageChange={(img) => persistDraftImage(di, img)} />
+            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} onImagesChange={(imgs) => persistDraftImages(di, imgs)} />
           }
           if (t.role === 'user') {
             return (

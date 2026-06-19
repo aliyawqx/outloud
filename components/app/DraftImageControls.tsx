@@ -8,6 +8,9 @@ import { COST_PER_AI_PHOTO, COST_PER_PHOTO_SEARCH, fmtCredits } from '@/lib/cred
 
 export type DraftImage = { url: string; source: 'ai' | 'stock' | 'upload'; alt?: string }
 
+// X allows up to 4 images per post; we cap at that for both destinations.
+const MAX_IMAGES = 4
+
 type Pane = 'ai' | 'search' | 'upload' | null
 type StockResult = {
   id: string
@@ -25,19 +28,20 @@ type StockResult = {
 // existing insufficient-credits flow via onInsufficient.
 export function DraftImageControls({
   draftText,
-  image,
+  images,
   onChange,
   onInsufficient,
 }: {
   draftText: string
-  image: DraftImage | null
-  onChange: (img: DraftImage | null) => void
+  images: DraftImage[]
+  onChange: (imgs: DraftImage[]) => void
   onInsufficient: () => void
 }) {
   const { setBalance } = useCredits()
   const [pane, setPane] = useState<Pane>(null)
-  const [zoomed, setZoomed] = useState(false)
+  const [zoom, setZoom] = useState<DraftImage | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const full = images.length >= MAX_IMAGES
 
   // Close the open popover on an outside click or Escape.
   useEffect(() => {
@@ -54,41 +58,56 @@ export function DraftImageControls({
     }
   }, [pane])
 
+  // Append the new image (one per pick); cap at MAX_IMAGES.
   function attach(img: DraftImage, creditsLeft?: number) {
     if (typeof creditsLeft === 'number') setBalance(creditsLeft)
-    onChange(img)
+    onChange([...images, img].slice(0, MAX_IMAGES))
     setPane(null)
   }
+  function removeAt(i: number) {
+    onChange(images.filter((_, idx) => idx !== i))
+  }
+
+  const toggle = (p: Exclude<Pane, null>) => setPane((cur) => (cur === p ? null : p))
 
   return (
     <div className="mt-3">
-      {image && (
-        <div className="relative mb-2 inline-block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={image.url}
-            alt={image.alt || ''}
-            onClick={() => setZoomed(true)}
-            title="Click to view full screen"
-            className="max-h-32 cursor-zoom-in rounded-xl border border-border-muted object-cover transition-opacity hover:opacity-90"
-          />
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            aria-label="Remove image"
-            className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full border border-border-muted bg-surface-container-high text-on-surface-variant transition-colors hover:text-on-surface"
-          >
-            <span aria-hidden className="material-symbols-outlined text-[15px]">close</span>
-          </button>
-          {image.alt && <p className="mt-1 max-w-[12rem] truncate font-code-label text-[10px] text-on-surface-variant/60">{image.alt}</p>}
+      {images.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {images.map((img, i) => (
+            <div key={`${img.url}-${i}`} className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={img.url}
+                alt={img.alt || ''}
+                onClick={() => setZoom(img)}
+                title="Click to view full screen"
+                className="size-24 cursor-zoom-in rounded-xl border border-border-muted object-cover transition-opacity hover:opacity-90"
+              />
+              <button
+                type="button"
+                onClick={() => removeAt(i)}
+                aria-label="Remove image"
+                className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full border border-border-muted bg-surface-container-high text-on-surface-variant transition-colors hover:text-on-surface"
+              >
+                <span aria-hidden className="material-symbols-outlined text-[15px]">close</span>
+              </button>
+            </div>
+          ))}
         </div>
       )}
-      {zoomed && image && <ImageLightbox src={image.url} alt={image.alt} onClose={() => setZoomed(false)} />}
+      {zoom && <ImageLightbox src={zoom.url} alt={zoom.alt} onClose={() => setZoom(null)} />}
 
-      <div ref={wrapRef} className="relative flex justify-end gap-1.5">
-        <IconButton icon="auto_awesome" label="AI image" active={pane === 'ai'} onClick={() => setPane((p) => (p === 'ai' ? null : 'ai'))} />
-        <IconButton icon="image_search" label="Search photo" active={pane === 'search'} onClick={() => setPane((p) => (p === 'search' ? null : 'search'))} />
-        <IconButton icon="attach_file" label="Upload image" active={pane === 'upload'} onClick={() => setPane((p) => (p === 'upload' ? null : 'upload'))} />
+      <div ref={wrapRef} className="relative flex items-center justify-end gap-1.5">
+        {full ? (
+          <span className="font-code-label text-code-label text-on-surface-variant/60">Max {MAX_IMAGES} images</span>
+        ) : (
+          <>
+            <IconButton icon="auto_awesome" label="AI image" active={pane === 'ai'} onClick={() => toggle('ai')} />
+            <IconButton icon="image_search" label="Search photo" active={pane === 'search'} onClick={() => toggle('search')} />
+            <IconButton icon="attach_file" label="Upload image" active={pane === 'upload'} onClick={() => toggle('upload')} />
+          </>
+        )}
 
         {pane === 'ai' && <AiPane draftText={draftText} onAttach={attach} onInsufficient={onInsufficient} />}
         {pane === 'search' && <SearchPane onAttach={attach} onInsufficient={onInsufficient} />}

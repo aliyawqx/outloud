@@ -36,14 +36,19 @@ export async function POST(req: Request) {
   // Optional: when set, publish as a reply to this Threads post.
   const rawReplyTo = (body as { inReplyTo?: unknown }).inReplyTo
   const inReplyTo = typeof rawReplyTo === 'string' && /^\d{1,30}$/.test(rawReplyTo) ? rawReplyTo : undefined
-  // Optional attached image — must be a public URL (our Blob URL) Threads can fetch.
-  const imageUrl = typeof (body as { imageUrl?: unknown }).imageUrl === 'string' ? (body as { imageUrl: string }).imageUrl : undefined
+  // Optional attached images — public URLs (our Blob URLs) Threads can fetch. 1 → IMAGE,
+  // 2+ → CAROUSEL. Back-compat: also accept a single `imageUrl`.
+  const imageUrls = Array.isArray((body as { imageUrls?: unknown }).imageUrls)
+    ? (body as { imageUrls: unknown[] }).imageUrls.filter((u): u is string => typeof u === 'string')
+    : typeof (body as { imageUrl?: unknown }).imageUrl === 'string'
+      ? [(body as { imageUrl: string }).imageUrl]
+      : []
 
   try {
     const token = await getValidAccessToken(session.userId)
     const account = await getAccount(session.userId)
     if (!account) throw new ThreadsNotConnectedError()
-    const { id } = await publishThread(token, account.threadsUserId, text, { replyToId: inReplyTo, imageUrl })
+    const { id } = await publishThread(token, account.threadsUserId, text, { replyToId: inReplyTo, imageUrls })
     const permalink = await getPermalink(token, id)
     const url = permalink ?? `https://www.threads.net/@${account.username}`
     return NextResponse.json({ id, url })

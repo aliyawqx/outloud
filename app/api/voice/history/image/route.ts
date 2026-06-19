@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getComposeEntry, updateComposeChat } from '@/lib/voice/history'
-import type { DraftPost } from '@/lib/voice/types'
+import type { DraftImage } from '@/lib/voice/types'
 
-// POST /api/voice/history/image — persist (or clear) the image attached to the
-// Nth draft of a saved chat, so it survives a page reload. The draft lives inside
-// the chat's JSONB transcript; we set the image fields on the matching draft in
-// both `messages` and `drafts` and re-save the entry.
+// POST /api/voice/history/image — persist the images attached to the Nth draft of a
+// saved chat, so they survive a page reload. The draft lives inside the chat's JSONB
+// transcript; we set `images` on the matching draft in both `messages` and `drafts`
+// and re-save the entry. Legacy single-image fields are cleared.
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
@@ -22,17 +22,18 @@ export async function POST(req: Request) {
   const draftIndex = typeof b.draftIndex === 'number' ? b.draftIndex : -1
   if (!historyId || draftIndex < 0) return NextResponse.json({ error: 'Bad request.' }, { status: 400 })
 
-  // image === null clears it; otherwise validate the shape.
-  const raw = b.image as { url?: unknown; source?: unknown; alt?: unknown } | null | undefined
-  let fields: Pick<DraftPost, 'imageUrl' | 'imageSource' | 'imageAlt'>
-  if (raw === null || raw === undefined) {
-    fields = { imageUrl: undefined, imageSource: undefined, imageAlt: undefined }
-  } else {
-    const url = typeof raw.url === 'string' ? raw.url : ''
-    if (!/^https?:\/\//.test(url)) return NextResponse.json({ error: 'Bad image url.' }, { status: 400 })
-    const source = raw.source === 'ai' || raw.source === 'stock' || raw.source === 'upload' ? raw.source : 'upload'
-    fields = { imageUrl: url, imageSource: source, imageAlt: typeof raw.alt === 'string' ? raw.alt : undefined }
+  // Validate the images array (cap 4); each must have a valid url.
+  const rawImages = Array.isArray(b.images) ? b.images : []
+  const images: DraftImage[] = []
+  for (const raw of rawImages.slice(0, 4)) {
+    const r = (raw ?? {}) as { url?: unknown; source?: unknown; alt?: unknown }
+    const url = typeof r.url === 'string' ? r.url : ''
+    if (!/^https?:\/\//.test(url)) continue
+    const source = r.source === 'ai' || r.source === 'stock' || r.source === 'upload' ? r.source : 'upload'
+    images.push({ url, source, alt: typeof r.alt === 'string' ? r.alt : undefined })
   }
+  // Set the new array; drop the legacy single-image fields.
+  const fields = { images, imageUrl: undefined, imageSource: undefined, imageAlt: undefined }
 
   const entry = await getComposeEntry(session.userId, historyId)
   if (!entry) return NextResponse.json({ error: 'Not found.' }, { status: 404 })
