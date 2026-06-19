@@ -27,7 +27,16 @@ export async function POST(req: Request) {
 
   try {
     const token = await getValidAccessToken(session.userId)
-    const mediaIds = imageUrl ? [await uploadImageFromUrl(token, imageUrl)] : undefined
+    // Try to attach the image; if media upload isn't available (e.g. the app lacks
+    // the media.write scope), fall back to a text-only post instead of failing.
+    let mediaIds: string[] | undefined
+    if (imageUrl) {
+      try {
+        mediaIds = [await uploadImageFromUrl(token, imageUrl)]
+      } catch (e) {
+        console.warn('[x/publish] image skipped, posting text-only:', (e as Error).message)
+      }
+    }
     const { id } = await postTweet(token, text, inReplyTo, mediaIds)
     const account = await getAccount(session.userId)
     const url = account ? `https://x.com/${account.username}/status/${id}` : `https://x.com/i/web/status/${id}`
