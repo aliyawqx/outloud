@@ -22,29 +22,40 @@ export async function getMe(accessToken: string): Promise<{ id: string; username
 
 /** Publish a tweet. Pass `replyToTweetId` to post it as a reply to that tweet —
  *  same endpoint/scope as a normal post, just with the reply field set. */
-// Media still goes through the LEGACY v1.1 upload host, even with an OAuth2 user
-// token — the v2 /2/tweets endpoint only accepts a media_id produced here. Requires
-// the `media.write` scope; a 401/403 means the token lacks it → MediaScopeError.
-const MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json'
+// v2 media upload is a 3-step flow on api.x.com (the old single-shot v1.1 host does
+// NOT accept OAuth2 tokens — it 403s): initialize → append chunk(s) → finalize. The
+// resulting media id goes into POST /2/tweets. Needs the `media.write` scope; a
+// 401/403 on initialize means the token lacks it → MediaScopeError. Images are well
+// under 5MB so a single append segment is enough.
+const MEDIA_BASE = 'https://api.x.com/2/media/upload'
 
-/** Upload an image to X (v1.1 simple upload, for files <5MB) and return its
- *  media_id_string to attach when creating a tweet via POST /2/tweets. */
 export async function uploadImage(accessToken: string, bytes: ArrayBuffer, contentType: string): Promise<string> {
+  const auth = { authorization: `Bearer ${accessToken}` }
+
+  // 1) initialize — JSON metadata, returns the media id.
+  const initRes = await fetch(`${MEDIA_BASE}/initialize`, {
+    method: 'POST',
+    headers: { ...auth, 'content-type': 'application/json' },
+    body: JSON.stringify({ media_type: contentType, total_bytes: bytes.byteLength, media_category: 'tweet_image' }),
+  })
+  const initData = (await readJson(initRes)) as { data?: { id?: string } } | null
+  const mediaId = initData?.data?.id
+  if (!initRes.ok || !mediaId) {
+    if (initRes.status === 401 || initRes.status === 403) throw new MediaScopeError()
+    throw new PublishError('Could not start the image upload to X.')
+  }
+
+  // 2) append — the image bytes as a single segment (multipart/form-data).
   const form = new FormData()
   form.append('media', new Blob([bytes], { type: contentType }))
-  form.append('media_category', 'tweet_image')
-  const res = await fetch(MEDIA_UPLOAD_URL, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${accessToken}` },
-    body: form,
-  })
-  const data = (await readJson(res)) as { media_id_string?: string; errors?: Array<{ message?: string }>; error?: string } | null
-  const mediaId = data?.media_id_string
-  if (!res.ok || !mediaId) {
-    const reason = data?.errors?.[0]?.message || data?.error || ''
-    if (res.status === 401 || res.status === 403) throw new MediaScopeError()
-    throw new PublishError(reason || 'Could not upload the image to X.')
-  }
+  form.append('segment_index', '0')
+  const appendRes = await fetch(`${MEDIA_BASE}/${mediaId}/append`, { method: 'POST', headers: auth, body: form })
+  if (!appendRes.ok) throw new PublishError('Could not upload the image to X.')
+
+  // 3) finalize — makes the media usable; for images it's ready immediately.
+  const finalizeRes = await fetch(`${MEDIA_BASE}/${mediaId}/finalize`, { method: 'POST', headers: auth })
+  if (!finalizeRes.ok) throw new PublishError('Could not finalize the image upload to X.')
+
   return mediaId
 }
 
