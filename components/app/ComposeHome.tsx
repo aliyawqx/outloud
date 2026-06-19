@@ -145,7 +145,7 @@ function DraftCard({
     draft.imageUrl ? { url: draft.imageUrl, source: draft.imageSource ?? 'upload', alt: draft.imageAlt } : null,
   )
   // Per-platform outcome after a publish attempt (url on success, error on failure).
-  const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string }>>>({})
+  const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string; note?: string }>>>({})
 
   const connected: Record<Dest, boolean> = { x: xConnected, threads: threadsConnected }
   // Pre-select every connected platform; the user can toggle any off before publishing.
@@ -162,7 +162,7 @@ function DraftCard({
     setSelected((s) => ({ ...s, [key]: !s[key] }))
   }
 
-  async function publishTo(d: (typeof DESTINATIONS)[number]): Promise<[Dest, { url?: string; error?: string }]> {
+  async function publishTo(d: (typeof DESTINATIONS)[number]): Promise<[Dest, { url?: string; error?: string; note?: string }]> {
     try {
       const res = await fetch(d.endpoint, {
         method: 'POST',
@@ -174,7 +174,9 @@ function DraftCard({
         const error = res.status === 409 ? (data.error ?? `Connect your ${d.label} account in Profile first.`) : data.error ?? 'Could not publish.'
         return [d.key, { error }]
       }
-      return [d.key, { url: data.url }]
+      // Posted, but the image couldn't go to X (image posting needs a paid X tier).
+      const note = image && data.imageSkipped ? 'image not added — X image posting isn’t enabled' : undefined
+      return [d.key, { url: data.url, note }]
     } catch {
       return [d.key, { error: 'Network error. Try again.' }]
     }
@@ -285,9 +287,12 @@ function DraftCard({
           const r = results[d.key]
           if (!r) return null
           return r.url ? (
-            <a key={d.key} href={r.url} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
-              View on {d.label} →
-            </a>
+            <div key={d.key} className="flex flex-col">
+              <a href={r.url} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
+                View on {d.label} →
+              </a>
+              {r.note && <span className="font-code-label text-code-label text-on-surface-variant/70">{r.note}</span>}
+            </div>
           ) : (
             <p key={d.key} className="font-body-sm text-body-sm text-error">{d.label}: {r.error}</p>
           )

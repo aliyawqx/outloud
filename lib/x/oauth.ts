@@ -3,11 +3,16 @@ import { XAuthError } from './errors'
 
 const AUTHORIZE_URL = 'https://x.com/i/oauth2/authorize'
 const TOKEN_URL = 'https://api.x.com/2/oauth2/token'
-// media.write enables v2 media upload so we can attach images to tweets. The X app
-// must allow this scope (User authentication settings) or consent fails — it's been
-// enabled. Users who connected earlier must reconnect X once to get it on their token;
-// until then x/publish falls back to a text-only post (never hard-fails).
-export const X_SCOPES = 'tweet.read tweet.write users.read media.write offline.access'
+// media.write enables v2 media upload (images on tweets) — but it is NOT grantable on
+// the FREE X API tier: requesting it makes X's consent fail with "You weren't able to
+// give access to the App". So it's gated behind X_REQUEST_MEDIA_SCOPE: leave it unset
+// and X login/connect works; set it to "1" once the X app is on a paid tier (Basic+)
+// that allows the scope. The image-upload code stays wired either way.
+const BASE_X_SCOPES = ['tweet.read', 'tweet.write', 'users.read', 'offline.access']
+export const X_MEDIA_SCOPE_ENABLED = process.env.X_REQUEST_MEDIA_SCOPE === '1'
+export const X_SCOPES = (
+  X_MEDIA_SCOPE_ENABLED ? ['tweet.read', 'tweet.write', 'users.read', 'media.write', 'offline.access'] : BASE_X_SCOPES
+).join(' ')
 
 export type TokenResponse = {
   access_token: string

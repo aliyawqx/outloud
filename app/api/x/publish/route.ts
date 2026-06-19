@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getAccount, getValidAccessToken } from '@/lib/x/store'
 import { postTweet, uploadImageFromUrl } from '@/lib/x/client'
+import { X_MEDIA_SCOPE_ENABLED } from '@/lib/x/oauth'
 import { MediaScopeError, PostTooLongError, PublishError, ReplyNotAllowedError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 
 const TEXT_MAX = 25000 // X long-post ceiling; account tier enforces the real limit.
@@ -27,14 +28,21 @@ export async function POST(req: Request) {
 
   try {
     const token = await getValidAccessToken(session.userId)
-    // Upload the image first. If the token predates the media.write scope, this throws
-    // MediaScopeError → we surface a clear "reconnect X" instead of silently dropping
-    // the image (which confused users who saw their post go out text-only).
-    const mediaIds = imageUrl ? [await uploadImageFromUrl(token, imageUrl)] : undefined
+    // Attach the image only when the media.write scope is enabled (paid X tier). When
+    // it's off, X can't accept media — post text-only and tell the client the image was
+    // skipped (honest, not silent). When on, a stale token without the scope surfaces a
+    // clear "reconnect X" via MediaScopeError.
+    let mediaIds: string[] | undefined
+    let imageSkipped = false
+    if (imageUrl && X_MEDIA_SCOPE_ENABLED) {
+      mediaIds = [await uploadImageFromUrl(token, imageUrl)]
+    } else if (imageUrl) {
+      imageSkipped = true
+    }
     const { id } = await postTweet(token, text, inReplyTo, mediaIds)
     const account = await getAccount(session.userId)
     const url = account ? `https://x.com/${account.username}/status/${id}` : `https://x.com/i/web/status/${id}`
-    return NextResponse.json({ id, url })
+    return NextResponse.json({ id, url, imageSkipped })
   } catch (err) {
     if (err instanceof XNotConnectedError) return NextResponse.json({ error: err.message }, { status: 409 })
     if (err instanceof XAuthError)
