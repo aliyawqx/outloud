@@ -3,14 +3,12 @@ import { headers } from 'next/headers'
 import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { listProfiles } from '@/lib/voice/store'
-import { listSamples } from '@/lib/voice/samples'
 import { listComposeHistory } from '@/lib/voice/history'
 import { hasReadyVoice } from '@/lib/voice/ready'
 import { isEmailVerified } from '@/lib/auth/verify'
 import { AppSidebar } from '@/components/app/AppSidebar'
 import { CreditsProvider } from '@/components/app/CreditsContext'
 import { TrialGate } from '@/components/app/TrialGate'
-import { VoiceOnboarding } from '@/components/app/VoiceOnboarding'
 import { VerifyEmail } from '@/components/app/VerifyEmail'
 import { isStaff } from '@/lib/appLock'
 import { resetIfDue } from '@/lib/credits'
@@ -30,32 +28,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // we emailed before anything else.
   if (!verified) return <VerifyEmail email={session.email} />
 
-  // Onboarding runs BEFORE payment for everyone: no usable voice yet → set it up first
-  // (name the voice + give it a source). It persists immediately, so a new user who then
-  // bails at the payment step doesn't have to redo it. New users go onboarding → payment
-  // (the gate below); existing in-window users go onboarding → straight into the app.
-  //
-  // Only /app/voices is exempt (picking a creator voice IS an onboarding path and needs the
-  // full library view). The onboarding takeover itself is rendered inline by this layout for
-  // EVERY other path while no voice is ready — including /app/onboarding, where the X-connect
-  // flow returns. NOT exempting /app/onboarding is deliberate: it keeps the user on the bare
-  // onboarding screen (no sidebar, no feature access, payment gate intact) until the voice +
-  // Style Guide are actually generated. Only then does hasReadyVoice flip and let them into
-  // the app and its subscription gate.
+  // Gating runs in this SERVER layout, so it must REDIRECT rather than render a takeover
+  // in place of {children}: a shared layout is NOT re-rendered on client navigation, so
+  // returning <Onboarding/> instead of {children} strands the user there — a <Link> (e.g.
+  // "Browse the voice library") changes the URL but has nowhere to render the new page.
+  // The onboarding screen therefore lives at its own route, /app/onboarding.
   const pathname = (await headers()).get('x-pathname') ?? ''
-  const gateExempt = pathname.startsWith('/app/voices')
-  if (!hasReadyVoice(voices) && !gateExempt) {
-    const draft = voices.find((v) => v.kind === 'own') ?? null
-    const samples = draft ? await listSamples(session.userId, draft.id) : []
-    const authorName = profile?.displayName?.trim() || session.email.split('@')[0]
-    return (
-      <VoiceOnboarding
-        profileId={draft?.id ?? null}
-        authorName={authorName}
-        initialSamples={samples.map((s) => ({ id: s.id, source: s.source, text: s.text }))}
-      />
-    )
-  }
+  const onOnboarding = pathname.startsWith('/app/onboarding')
+  const onVoices = pathname.startsWith('/app/voices')
+
+  // No usable voice yet → onboarding first, for everyone, BEFORE payment. /app/voices
+  // (the creator-voice path) stays reachable so a user can pick a voice instead.
+  if (!hasReadyVoice(voices) && !onOnboarding && !onVoices) redirect('/app/onboarding')
+
+  // Onboarding is a full-screen takeover: render its page WITHOUT the app shell, so there's
+  // no sidebar and no way into features until the voice + Style Guide actually exist. Sits
+  // before the payment gate — onboarding always comes first.
+  if (onOnboarding) return <>{children}</>
 
   const unlimited = isStaff(session.email)
 
@@ -72,7 +61,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Gate everyone else who is on the free plan: brand-new users (pick a plan + add a
   // card to start the Polar trial) and existing users whose card-free window ended
   // (subscribe — charged immediately since they already used their trial window).
-  if (!unlimited && !gateExempt && (profile?.plan ?? 'free') === 'free' && !inCardFreeWindow) {
+  if (!unlimited && !onVoices && (profile?.plan ?? 'free') === 'free' && !inCardFreeWindow) {
     return (
       <TrialGate
         name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]}
