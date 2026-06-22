@@ -33,8 +33,11 @@ export async function POST(req: Request) {
   const successUrl = `${origin}/api/billing/success?checkout_id={CHECKOUT_ID}`
 
   // A customer can only trial once — repeat checkouts skip the trial and charge now.
+  // skipTrial lets the user explicitly start their subscription immediately (e.g. the
+  // "Start a subscription" button on Billing), bypassing any remaining free trial.
+  const skipTrial = (body as { skipTrial?: unknown }).skipTrial === true
   const profile = await getProfile(session.userId)
-  const allowTrial = !profile?.trialUsed
+  const allowTrial = !profile?.trialUsed && !skipTrial
 
   try {
     const { url } = await createCheckout({

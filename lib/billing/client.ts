@@ -3,11 +3,12 @@
 export async function startCheckout(
   plan: 'pro' | 'starter',
   period: 'monthly' | 'annual' = 'monthly',
+  opts?: { skipTrial?: boolean },
 ): Promise<void> {
   const res = await fetch('/api/billing/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plan, period }),
+    body: JSON.stringify({ plan, period, skipTrial: opts?.skipTrial === true }),
   })
   if (res.status === 401) {
     window.location.href = '/signup'

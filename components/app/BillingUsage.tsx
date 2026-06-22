@@ -128,16 +128,20 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
   )
 }
 
-function BillingTab({ plan, hasBilling }: { plan: string; hasBilling: boolean }) {
+function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: boolean; hasBilling: boolean }) {
   const meta = PLAN_META[plan] ?? PLAN_META.free
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  async function upgrade(target: 'starter' | 'pro') {
+  // A card-free trial window (trialing, no Polar subscription yet) → offer to start a
+  // real subscription now, skipping the rest of the free trial (billed today).
+  const canStartNow = trialing && !hasBilling
+
+  async function upgrade(target: 'starter' | 'pro', skipTrial = false) {
     setError('')
-    setBusy(target)
+    setBusy(skipTrial ? `now-${target}` : target)
     try {
-      await startCheckout(target, 'monthly')
+      await startCheckout(target, 'monthly', { skipTrial })
     } catch (e) {
       setError((e as Error).message || "Couldn't open checkout.")
       setBusy(null)
@@ -160,6 +164,32 @@ function BillingTab({ plan, hasBilling }: { plan: string; hasBilling: boolean })
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Start a subscription now — skip the rest of a card-free trial window. */}
+      {canStartNow && (
+        <div className="rounded-2xl border border-cyber-lime/30 bg-cyber-lime/5 p-5">
+          <span className="font-code-label text-code-label uppercase text-cyber-lime">Free trial active</span>
+          <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
+            Don’t want to wait? Start a subscription now to skip the rest of your free trial — you’ll be billed
+            today and your full plan credits unlock right away.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(['starter', 'pro'] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => upgrade(p, true)}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+              >
+                {busy === `now-${p}` ? <Spinner size={14} /> : null}
+                Start {PLAN_META[p].name} · ${PLAN_META[p].price}/mo
+              </button>
+            ))}
+          </div>
+          {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
+        </div>
+      )}
+
       {/* Current plan */}
       <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <span className="font-code-label text-code-label uppercase text-on-surface-variant">Current plan</span>
@@ -169,7 +199,9 @@ function BillingTab({ plan, hasBilling }: { plan: string; hasBilling: boolean })
             {meta.price > 0 ? `$${meta.price}/mo` : 'no card'} · {fmtCredits(meta.allowance)} credits/mo
           </span>
         </div>
-        {upgrades.length > 0 && (
+        {/* Hide the plain upgrade buttons while the "start now" box is shown — they'd be
+            the same two plans, just without the skip-trial framing. */}
+        {upgrades.length > 0 && !canStartNow && (
           <div className="mt-4 flex flex-wrap gap-2">
             {upgrades.map((p) => (
               <button
@@ -185,7 +217,7 @@ function BillingTab({ plan, hasBilling }: { plan: string; hasBilling: boolean })
             ))}
           </div>
         )}
-        {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
+        {error && !canStartNow && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
 
       {/* Payment method, invoices, change/cancel — all via the Polar customer portal. */}
@@ -226,7 +258,7 @@ export function BillingUsage({ plan, trialing, hasBilling }: { plan: string; tri
         <button type="button" className={pill(tab === 'usage')} onClick={() => setTab('usage')}>Usage</button>
         <button type="button" className={pill(tab === 'billing')} onClick={() => setTab('billing')}>Billing</button>
       </div>
-      {tab === 'usage' ? <UsageTab trialing={trialing} plan={plan} /> : <BillingTab plan={plan} hasBilling={hasBilling} />}
+      {tab === 'usage' ? <UsageTab trialing={trialing} plan={plan} /> : <BillingTab plan={plan} trialing={trialing} hasBilling={hasBilling} />}
     </div>
   )
 }
