@@ -302,8 +302,9 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
               <button
                 type="button"
                 onClick={onGenerate}
-                disabled={genBusy || enabledCount === 0}
-                className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                disabled={genBusy || enabledCount === 0 || !stale}
+                title={!stale ? 'Add or change a writing sample first — nothing new to learn from yet' : undefined}
+                className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {genBusy ? <><Spinner size={16} /> Analyzing…</> : 'Regenerate'}
               </button>
