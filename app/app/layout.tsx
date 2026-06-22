@@ -34,10 +34,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // (name the voice + give it a source). It persists immediately, so a new user who then
   // bails at the payment step doesn't have to redo it. New users go onboarding → payment
   // (the gate below); existing in-window users go onboarding → straight into the app.
-  // Exempt /app/voices (picking a creator voice IS an onboarding path) and /app/onboarding
-  // from BOTH gates — onboarding (incl. the creator-voice path) happens before payment.
+  //
+  // Only /app/voices is exempt (picking a creator voice IS an onboarding path and needs the
+  // full library view). The onboarding takeover itself is rendered inline by this layout for
+  // EVERY other path while no voice is ready — including /app/onboarding, where the X-connect
+  // flow returns. NOT exempting /app/onboarding is deliberate: it keeps the user on the bare
+  // onboarding screen (no sidebar, no feature access, payment gate intact) until the voice +
+  // Style Guide are actually generated. Only then does hasReadyVoice flip and let them into
+  // the app and its subscription gate.
   const pathname = (await headers()).get('x-pathname') ?? ''
-  const gateExempt = pathname.startsWith('/app/voices') || pathname.startsWith('/app/onboarding')
+  const gateExempt = pathname.startsWith('/app/voices')
   if (!hasReadyVoice(voices) && !gateExempt) {
     const draft = voices.find((v) => v.kind === 'own') ?? null
     const samples = draft ? await listSamples(session.userId, draft.id) : []
