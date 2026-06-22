@@ -28,6 +28,10 @@ export function VoiceOnboarding({
   const router = useRouter()
   const [profileId, setProfileId] = useState(initialProfileId)
   const [samples, setSamples] = useState<Sample[]>(initialSamples)
+  // Step 1 = name the voice (pre-filled with the account name, editable, required).
+  // Step 2 = give it a source. A returning in-progress draft skips straight to step 2.
+  const [step, setStep] = useState<1 | 2>(initialProfileId ? 2 : 1)
+  const [voiceName, setVoiceName] = useState(authorName)
   const [mode, setMode] = useState<'paste' | 'url'>('paste')
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
@@ -48,14 +52,30 @@ export function VoiceOnboarding({
       .catch(() => setXStatus({ connected: false }))
   }, [])
 
-  /** Lazily create the own-voice draft the first time a sample is added. Name it
-   *  after the author: their X handle if connected, else their profile name. */
+  /** Create the own-voice draft with the user-chosen name. Called when finishing step 1
+   *  (so the name persists even if they drop off later), or lazily if a sample is added
+   *  before a profile exists. */
   async function ensureProfile(): Promise<string> {
     if (profileId) return profileId
-    const name = xStatus?.username ? `@${xStatus.username}` : authorName || 'My voice'
+    const name = voiceName.trim() || authorName || 'My voice'
     const { profile } = await createOwnVoice(name)
     setProfileId(profile.id)
     return profile.id
+  }
+
+  // Step 1 → step 2: lock in the name by creating the draft now (persists it).
+  async function onNameContinue() {
+    if (!voiceName.trim() || busy) return
+    setError('')
+    setBusy(true)
+    try {
+      await ensureProfile()
+      setStep(2)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save the name. Try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function addText(source: 'paste' | 'upload', text: string) {
@@ -150,6 +170,40 @@ export function VoiceOnboarding({
     }
   }
 
+  // ── Step 1: name the voice (pre-filled, editable, required) ──
+  if (step === 1) {
+    return (
+      <div className="mx-auto max-w-md">
+        <h1 className="mb-2 font-headline-xl text-headline-xl">Name your voice</h1>
+        <p className="mb-6 font-body-md text-body-md text-on-surface-variant">
+          This is how it shows up in your library. We pre-filled your name — keep it or change it.
+        </p>
+        <input
+          value={voiceName}
+          onChange={(e) => setVoiceName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') onNameContinue() }}
+          placeholder="e.g. Aliya"
+          autoFocus
+          className="w-full rounded-xl border border-border-muted bg-surface-container-lowest p-4 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none"
+        />
+        {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
+        <button
+          type="button"
+          onClick={onNameContinue}
+          disabled={!voiceName.trim() || busy}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? <><Spinner size={18} /> Saving…</> : 'Continue'}
+        </button>
+        <p className="mt-5 text-center font-body-sm text-body-sm text-on-surface-variant">
+          Want to write in a creator’s voice instead?{' '}
+          <Link href="/app/voices" className="text-electric-indigo hover:underline">Browse the voice library</Link>
+        </p>
+      </div>
+    )
+  }
+
+  // ── Step 2: give the voice a source (connect X / paste / URL / upload) ──
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-2 font-headline-xl text-headline-xl">Set up your voice</h1>
