@@ -32,7 +32,7 @@ function dayLabel(date: string): string {
 }
 
 const PLAN_META: Record<string, { name: string; price: number; allowance: number }> = {
-  free: { name: 'Free trial', price: 0, allowance: PLAN_ALLOWANCE.free },
+  free: { name: 'Free', price: 0, allowance: 0 },
   starter: { name: 'Starter', price: STARTER_PRICE, allowance: PLAN_ALLOWANCE.starter },
   pro: { name: 'Pro', price: PRO_PRICE, allowance: PLAN_ALLOWANCE.pro },
 }

@@ -27,7 +27,7 @@ describe('credit config', () => {
 
   it('uses the locked plan allowances', () => {
     expect(PLAN_ALLOWANCE).toMatchObject({ free: 10_000, starter: 200_000, pro: 600_000 })
-    expect(SIGNUP_GRANT).toBe(10_000)
+    expect(SIGNUP_GRANT).toBe(0) // no free signup credits — only via card-backed trial / paid plan
   })
 
   it('planAllowance falls back to the free pool for unknown plans', () => {

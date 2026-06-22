@@ -215,6 +215,33 @@ export async function grantPlan(userId: string, plan: string): Promise<void> {
  *  user picked for the trial. Called once at trial start (subscription.created +
  *  status 'trialing'). At conversion, order.paid → grantPlan replaces this with the
  *  full plan allowance (leftover trial credits vanish, per spec §4). */
+/** Zero a user's PLAN credits — used when a trial is revoked / a subscription ends
+ *  without payment. Purchased top-up credits are left untouched (separate bucket). */
+export async function zeroPlanCredits(userId: string): Promise<void> {
+  await ensureSchema()
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const { rows } = await client.query<{ credit_balance: number; topup_balance: number }>(
+      'SELECT credit_balance, topup_balance FROM profiles WHERE user_id = $1 FOR UPDATE',
+      [userId],
+    )
+    if (rows.length === 0 || rows[0].credit_balance <= 0) {
+      await client.query('ROLLBACK')
+      return
+    }
+    const prev = rows[0].credit_balance
+    await client.query('UPDATE profiles SET credit_balance = 0, credits_reset_at = NULL, updated_at = now() WHERE user_id = $1', [userId])
+    await ledger(client, userId, -prev, 'reset', rows[0].topup_balance, null, { revoked: true, previous: prev })
+    await client.query('COMMIT')
+  } catch (err) {
+    try { await client.query('ROLLBACK') } catch {}
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
 export async function grantTrialPool(userId: string): Promise<void> {
   await ensureSchema()
   const amount = PLAN_ALLOWANCE.free
@@ -242,11 +269,11 @@ export async function grantTrialPool(userId: string): Promise<void> {
 }
 
 /**
- * Lazy monthly/weekly reset for FREE accounts: when `credits_reset_at` has passed
- * (or is unset), set the balance to the free allowance, stamp the next reset
- * `FREE_RESET_DAYS` out, and log a 'reset' row. Paid plans reset via Polar renewal,
- * so this is a no-op for them. Returns the new balance if a reset happened, else null.
- * Serialized with a row lock so concurrent requests reset at most once.
+ * Free accounts never auto-refill. This only EXPIRES stale plan credits on a free
+ * account to 0 (e.g. a revoked/ended trial that left a balance) — it never grants
+ * credits. Paid/trial plans (plan != 'free') are a no-op here; their credits come from
+ * Polar (grantPlan on payment, grantTrialPool on trial start). Returns 0 if it expired
+ * a balance, else null. Serialized with a row lock.
  */
 export async function resetIfDue(userId: string): Promise<number | null> {
   await ensureSchema()
@@ -258,31 +285,24 @@ export async function resetIfDue(userId: string): Promise<number | null> {
       [userId],
     )
     const r = rows[0]
-    if (!r || r.plan !== 'free') {
+    // Free accounts NEVER auto-refill — they hold 0 plan credits. Credits only come
+    // from a card-backed trial or a paid plan (both set plan != 'free'). If a revoked
+    // or expired trial left a stale plan balance on a now-free account, expire it to 0.
+    if (!r || r.plan !== 'free' || r.credit_balance <= 0) {
       await client.query('ROLLBACK')
       return null
     }
-    const now = new Date()
-    if (r.credits_reset_at && now < r.credits_reset_at) {
-      await client.query('ROLLBACK')
-      return null
-    }
-    // Flat reset to the allowance: any leftover (including purchased top-up credits)
-    // is wiped on cycle reset, per the monetization decision that top-ups burn when
-    // the plan refreshes. Mirrors grantPlan's flat reset on paid renewal.
-    const allowance = planAllowance('free')
-    const next = new Date(now.getTime() + FREE_RESET_DAYS * 86_400_000)
     await client.query(
-      'UPDATE profiles SET credit_balance = $2, credits_reset_at = $3, updated_at = now() WHERE user_id = $1',
-      [userId, allowance, next],
+      'UPDATE profiles SET credit_balance = 0, credits_reset_at = NULL, updated_at = now() WHERE user_id = $1',
+      [userId],
     )
-    await ledger(client, userId, allowance - r.credit_balance, 'reset', allowance, null, {
+    await ledger(client, userId, -r.credit_balance, 'reset', 0, null, {
       plan: 'free',
-      periodDays: FREE_RESET_DAYS,
+      expired: true,
       previous: r.credit_balance,
     })
     await client.query('COMMIT')
-    return allowance
+    return 0
   } catch (err) {
     try { await client.query('ROLLBACK') } catch {}
     throw err

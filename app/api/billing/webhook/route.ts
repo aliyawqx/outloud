@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
 import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
-import { addCredits, grantPlan, grantTrialPool, packByProductId } from '@/lib/credits'
+import { addCredits, grantPlan, grantTrialPool, zeroPlanCredits, packByProductId } from '@/lib/credits'
 
 // POST /api/billing/webhook — Polar's durable activation path (Standard Webhooks).
 // Verifies the signature, then flips the user's plan on subscribe / cancel. Set
@@ -102,10 +102,13 @@ export async function POST(req: Request) {
         await setPolarRefs(userId, { customerId, subscriptionId: (data.id as string) ?? undefined, periodEnd })
       }
     } else if (type === 'subscription.revoked') {
+      // Trial ended without converting, or a cancelled plan's access ended → drop to
+      // the free plan with ZERO credits (purchased top-ups are kept).
       const userId = await resolveUserId(data)
       if (userId) {
         await setPlan(userId, 'free')
         await setTrialing(userId, false)
+        await zeroPlanCredits(userId)
         await setPolarRefs(userId, { subscriptionId: null }) // keep customer id for the portal
       }
     }

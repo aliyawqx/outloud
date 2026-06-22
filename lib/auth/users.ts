@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
 import { hashPassword } from './password'
-import { FREE_RESET_DAYS, SIGNUP_GRANT } from '@/lib/credits'
 
 export type AuthUser = { id: string; email: string }
 
@@ -30,16 +29,11 @@ export async function createUser(input: {
       input.email,
       hash,
     ])
-    // Free allowance + when it next auto-resets (FREE_RESET_DAYS out).
-    const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
+    // No starting credits: a new account begins at 0. Credits are only granted when
+    // the user starts a card-backed trial (10k pool) or pays for a plan.
     await client.query(
-      'INSERT INTO profiles (user_id, display_name, email, credit_balance, credits_reset_at) VALUES ($1, $2, $3, $4, $5)',
-      [id, input.displayName, input.email, SIGNUP_GRANT, resetAt],
-    )
-    // Audit the free starting grant.
-    await client.query(
-      'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
-      [randomUUID(), id, SIGNUP_GRANT, 'grant', SIGNUP_GRANT, JSON.stringify({ signup: true })],
+      'INSERT INTO profiles (user_id, display_name, email, credit_balance, credits_reset_at) VALUES ($1, $2, $3, 0, NULL)',
+      [id, input.displayName, input.email],
     )
     await client.query('COMMIT')
     return { id, email: input.email }

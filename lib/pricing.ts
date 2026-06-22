@@ -22,9 +22,6 @@ export const ANNUAL_BADGE = '7 days free'
 
 export const PRICING_NOTE = 'Pricing is for launch and may change.'
 
-// Everyone starts on a 7-day free trial capped at this many drafts.
-export const TRIAL_DRAFTS = 5
-
 // Prices shown in the UI. Checkout itself goes through Polar via
 // /api/billing/checkout (see lib/billing). Pro is the default upsell.
 export const PRO_PRICE = 30
@@ -40,8 +37,8 @@ export const PLANS: Plan[] = [
     monthly: { perMo: 0, sub: '7 days free' },
     annual: { perMo: 0, sub: '7 days free', save: '' },
     features: [
-      '7 days free, no card needed',
-      `${TRIAL_DRAFTS} drafts to start`,
+      '7 days free, card required',
+      '10,000 credits to start',
       'Posts in your voice across X, LinkedIn & Telegram',
       'Voice capture from your existing posts',
       'X Reply engine included',
