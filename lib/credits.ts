@@ -269,11 +269,11 @@ export async function grantTrialPool(userId: string): Promise<void> {
 }
 
 /**
- * Free accounts never auto-refill. This NEVER grants credits — it only EXPIRES:
- *  1. A COMPED trial (trialing, but no Polar subscription) whose `credits_reset_at`
- *     has passed → end it: drop to the free plan with 0 credits. (Real trials have a
- *     Polar subscription and are ended by Polar webhooks, never here.)
- *  2. A free account that still holds stale plan credits → zero them.
+ * Never grants credits — it only EXPIRES:
+ *  1. A card-free trial (trialing, no Polar subscription): kept while within the 7-day
+ *     window, then ended → free plan with 0 credits. (Real Polar trials have a
+ *     subscription id and are ended by webhooks, never here.)
+ *  2. A non-trial free account holding stale plan credits → zero them (no auto-refill).
  * Returns 0 if it expired a balance, else null. Serialized with a row lock.
  */
 export async function resetIfDue(userId: string): Promise<number | null> {
@@ -293,21 +293,27 @@ export async function resetIfDue(userId: string): Promise<number | null> {
       return null
     }
     const now = new Date()
-    const compTrial = r.trialing && !r.polar_subscription_id // comped trial: no Polar to bill/end it
-    const compTrialExpired = compTrial && r.credits_reset_at != null && now >= r.credits_reset_at
+    // A card-free trial = `trialing` with no Polar subscription (real Polar trials have
+    // a subscription id and are ended by webhooks, never here).
+    const cardFreeTrial = r.trialing && !r.polar_subscription_id
 
-    if (compTrialExpired) {
-      // 7-day comped trial elapsed with no card → end it: free plan, 0 credits.
+    if (cardFreeTrial) {
+      // Still within the 7-day window → keep the trial credits as-is.
+      if (r.credits_reset_at == null || now < r.credits_reset_at) {
+        await client.query('ROLLBACK')
+        return null
+      }
+      // Window elapsed → end the trial: free plan, 0 credits (must pick a paid plan).
       await client.query(
         "UPDATE profiles SET plan = 'free', trialing = false, credit_balance = 0, credits_reset_at = NULL, updated_at = now() WHERE user_id = $1",
         [userId],
       )
-      await ledger(client, userId, -r.credit_balance, 'reset', r.topup_balance, null, { compTrialExpired: true, previous: r.credit_balance })
+      await ledger(client, userId, -r.credit_balance, 'reset', r.topup_balance, null, { trialExpired: true, previous: r.credit_balance })
       await client.query('COMMIT')
       return 0
     }
 
-    // Free account holding stale plan credits → zero (never refill).
+    // Not a trial: a free account never auto-refills. Zero any stale plan credits.
     if (r.plan === 'free' && r.credit_balance > 0) {
       await client.query(
         'UPDATE profiles SET credit_balance = 0, credits_reset_at = NULL, updated_at = now() WHERE user_id = $1',

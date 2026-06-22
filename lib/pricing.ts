@@ -37,7 +37,7 @@ export const PLANS: Plan[] = [
     monthly: { perMo: 0, sub: '7 days free' },
     annual: { perMo: 0, sub: '7 days free', save: '' },
     features: [
-      '7 days free, card required',
+      '7 days free, no card needed',
       '10,000 credits to start',
       'Posts in your voice across X, LinkedIn & Telegram',
       'Voice capture from your existing posts',

@@ -6,7 +6,6 @@ import { listComposeHistory } from '@/lib/voice/history'
 import { isEmailVerified } from '@/lib/auth/verify'
 import { AppSidebar } from '@/components/app/AppSidebar'
 import { CreditsProvider } from '@/components/app/CreditsContext'
-import { TrialGate } from '@/components/app/TrialGate'
 import { VerifyEmail } from '@/components/app/VerifyEmail'
 import { isStaff } from '@/lib/appLock'
 import { resetIfDue } from '@/lib/credits'
@@ -26,26 +25,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // we emailed before anything else.
   if (!verified) return <VerifyEmail email={session.email} />
 
-  // Trial gate (TRIAL_GATE flag): after registration, BEFORE voice capture, a
-  // not-yet-subscribed user adds a card to start the 7-day trial. Staff skip it;
-  // anyone already on a plan (incl. in-trial) is past it. Off by default so it
-  // never blocks existing free users until Polar trials are configured.
-  if (process.env.TRIAL_GATE === '1' && !isStaff(session.email) && (profile?.plan ?? 'free') === 'free') {
-    return (
-      <TrialGate
-        name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]}
-        trialUsed={Boolean(profile?.trialUsed)}
-      />
-    )
-  }
-
-  // Live credit balance for the header. Run the lazy free-allowance reset so a
-  // returning free user sees a refilled balance immediately (no-op for paid/staff).
+  // No card wall up front: everyone gets a 7-day card-free trial on signup. When it
+  // expires, resetIfDue zeroes the credits and the user hits the upgrade paywall on
+  // their next action (paid plans charge immediately via Polar).
   const unlimited = isStaff(session.email)
   const topup = profile?.topupBalance ?? 0
-  let creditBalance = (profile?.creditBalance ?? 0) + topup // plan + persistent top-up
+  let creditBalance = (profile?.creditBalance ?? 0) + topup // plan/trial + persistent top-up
   if (!unlimited) {
-    const reset = await resetIfDue(session.userId) // returns the new plan balance (top-up untouched)
+    const reset = await resetIfDue(session.userId) // expires the trial when due (top-up untouched)
     if (reset != null) creditBalance = reset + topup
   }
 

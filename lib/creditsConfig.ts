@@ -31,8 +31,8 @@ export const PLAN_ALLOWANCE: Record<string, number> = {
  *  credits; paid plans reset on their Polar billing renewal. */
 export const FREE_RESET_DAYS = 7
 
-/** Credits a brand-new account starts with. ZERO — credits only come from a card-backed
- *  trial or a paid plan, never from signup. */
+/** Deprecated/unused: the starting balance is set directly in createUser as the 7-day
+ *  card-free trial pool (PLAN_ALLOWANCE.free). Kept at 0 for back-compat. */
 export const SIGNUP_GRANT = 0
 
 export function planAllowance(plan: string): number {
