@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -18,7 +19,7 @@ import { EmptyState } from './EmptyState'
 
 type Tab = 'library' | 'mine'
 
-export function VoiceStudio() {
+export function VoiceStudio({ onboarding = false }: { onboarding?: boolean }) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('library')
   const [profiles, setProfiles] = useState<VoiceProfile[]>([])
@@ -77,6 +78,13 @@ export function VoiceStudio() {
       setSelectedIds([])
       setWeights({})
       setName('')
+      // During onboarding this voice is now ready → straight into the app. Otherwise
+      // (managing voices) stay here and show the saved voice in "My voices".
+      if (onboarding) {
+        router.push('/app')
+        router.refresh()
+        return
+      }
       await refresh()
       setTab('mine')
     } catch (e) {
@@ -130,6 +138,17 @@ export function VoiceStudio() {
 
   return (
     <>
+      {/* During onboarding, a clear way back to the setup screen. */}
+      {onboarding && (
+        <Link
+          href="/app/onboarding"
+          className="reveal mb-5 inline-flex items-center gap-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Back to setup
+        </Link>
+      )}
+
       {/* tabs */}
       <div className="reveal mb-8 flex flex-wrap items-center gap-3">
         <div className="inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">

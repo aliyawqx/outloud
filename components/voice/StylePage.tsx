@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import {
@@ -16,7 +17,8 @@ const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 
 type AddMode = null | 'paste' | 'url'
 
-export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; initialSamples: WritingSample[] }) {
+export function StylePage({ profile, initialSamples, onboarding = false }: { profile: VoiceProfile; initialSamples: WritingSample[]; onboarding?: boolean }) {
+  const router = useRouter()
   const [samples, setSamples] = useState<WritingSample[]>(initialSamples)
   const [guide, setGuide] = useState(profile.styleGuide)
   const [summary, setSummary] = useState(profile.styleSummary)
@@ -127,6 +129,12 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
     setGenBusy(true)
     try {
       const { profile: updated } = await generateStyleGuide(profile.id)
+      // First-time generation during onboarding makes this voice ready → into the app.
+      if (onboarding) {
+        router.push('/app')
+        router.refresh()
+        return
+      }
       setGuide(updated.styleGuide)
       setSummary(updated.styleSummary)
       setStale(false)
@@ -153,11 +161,18 @@ export function StylePage({ profile, initialSamples }: { profile: VoiceProfile; 
 
   return (
     <div className="mx-auto max-w-4xl">
-      {/* breadcrumb + title */}
+      {/* breadcrumb + title — during onboarding the root returns to setup, not the library */}
       <div className="mb-1 flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
-        <Link href="/app/voices" className="hover:text-on-surface">
-          Voices
-        </Link>
+        {onboarding ? (
+          <Link href="/app/onboarding" className="inline-flex items-center gap-1 hover:text-on-surface">
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
+            Back to setup
+          </Link>
+        ) : (
+          <Link href="/app/voices" className="hover:text-on-surface">
+            Voices
+          </Link>
+        )}
         <span aria-hidden="true">›</span>
         <span className="text-on-surface">{profile.name}</span>
       </div>

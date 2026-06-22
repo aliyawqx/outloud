@@ -1,9 +1,18 @@
+import { getSession } from '@/lib/auth/session'
+import { listProfiles } from '@/lib/voice/store'
+import { hasReadyVoice } from '@/lib/voice/ready'
 import { VoiceStudio } from '@/components/voice/VoiceStudio'
 import { ScrollReveal } from '@/components/ScrollReveal'
 
 export const metadata = { title: 'Outloud | Voices' }
 
-export default function VoicesPage() {
+export default async function VoicesPage() {
+  const session = await getSession()
+  // No ready voice yet → the user is here as part of onboarding (via "Browse the voice
+  // library"). In that mode the studio offers a way back to setup, and finishing a voice
+  // sends them into the app.
+  const onboarding = session ? !hasReadyVoice(await listProfiles(session.userId)) : false
+
   return (
     <div className="mx-auto max-w-container-max">
       <div className="mb-8">
@@ -16,7 +25,7 @@ export default function VoicesPage() {
           only — your posts stay about your ideas, in your blended style.
         </p>
       </div>
-      <VoiceStudio />
+      <VoiceStudio onboarding={onboarding} />
       <ScrollReveal />
     </div>
   )
