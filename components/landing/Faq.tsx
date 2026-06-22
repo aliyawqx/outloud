@@ -21,6 +21,10 @@ const FAQS = [
     a: 'Yes. Alongside your own captured voice, you can pick from a library of creator voices and generate posts in that style.',
   },
   {
+    q: 'Will I get shadowbanned?',
+    a: 'No. Outloud doesn’t auto-post, spam, or mass-reply — you publish each draft yourself, one at a time, in your own voice. Because posts read like you (not generic AI), they look exactly like normal human activity to the platform.',
+  },
+  {
     q: 'What happens after the free trial?',
     a: 'You get 7 days free to capture your voice and start posting. After that, pick a plan to keep going — cancel anytime.',
   },
