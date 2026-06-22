@@ -129,6 +129,7 @@ function DraftCard({
   threadsConnected,
   onInsufficient,
   onImagesChange,
+  onTextChange,
 }: {
   draft: DraftPost
   index: number
@@ -136,9 +137,16 @@ function DraftCard({
   threadsConnected: boolean
   onInsufficient: () => void
   onImagesChange?: (imgs: DraftImage[]) => void
+  onTextChange?: (text: string) => void
 }) {
   const [text, setText] = useState(draft.fullText)
   const [editing, setEditing] = useState(false)
+
+  // Finishing an edit ("Done" or blurring the textarea) persists the new text to the
+  // saved chat so it survives a reload — without this, a reload restores the original.
+  function finishEdit() {
+    if (text !== draft.fullText) onTextChange?.(text)
+  }
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
   // One optional image per draft (AI / stock / upload), attached client-side and
@@ -217,7 +225,7 @@ function DraftCard({
           Draft {index + 1}
         </span>
         <div className="flex items-center gap-3">
-          <button onClick={() => setEditing((e) => !e)} aria-pressed={editing} className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant hover:text-on-surface">
+          <button onClick={() => { if (editing) finishEdit(); setEditing((e) => !e) }} aria-pressed={editing} className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant hover:text-on-surface">
             <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{editing ? 'check' : 'edit'}</span>
             {editing ? 'Done' : 'Edit'}
           </button>
@@ -231,6 +239,7 @@ function DraftCard({
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onBlur={finishEdit}
           className="h-56 w-full resize-none rounded-xl border border-border-muted bg-surface-container-lowest p-4 font-body-md leading-relaxed text-on-surface focus:border-electric-indigo focus:outline-none"
         />
       ) : (
@@ -689,6 +698,29 @@ export function ComposeHome({
     }
   }
 
+  // Persist an edited draft's text the same way: set it on the matching draft in `turns`
+  // (so a later re-save keeps it) and save to history (so it survives a reload).
+  function persistDraftText(draftIndex: number, fullText: string) {
+    setTurns((prev) => {
+      let n = 0
+      return prev.map((t) => {
+        if ('draft' in t) {
+          const here = n === draftIndex
+          n++
+          if (here) return { ...t, draft: { ...t.draft, fullText } }
+        }
+        return t
+      })
+    })
+    if (historyId) {
+      fetch('/api/voice/history/text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ historyId, draftIndex, fullText }),
+      }).catch(() => {})
+    }
+  }
+
   let draftN = 0
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-3xl flex-col">
@@ -696,7 +728,7 @@ export function ComposeHome({
         {turns.map((t) => {
           if ('draft' in t) {
             const di = draftN++
-            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} onImagesChange={(imgs) => persistDraftImages(di, imgs)} />
+            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} onImagesChange={(imgs) => persistDraftImages(di, imgs)} onTextChange={(txt) => persistDraftText(di, txt)} />
           }
           if (t.role === 'user') {
             return (
