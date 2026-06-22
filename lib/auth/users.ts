@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
 import { hashPassword } from './password'
+import { isCompTrialEmail } from '@/lib/appLock'
+import { PLAN_ALLOWANCE, FREE_RESET_DAYS } from '@/lib/creditsConfig'
 
 export type AuthUser = { id: string; email: string }
 
@@ -29,12 +31,28 @@ export async function createUser(input: {
       input.email,
       hash,
     ])
-    // No starting credits: a new account begins at 0. Credits are only granted when
-    // the user starts a card-backed trial (10k pool) or pays for a plan.
-    await client.query(
-      'INSERT INTO profiles (user_id, display_name, email, credit_balance, credits_reset_at) VALUES ($1, $2, $3, 0, NULL)',
-      [id, input.displayName, input.email],
-    )
+    if (isCompTrialEmail(input.email)) {
+      // Comped trial (allowlist): start a 7-day trial with the 10k pool, NO card.
+      // plan='pro' so the trial gate is passed; trialing flags it like a real trial.
+      const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
+      const pool = PLAN_ALLOWANCE.free
+      await client.query(
+        `INSERT INTO profiles (user_id, display_name, email, plan, trialing, trial_used, credit_balance, credits_reset_at)
+         VALUES ($1, $2, $3, 'pro', true, true, $4, $5)`,
+        [id, input.displayName, input.email, pool, resetAt],
+      )
+      await client.query(
+        'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
+        [randomUUID(), id, pool, 'grant', pool, JSON.stringify({ compTrial: true })],
+      )
+    } else {
+      // No starting credits: a new account begins at 0. Credits are only granted when
+      // the user starts a card-backed trial (10k pool) or pays for a plan.
+      await client.query(
+        'INSERT INTO profiles (user_id, display_name, email, credit_balance, credits_reset_at) VALUES ($1, $2, $3, 0, NULL)',
+        [id, input.displayName, input.email],
+      )
+    }
     await client.query('COMMIT')
     return { id, email: input.email }
   } catch (err) {
