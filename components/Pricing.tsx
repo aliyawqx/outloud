@@ -14,7 +14,7 @@ const PLAN_CREDITS: Record<string, number> = {
   pro: PLAN_ALLOWANCE.pro,
 }
 
-function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
+export function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
   const pill = (active: boolean) =>
     `rounded-full px-5 py-1.5 font-code-label text-code-label transition-colors ${
       active ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
@@ -36,7 +36,7 @@ function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode
   )
 }
 
-function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
+export function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
   const annual = mode === 'annual'
   const price = annual ? plan.annual.perMo : plan.monthly.perMo
   const sub = annual ? plan.annual.sub : plan.monthly.sub
