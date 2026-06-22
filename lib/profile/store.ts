@@ -18,6 +18,8 @@ export type Profile = {
   /** Polar customer id — powers the customer-portal link. Null until first checkout. */
   polarCustomerId: string | null
   polarSubscriptionId: string | null
+  /** When the current credits cycle/trial window ends (ISO). Null when not applicable. */
+  creditsResetAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -35,6 +37,7 @@ type Row = {
   trial_used: boolean
   polar_customer_id: string | null
   polar_subscription_id: string | null
+  credits_reset_at: Date | null
   created_at: Date
   updated_at: Date
 }
@@ -53,6 +56,7 @@ function mapRow(r: Row): Profile {
     trialUsed: r.trial_used ?? false,
     polarCustomerId: r.polar_customer_id ?? null,
     polarSubscriptionId: r.polar_subscription_id ?? null,
+    creditsResetAt: r.credits_reset_at ? r.credits_reset_at.toISOString() : null,
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
   }

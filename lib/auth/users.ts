@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
 import { hashPassword } from './password'
+import { isCardFreeTrialEmail } from '@/lib/appLock'
 import { PLAN_ALLOWANCE, FREE_RESET_DAYS } from '@/lib/creditsConfig'
 
 export type AuthUser = { id: string; email: string }
@@ -30,20 +31,29 @@ export async function createUser(input: {
       input.email,
       hash,
     ])
-    // Everyone starts on a 7-day free trial — NO card. 10k pool now, and `trialing`
-    // (with no Polar subscription) makes resetIfDue expire it to 0 after 7 days, at
-    // which point the user must pick a paid plan (charged immediately via Polar).
-    const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
-    const pool = PLAN_ALLOWANCE.free
-    await client.query(
-      `INSERT INTO profiles (user_id, display_name, email, trialing, trial_used, credit_balance, credits_reset_at)
-       VALUES ($1, $2, $3, true, true, $4, $5)`,
-      [id, input.displayName, input.email, pool, resetAt],
-    )
-    await client.query(
-      'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
-      [randomUUID(), id, pool, 'grant', pool, JSON.stringify({ trial: true })],
-    )
+    if (isCardFreeTrialEmail(input.email)) {
+      // EXISTING-user treatment: a 7-day card-free window with 10k credits, NO Polar.
+      // trialing + no subscription → resetIfDue expires it to 0 after 7 days, then the
+      // user must subscribe (charged immediately, since trial_used=true).
+      const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
+      const pool = PLAN_ALLOWANCE.free
+      await client.query(
+        `INSERT INTO profiles (user_id, display_name, email, trialing, trial_used, credit_balance, credits_reset_at)
+         VALUES ($1, $2, $3, true, true, $4, $5)`,
+        [id, input.displayName, input.email, pool, resetAt],
+      )
+      await client.query(
+        'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
+        [randomUUID(), id, pool, 'grant', pool, JSON.stringify({ cardFreeWindow: true })],
+      )
+    } else {
+      // NEW user: start at 0 on the free plan → the trial gate makes them pick a plan +
+      // add a card to start the Polar 7-day trial (then auto-bills on day 7).
+      await client.query(
+        'INSERT INTO profiles (user_id, display_name, email, credit_balance, credits_reset_at) VALUES ($1, $2, $3, 0, NULL)',
+        [id, input.displayName, input.email],
+      )
+    }
     await client.query('COMMIT')
     return { id, email: input.email }
   } catch (err) {

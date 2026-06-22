@@ -6,6 +6,7 @@ import { listComposeHistory } from '@/lib/voice/history'
 import { isEmailVerified } from '@/lib/auth/verify'
 import { AppSidebar } from '@/components/app/AppSidebar'
 import { CreditsProvider } from '@/components/app/CreditsContext'
+import { TrialGate } from '@/components/app/TrialGate'
 import { VerifyEmail } from '@/components/app/VerifyEmail'
 import { isStaff } from '@/lib/appLock'
 import { resetIfDue } from '@/lib/credits'
@@ -25,14 +26,36 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // we emailed before anything else.
   if (!verified) return <VerifyEmail email={session.email} />
 
-  // No card wall up front: everyone gets a 7-day card-free trial on signup. When it
-  // expires, resetIfDue zeroes the credits and the user hits the upgrade paywall on
-  // their next action (paid plans charge immediately via Polar).
   const unlimited = isStaff(session.email)
+
+  // Active card-free window = existing-user grant: trialing, NO Polar subscription,
+  // still has credits, and within its 7-day window. Those users skip the gate.
+  const inCardFreeWindow = Boolean(
+    profile?.trialing &&
+      !profile?.polarSubscriptionId &&
+      (profile?.creditBalance ?? 0) > 0 &&
+      profile?.creditsResetAt &&
+      new Date(profile.creditsResetAt).getTime() > Date.now(),
+  )
+
+  // Gate everyone else who is on the free plan: brand-new users (pick a plan + add a
+  // card to start the Polar trial) and existing users whose card-free window ended
+  // (subscribe — charged immediately since they already used their trial window).
+  if (!unlimited && (profile?.plan ?? 'free') === 'free' && !inCardFreeWindow) {
+    return (
+      <TrialGate
+        name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]}
+        trialUsed={Boolean(profile?.trialUsed)}
+      />
+    )
+  }
+
+  // Live credit balance for the header; expire a card-free window that has run its
+  // course (no-op for paid/staff and for windows still in progress).
   const topup = profile?.topupBalance ?? 0
   let creditBalance = (profile?.creditBalance ?? 0) + topup // plan/trial + persistent top-up
   if (!unlimited) {
-    const reset = await resetIfDue(session.userId) // expires the trial when due (top-up untouched)
+    const reset = await resetIfDue(session.userId)
     if (reset != null) creditBalance = reset + topup
   }
 
