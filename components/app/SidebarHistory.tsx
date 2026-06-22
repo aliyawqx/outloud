@@ -139,7 +139,7 @@ export function SidebarHistory({ initial, onNavigate }: { initial: SidebarHistor
                         menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`}
                     >
-                      <span aria-hidden="true" className="block text-[16px] leading-none">⋮</span>
+                      <span aria-hidden="true" className="material-symbols-outlined block text-[18px] leading-none">more_vert</span>
                     </button>
                   </div>
                 )}
@@ -156,7 +156,7 @@ export function SidebarHistory({ initial, onNavigate }: { initial: SidebarHistor
                       onClick={() => startRename(item)}
                       className="flex w-full items-center gap-2 px-3 py-1.5 text-left font-body-sm text-body-sm text-on-surface-variant transition-colors hover:bg-white/[0.06] hover:text-on-surface"
                     >
-                      ✏️ Rename
+                      <span aria-hidden="true" className="material-symbols-outlined text-[16px]">edit</span> Rename
                     </button>
                     <button
                       type="button"
@@ -164,7 +164,7 @@ export function SidebarHistory({ initial, onNavigate }: { initial: SidebarHistor
                       onClick={() => remove(item.id)}
                       className="flex w-full items-center gap-2 px-3 py-1.5 text-left font-body-sm text-body-sm text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error"
                     >
-                      🗑️ Delete
+                      <span aria-hidden="true" className="material-symbols-outlined text-[16px]">delete</span> Delete
                     </button>
                   </div>
                 )}

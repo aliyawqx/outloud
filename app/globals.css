@@ -19,6 +19,17 @@ body {
   overflow-x: clip;
 }
 
+/* Clickable affordance app-wide: native buttons default to an arrow cursor, which
+   reads as "not interactive". Give every enabled button / role=button / summary a
+   pointer. Disabled controls keep the default cursor. */
+@layer base {
+  button:not(:disabled):not([aria-disabled='true']),
+  [role='button']:not([aria-disabled='true']),
+  summary {
+    cursor: pointer;
+  }
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;

@@ -16,10 +16,10 @@ export type SidebarProfile = {
 
 type NavItem = { href: string; label: string; icon: string; badge?: number; soon?: boolean }
 
+// Secondary navigation. The two creation actions (New post / New reply) are
+// promoted out of this list into prominent buttons at the top of the sidebar.
 function navItems(voiceCount: number): NavItem[] {
   return [
-    { href: '/app', label: 'New post', icon: 'edit_square' },
-    { href: '/app/reply', label: 'New reply', icon: 'reply' },
     { href: '/app/voices', label: 'Voices', icon: 'graphic_eq', badge: voiceCount },
     { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks' },
     { href: '/app/knowledge', label: 'Knowledge', icon: 'menu_book', soon: true },
@@ -52,6 +52,35 @@ export function AppSidebar({
     router.push('/')
     router.refresh()
   }
+
+  // The two core creation actions, promoted to prominent buttons. "New post" is the
+  // hero action (always filled); "New reply" is secondary (tinted when active).
+  const create = (
+    <div className="flex flex-col gap-2 px-3 pb-3">
+      <Link
+        href="/app"
+        onClick={() => setOpen(false)}
+        aria-current={isActive('/app') ? 'page' : undefined}
+        className="flex items-center gap-2 rounded-xl bg-electric-indigo px-3 py-2.5 font-body-md text-body-md font-bold text-white transition-colors hover:bg-primary-container"
+      >
+        <span aria-hidden="true" className="material-symbols-outlined text-[20px]">edit_square</span>
+        New post
+      </Link>
+      <Link
+        href="/app/reply"
+        onClick={() => setOpen(false)}
+        aria-current={isActive('/app/reply') ? 'page' : undefined}
+        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 font-body-md text-body-md transition-colors ${
+          isActive('/app/reply')
+            ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface'
+            : 'border-border-muted text-on-surface-variant hover:border-electric-indigo/60 hover:text-on-surface'
+        }`}
+      >
+        <span aria-hidden="true" className="material-symbols-outlined text-[20px]">reply</span>
+        New reply
+      </Link>
+    </div>
+  )
 
   const nav = (
     <nav className="flex flex-col gap-1 px-3" aria-label="Primary">
@@ -163,6 +192,7 @@ export function AppSidebar({
             <div className="px-5 pb-4">
               <Logo />
             </div>
+            {create}
             {nav}
             <SidebarHistory initial={history} onNavigate={() => setOpen(false)} />
             {footer}
@@ -177,6 +207,7 @@ export function AppSidebar({
             <Logo />
           </Link>
         </div>
+        {create}
         {nav}
         <SidebarHistory initial={history} />
         {footer}

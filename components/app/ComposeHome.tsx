@@ -735,9 +735,9 @@ export function ComposeHome({
                     type="button"
                     onClick={() => taRef.current?.focus()}
                     disabled={loading}
-                    className="rounded-xl border border-dashed border-border-muted px-4 py-2.5 text-left font-body-md text-on-surface-variant transition-colors hover:border-on-surface-variant hover:text-on-surface disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-xl border border-dashed border-border-muted px-4 py-2.5 text-left font-body-md text-on-surface-variant transition-colors hover:border-on-surface-variant hover:text-on-surface disabled:opacity-50"
                   >
-                    ✏️ Write your own
+                    <span aria-hidden="true" className="material-symbols-outlined text-[18px]">edit</span> Write your own
                   </button>
                 </div>
               )}
