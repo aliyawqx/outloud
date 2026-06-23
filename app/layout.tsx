@@ -8,9 +8,22 @@ const jetbrains = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500'], v
 const hanken = Hanken_Grotesk({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-hanken' })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tryoutloud.app'),
   title: 'Outloud AI | Turn Ships into Posts',
   description:
     'Outloud captures your voice and turns code updates and build-in-public logs into high-signal X posts and witty replies — not generic AI slop.',
+  openGraph: {
+    title: 'Outloud — post in your own voice',
+    description: 'An AI copilot that writes your posts in your real voice, not generic AI slop.',
+    url: 'https://tryoutloud.app',
+    images: ['https://tryoutloud.app/og-image.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Outloud — post in your own voice',
+    description: 'An AI copilot that writes your posts in your real voice, not generic AI slop.',
+    images: ['https://tryoutloud.app/og-image.png'],
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
