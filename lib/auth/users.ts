@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
 import { hashPassword } from './password'
-import { isCardFreeTrialEmail } from '@/lib/appLock'
 import { PLAN_ALLOWANCE, FREE_RESET_DAYS } from '@/lib/creditsConfig'
 
 export type AuthUser = { id: string; email: string }
@@ -31,29 +30,21 @@ export async function createUser(input: {
       input.email,
       hash,
     ])
-    if (isCardFreeTrialEmail(input.email)) {
-      // EXISTING-user treatment: a 7-day card-free window with 10k credits, NO Polar.
-      // trialing + no subscription → resetIfDue expires it to 0 after 7 days, then the
-      // user must subscribe (charged immediately, since trial_used=true).
-      const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
-      const pool = PLAN_ALLOWANCE.free
-      await client.query(
-        `INSERT INTO profiles (user_id, display_name, email, trialing, trial_used, credit_balance, credits_reset_at)
-         VALUES ($1, $2, $3, true, true, $4, $5)`,
-        [id, input.displayName, input.email, pool, resetAt],
-      )
-      await client.query(
-        'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
-        [randomUUID(), id, pool, 'grant', pool, JSON.stringify({ cardFreeWindow: true })],
-      )
-    } else {
-      // NEW user: start at 0 on the free plan → the trial gate makes them pick a plan +
-      // add a card to start the Polar 7-day trial (then auto-bills on day 7).
-      await client.query(
-        'INSERT INTO profiles (user_id, display_name, email, credit_balance, credits_reset_at) VALUES ($1, $2, $3, 0, NULL)',
-        [id, input.displayName, input.email],
-      )
-    }
+    // Every new account starts on a card-free trial: a 3-day window with 10k credits and
+    // NO Polar / no card capture. `trialing` + no subscription id → resetIfDue ends it
+    // when the window elapses; spending the 10k also ends it (balance hits 0). Either way
+    // the user is then asked to pick a paid plan (charged immediately, since trial_used).
+    const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
+    const pool = PLAN_ALLOWANCE.free
+    await client.query(
+      `INSERT INTO profiles (user_id, display_name, email, trialing, trial_used, credit_balance, credits_reset_at)
+       VALUES ($1, $2, $3, true, true, $4, $5)`,
+      [id, input.displayName, input.email, pool, resetAt],
+    )
+    await client.query(
+      'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
+      [randomUUID(), id, pool, 'grant', pool, JSON.stringify({ cardFreeWindow: true })],
+    )
     await client.query('COMMIT')
     return { id, email: input.email }
   } catch (err) {

@@ -26,7 +26,7 @@ const FAQS = [
   },
   {
     q: 'What happens after the free trial?',
-    a: 'You get 7 days free to capture your voice and start posting. After that, pick a plan to keep going — cancel anytime.',
+    a: 'You get 3 days free — no card needed — to capture your voice and start posting, with 10,000 credits to use. After that (or once your credits run out), pick a plan to keep going — cancel anytime.',
   },
 ]
 

@@ -18,20 +18,21 @@ export const COST_PER_LINK_SEARCH = 5_000 // fetch one link's context → draft 
 export const COST_PER_GOOGLE_PHOTO = COST_PER_PHOTO_SEARCH
 
 /** Credit allowance per plan. On reset the balance is set to this (NOT stacked).
- *  `free` is the size of the 7-day TRIAL pool (10k) — granted ONLY when a user starts
- *  a card-backed trial, never on signup and never auto-refilled. A plain free account
- *  always has 0 credits. */
+ *  `free` is the size of the card-free TRIAL pool (10k) — granted to every new account
+ *  at signup (no card). It is NOT auto-refilled: once spent, or once the trial window
+ *  ends, the user must pick a paid plan. */
 export const PLAN_ALLOWANCE: Record<string, number> = {
   free: 10_000,
   starter: 200_000, // $15/mo
   pro: 600_000, // $30/mo
 }
 
-/** Length of the card-backed free trial (Polar). NOTE: free accounts do NOT auto-reset
- *  credits; paid plans reset on their Polar billing renewal. */
-export const FREE_RESET_DAYS = 7
+/** Length of the card-free trial window granted at signup (days). The trial ends on
+ *  whichever comes first: the 10k credits run out, or this window elapses. Free accounts
+ *  do NOT auto-reset credits; paid plans reset on their Polar billing renewal. */
+export const FREE_RESET_DAYS = 3
 
-/** Deprecated/unused: the starting balance is set directly in createUser as the 7-day
+/** Deprecated/unused: the starting balance is set directly in createUser as the
  *  card-free trial pool (PLAN_ALLOWANCE.free). Kept at 0 for back-compat. */
 export const SIGNUP_GRANT = 0
 

@@ -270,7 +270,7 @@ export async function grantTrialPool(userId: string): Promise<void> {
 
 /**
  * Never grants credits — it only EXPIRES:
- *  1. A card-free trial (trialing, no Polar subscription): kept while within the 7-day
+ *  1. A card-free trial (trialing, no Polar subscription): kept while within the 3-day
  *     window, then ended → free plan with 0 credits. (Real Polar trials have a
  *     subscription id and are ended by webhooks, never here.)
  *  2. A non-trial free account holding stale plan credits → zero them (no auto-refill).
@@ -298,7 +298,7 @@ export async function resetIfDue(userId: string): Promise<number | null> {
     const cardFreeTrial = r.trialing && !r.polar_subscription_id
 
     if (cardFreeTrial) {
-      // Still within the 7-day window → keep the trial credits as-is.
+      // Still within the 3-day window → keep the trial credits as-is.
       if (r.credits_reset_at == null || now < r.credits_reset_at) {
         await client.query('ROLLBACK')
         return null

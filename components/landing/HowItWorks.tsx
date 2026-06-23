@@ -32,13 +32,33 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section id="how" className="mx-auto max-w-container-max px-margin-mobile py-20 md:px-margin-desktop">
-      <div className="reveal mx-auto mb-14 max-w-2xl text-center">
+      <div className="reveal mx-auto mb-10 max-w-2xl text-center">
         <div className="mb-3 font-code-label text-code-label text-cyber-lime">// HOW IT WORKS</div>
-        <h2 className="mb-3 font-headline-lg text-headline-lg">From zero to on-voice in three steps.</h2>
+        <h2 className="mb-3 font-headline-lg text-headline-lg">Watch Outloud capture a voice.</h2>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Set up your voice once. Every post and reply after that sounds like you.
+          See voice capture in action — then it’s three steps from zero to on-voice.
         </p>
       </div>
+
+      {/* Demo slot: responsive 16:9 frame, poster fallback, lazy (preload="none" defers
+          the video until play). Swap the placeholder asset paths under /public/demo. */}
+      <figure className="reveal mx-auto mb-14 w-full max-w-3xl">
+        <div className="relative aspect-video overflow-hidden rounded-3xl border border-border-muted bg-surface-container-low shadow-2xl shadow-electric-indigo/10">
+          <video
+            className="h-full w-full object-cover"
+            controls
+            playsInline
+            preload="none"
+            poster="/demo/voice-capture-poster.jpg"
+          >
+            <source src="/demo/voice-capture.mp4" type="video/mp4" />
+            Your browser doesn’t support embedded video.
+          </video>
+        </div>
+        <figcaption className="mt-3 text-center font-code-label text-code-label text-on-surface-variant/60">
+          ~30s — capturing a voice from a few existing posts.
+        </figcaption>
+      </figure>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {STEPS.map((s, i) => (

@@ -36,7 +36,9 @@ export async function GET(req: Request) {
           await setTrialing(userId, false)
           await grantPlan(userId, plan)
         } else {
-          // No charge → 7-day trial started: 10k pool + trial flags.
+          // No charge → a Polar trial started: 10k pool + trial flags. (Dead path now
+          // that signup grants the card-free trial and checkout always charges, but kept
+          // as a safe backstop in case a $0 trial product is ever used again.)
           await markTrialStarted(userId)
           await grantTrialPool(userId)
         }

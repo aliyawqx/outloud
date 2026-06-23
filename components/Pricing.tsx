@@ -91,7 +91,7 @@ export function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
           </div>
           <ul className="mt-6 space-y-3 border-t border-border-muted pt-6">
             {plan.features.map((f) => (
-              <li key={f} className="flex items-start gap-3 font-body-sm text-body-sm text-on-surface">
+              <li key={f} className="flex items-start gap-3 text-left font-body-sm text-body-sm text-on-surface">
                 <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
                 {f}
               </li>
@@ -101,7 +101,7 @@ export function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
       ) : (
         <ul className="my-8 flex-1 space-y-3">
           {plan.features.map((f) => (
-            <li key={f} className="flex items-start gap-3 font-body-sm text-body-sm text-on-surface">
+            <li key={f} className="flex items-start gap-3 text-left font-body-sm text-body-sm text-on-surface">
               <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
               {f}
             </li>

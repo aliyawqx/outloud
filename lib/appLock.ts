@@ -10,9 +10,9 @@ export function isStaff(email: string | null | undefined): boolean {
   return STAFF_EMAILS.includes(email.trim().toLowerCase())
 }
 
-/** Emails treated as EXISTING users: on signup they get a 7-day card-free window
- *  (10k credits, no Polar) instead of the card-required new-user trial gate. Add
- *  lowercase emails here, or via the CARD_FREE_TRIAL_EMAILS env (comma-separated). */
+/** DEPRECATED: every new account now gets the card-free trial by default (see
+ *  createUser), so this list no longer changes signup behavior. Kept only so any
+ *  external references / env config don't break. */
 export const CARD_FREE_TRIAL_EMAILS = ['suthomemon061@gmail.com']
 
 export function isCardFreeTrialEmail(email: string | null | undefined): boolean {

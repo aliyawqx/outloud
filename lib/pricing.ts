@@ -7,7 +7,7 @@ export type Plan = {
   name: string
   tagline: string
   highlight?: boolean
-  /** Free trial tier: rendered as "Free / 7 days" and ignores the billing toggle. */
+  /** Free trial tier: rendered as "Free / 3 days" and ignores the billing toggle. */
   trial?: boolean
   badge?: string
   monthly: { perMo: number; sub: string }
@@ -18,7 +18,7 @@ export type Plan = {
   href?: string
 }
 
-export const ANNUAL_BADGE = '7 days free'
+export const ANNUAL_BADGE = '3 days free'
 
 export const PRICING_NOTE = 'Pricing is for launch and may change.'
 
@@ -33,11 +33,11 @@ export const PLANS: Plan[] = [
     name: 'Free trial',
     tagline: 'try Outloud in your own voice',
     trial: true,
-    badge: '7 days free',
-    monthly: { perMo: 0, sub: '7 days free' },
-    annual: { perMo: 0, sub: '7 days free', save: '' },
+    badge: '3 days free',
+    monthly: { perMo: 0, sub: '3 days free' },
+    annual: { perMo: 0, sub: '3 days free', save: '' },
     features: [
-      '7 days free, no card needed',
+      '3 days free, no card needed',
       '10,000 credits to start',
       'Posts in your voice across X, LinkedIn & Telegram',
       'Voice capture from your existing posts',

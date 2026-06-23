@@ -48,8 +48,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const unlimited = isStaff(session.email)
 
-  // Active card-free window = existing-user grant: trialing, NO Polar subscription,
-  // still has credits, and within its 7-day window. Those users skip the gate.
+  // Active card-free trial = the signup grant: trialing, NO Polar subscription, still has
+  // credits, and within its 3-day window. These users draft freely and skip the gate.
+  // The trial ends on whichever comes first — credits hit 0, or the window elapses — and
+  // either condition flips this false, so the "keep going" gate below appears.
   const inCardFreeWindow = Boolean(
     profile?.trialing &&
       !profile?.polarSubscriptionId &&
@@ -58,9 +60,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       new Date(profile.creditsResetAt).getTime() > Date.now(),
   )
 
-  // Gate everyone else who is on the free plan: brand-new users (pick a plan + add a
-  // card to start the Polar trial) and existing users whose card-free window ended
-  // (subscribe — charged immediately since they already used their trial window).
+  // Gate only once the free trial is truly done: a free-plan user with no active trial
+  // (window ended or 10k spent) and no subscription → pick a plan to keep going (billed
+  // immediately, since they've already used their card-free trial). Paid plans never hit
+  // this; an in-trial user with credits never hits this.
   if (!unlimited && !onVoices && (profile?.plan ?? 'free') === 'free' && !inCardFreeWindow) {
     return (
       <TrialGate
