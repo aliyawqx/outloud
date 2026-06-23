@@ -32,6 +32,11 @@ export const PLAN_ALLOWANCE: Record<string, number> = {
  *  do NOT auto-reset credits; paid plans reset on their Polar billing renewal. */
 export const FREE_RESET_DAYS = 3
 
+/** Guaranteed first experience: every user can draft at least this many posts before any
+ *  paywall can appear — even at 0 credits / expired window. A hard safety net so no one
+ *  hits the card prompt before trying the core feature, regardless of credit accounting. */
+export const FREE_DRAFT_FLOOR = 3
+
 /** Deprecated/unused: the starting balance is set directly in createUser as the
  *  card-free trial pool (PLAN_ALLOWANCE.free). Kept at 0 for back-compat. */
 export const SIGNUP_GRANT = 0

@@ -12,6 +12,7 @@ import {
   COST_UPLOAD_PHOTO,
   PLAN_ALLOWANCE,
   FREE_RESET_DAYS,
+  FREE_DRAFT_FLOOR,
   SIGNUP_GRANT,
   planAllowance,
   CREDIT_PACKS,
@@ -33,6 +34,7 @@ export {
   COST_UPLOAD_PHOTO,
   PLAN_ALLOWANCE,
   FREE_RESET_DAYS,
+  FREE_DRAFT_FLOOR,
   SIGNUP_GRANT,
   planAllowance,
   CREDIT_PACKS,
@@ -57,6 +59,69 @@ export async function getBalance(userId: string): Promise<number> {
     [userId],
   )
   return rows[0]?.total ?? 0
+}
+
+/**
+ * How many post drafts this user has actually produced — the counter behind the
+ * FREE_DRAFT_FLOOR safety net. Counts 'post' ledger rows that were NOT refunded
+ * (a clarifying-question turn is charged then refunded, so it must not count), plus
+ * floor freebies (amount 0). Cheap COUNT; called on the gate + before charging.
+ */
+export async function countDraftsMade(userId: string): Promise<number> {
+  await ensureSchema()
+  const { rows } = await getPool().query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM credit_ledger l
+      WHERE l.user_id = $1 AND l.reason = 'post'
+        AND NOT EXISTS (
+          SELECT 1 FROM credit_ledger r
+           WHERE r.reason = 'refund' AND r.metadata->>'refundOf' = l.id
+        )`,
+    [userId],
+  )
+  return rows[0]?.n ?? 0
+}
+
+/** Log a draft made under the FREE_DRAFT_FLOOR safety net: a 0-credit 'post' ledger row
+ *  (so it counts toward the floor and shows in the breakdown), no balance change. Used
+ *  when a user is out of credits but still within their guaranteed first drafts. */
+export async function grantFreeDraft(userId: string): Promise<void> {
+  await ensureSchema()
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const { rows } = await client.query<{ total: number }>(
+      'SELECT (credit_balance + topup_balance) AS total FROM profiles WHERE user_id = $1',
+      [userId],
+    )
+    const balanceAfter = rows[0]?.total ?? 0
+    await ledger(client, userId, 0, 'post', balanceAfter, null, { floor: true, freeDraft: true })
+    await client.query('COMMIT')
+  } catch (err) {
+    try { await client.query('ROLLBACK') } catch {}
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
+export type LedgerEntry = { id: string; createdAt: string; reason: CreditReason; amount: number; metadata: Record<string, unknown> }
+
+/** Recent ledger entries (newest first) for the usage breakdown. Raw per-entry audit:
+ *  timestamp, action (reason + metadata), and credits delta. */
+export async function getLedger(userId: string, limit = 50): Promise<LedgerEntry[]> {
+  await ensureSchema()
+  const { rows } = await getPool().query<{ id: string; created_at: Date; reason: CreditReason; amount: number; metadata: Record<string, unknown> | null }>(
+    `SELECT id, created_at, reason, amount, metadata FROM credit_ledger
+      WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
+    [userId, limit],
+  )
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.created_at.toISOString(),
+    reason: r.reason,
+    amount: r.amount,
+    metadata: r.metadata ?? {},
+  }))
 }
 
 /** Append an audit row. `balanceAfter` is the resulting balance; `refId` ties the

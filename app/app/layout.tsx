@@ -11,7 +11,7 @@ import { CreditsProvider } from '@/components/app/CreditsContext'
 import { TrialGate } from '@/components/app/TrialGate'
 import { VerifyEmail } from '@/components/app/VerifyEmail'
 import { isStaff } from '@/lib/appLock'
-import { resetIfDue } from '@/lib/credits'
+import { resetIfDue, countDraftsMade, FREE_DRAFT_FLOOR } from '@/lib/credits'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -64,7 +64,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // (window ended or 10k spent) and no subscription → pick a plan to keep going (billed
   // immediately, since they've already used their card-free trial). Paid plans never hit
   // this; an in-trial user with credits never hits this.
-  if (!unlimited && !onVoices && (profile?.plan ?? 'free') === 'free' && !inCardFreeWindow) {
+  //
+  // Hard floor (P2): never wall a user who hasn't yet made their guaranteed first drafts —
+  // they must be able to reach the composer and experience drafting before any paywall,
+  // regardless of balance. countDraftsMade is only queried when a gate is otherwise due.
+  if (
+    !unlimited &&
+    !onVoices &&
+    (profile?.plan ?? 'free') === 'free' &&
+    !inCardFreeWindow &&
+    (await countDraftsMade(session.userId)) >= FREE_DRAFT_FLOOR
+  ) {
     return (
       <TrialGate
         name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]}

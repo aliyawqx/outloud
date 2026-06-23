@@ -9,6 +9,7 @@ import { isPaidPlan } from '@/lib/billing/plans'
 import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
 
 type Feature = { key: string; label: string; cost: number; count: number; total: number }
+type LedgerEntry = { id: string; createdAt: string; reason: string; amount: number; metadata: Record<string, unknown> }
 type Usage = {
   balance: number
   topupBalance: number
@@ -17,6 +18,42 @@ type Usage = {
   resetAt: string | null
   daily: { date: string; used: number }[]
   byFeature: Feature[]
+  ledger: LedgerEntry[]
+}
+
+// Human label for a ledger row, from its reason + metadata. Onboarding / voice capture
+// never appears here because it doesn't consume credits (it's infra, off the meter).
+function ledgerLabel(e: LedgerEntry): string {
+  const m = e.metadata ?? {}
+  switch (e.reason) {
+    case 'post':
+      return m.floor ? 'Post draft · free (trial floor)' : 'Post draft'
+    case 'reply':
+      return 'Reply'
+    case 'ai_image':
+      return 'AI image'
+    case 'photo_search':
+      return 'Photo search'
+    case 'search':
+      return 'Topic search'
+    case 'purchase':
+      return 'Credit top-up'
+    case 'refund':
+      return 'Refund (failed action)'
+    case 'reset':
+      return m.trialExpired ? 'Trial ended' : 'Credits reset'
+    case 'grant':
+      if (m.cardFreeWindow || m.trial) return 'Trial credits granted'
+      return 'Plan credits'
+    default:
+      return e.reason
+  }
+}
+
+function ledgerTime(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
 }
 
 const kEach = (cost: number) => `${fmtCredits(cost)} each`
@@ -111,6 +148,32 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Per-entry ledger: exactly where credits went, newest first. Onboarding / voice
+          capture is intentionally absent — it doesn't consume credits. */}
+      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+        <h2 className="mb-1 font-code-label text-code-label uppercase text-on-surface-variant">activity</h2>
+        <p className="mb-3 font-code-label text-code-label text-on-surface-variant/60">
+          Credits are only used for drafting. Onboarding &amp; voice capture are free.
+        </p>
+        {usage.ledger.length === 0 ? (
+          <p className="py-4 text-center font-body-sm text-body-sm text-on-surface-variant/60">No activity yet.</p>
+        ) : (
+          <div className="flex flex-col divide-y divide-border-muted">
+            {usage.ledger.map((e) => (
+              <div key={e.id} className="flex items-center justify-between gap-3 py-2.5 font-body-sm text-body-sm">
+                <span className="min-w-0">
+                  <span className="block truncate text-on-surface">{ledgerLabel(e)}</span>
+                  <span className="font-code-label text-code-label text-on-surface-variant/60">{ledgerTime(e.createdAt)}</span>
+                </span>
+                <span className={`shrink-0 tabular-nums ${e.amount > 0 ? 'text-cyber-lime' : e.amount < 0 ? 'text-on-surface' : 'text-on-surface-variant/60'}`}>
+                  {e.amount > 0 ? '+' : ''}{fmtCredits(e.amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Buy more credits — only on an active paid plan (not free, not in trial) */}

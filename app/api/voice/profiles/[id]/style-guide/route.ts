@@ -10,6 +10,11 @@ type Ctx = { params: Promise<{ id: string }> }
 const GUIDE_MAX = 20_000
 
 // POST /api/voice/profiles/:id/style-guide — (re)generate the guide from enabled samples.
+//
+// CREDIT POLICY (approach a): voice capture / onboarding is INFRA cost, NOT user-metered.
+// This route — and every onboarding step (X import, adding samples, building the profile)
+// — deliberately never calls deduct(). The 10k trial credits are reserved exclusively for
+// drafting (post/reply/image). Do NOT add a credit deduction here.
 export async function POST(_req: Request, { params }: Ctx) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })

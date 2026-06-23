@@ -4,7 +4,7 @@ import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import { isStaff } from '@/lib/appLock'
-import { deduct, refund, getBalance, resetIfDue, InsufficientCreditsError, COST_PER_POST } from '@/lib/credits'
+import { deduct, refund, getBalance, resetIfDue, countDraftsMade, grantFreeDraft, InsufficientCreditsError, COST_PER_POST, FREE_DRAFT_FLOOR } from '@/lib/credits'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { getPromptText } from '@/lib/prompts/store'
 import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
@@ -143,6 +143,9 @@ export async function POST(req: Request) {
       const send = (ev: ComposeEvent) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`))
       // The deduction's ledger id, so we can refund if generation fails (spec §5).
       let chargeLedgerId: string | undefined
+      // True when this draft is granted under the FREE_DRAFT_FLOOR safety net (out of
+      // credits but within the guaranteed first drafts) — logged only on success.
+      let freeDraft = false
       try {
         // Stage 1 — parse: interpret what the user actually wants (intake). Intake
         // may research a recent topic to sharpen its question → emits 'context'.
@@ -176,10 +179,18 @@ export async function POST(req: Request) {
             chargeLedgerId = charge.ledgerId
           } catch (e) {
             if (e instanceof InsufficientCreditsError) {
-              send({ type: 'error', error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance })
-              return
+              // Hard floor: guarantee the first FREE_DRAFT_FLOOR drafts even at 0 credits,
+              // so a user can always experience drafting before any paywall. Don't charge
+              // now; log a 0-credit floor draft only after a real draft is produced.
+              if ((await countDraftsMade(session.userId)) < FREE_DRAFT_FLOOR) {
+                freeDraft = true
+              } else {
+                send({ type: 'error', error: 'Not enough credits.', insufficientCredits: true, cost: e.cost, balance: e.balance })
+                return
+              }
+            } else {
+              throw e
             }
-            throw e
           }
         }
 
@@ -224,6 +235,9 @@ export async function POST(req: Request) {
           messages: fullTurns,
           historyId: priorHistoryId,
         })
+        // Floor draft (out of credits, within the guaranteed first drafts) → record it
+        // now that a real draft exists, so it counts toward the floor and shows in usage.
+        if (freeDraft) await grantFreeDraft(session.userId).catch(() => {})
         const creditsLeft = staff ? undefined : await getBalance(session.userId)
         send({ type: 'done', draft: drafts[0], voiceName: profile.name, historyId, creditsLeft })
       } catch (err) {
