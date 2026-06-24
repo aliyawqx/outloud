@@ -139,6 +139,7 @@ function DraftCard({
   onImagesChange?: (imgs: DraftImage[]) => void
   onTextChange?: (text: string) => void
 }) {
+  const router = useRouter()
   const [text, setText] = useState(draft.fullText)
   const [editing, setEditing] = useState(false)
 
@@ -319,6 +320,24 @@ function DraftCard({
           )
         })}
       </div>
+
+      {/* Post-publish nudge: each post should live in its own chat, so credits go to
+          drafting rather than carrying old context. Non-blocking. */}
+      {Object.values(results).some((r) => r?.url) && (
+        <div className="mt-3 flex flex-col gap-2 rounded-xl border border-electric-indigo/30 bg-electric-indigo/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            posted! start a new chat for your next post — keeps your credits on drafting, not old context.
+          </p>
+          <button
+            type="button"
+            onClick={() => { router.push('/app'); router.refresh() }}
+            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label font-bold text-white transition-colors hover:bg-primary-container active:scale-95 sm:self-auto"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">add</span>
+            New post
+          </button>
+        </div>
+      )}
     </div>
   )
 }

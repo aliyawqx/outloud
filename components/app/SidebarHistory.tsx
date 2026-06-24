@@ -91,7 +91,7 @@ export function SidebarHistory({ initial, onNavigate }: { initial: SidebarHistor
           .
         </p>
       ) : (
-        <ul className="-mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1 py-1">
+        <ul className="sidebar-scroll -mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1 py-1">
           {items.map((item) => {
             const active = item.id === activeId
             const editing = item.id === editingId

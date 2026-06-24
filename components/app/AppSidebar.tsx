@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
 import { useCredits } from '@/components/app/CreditsContext'
+import { Tooltip } from '@/components/ui/tooltip'
 import { fmtCredits } from '@/lib/creditsConfig'
 
 export type SidebarProfile = {
@@ -56,7 +57,7 @@ export function AppSidebar({
   // The two core creation actions, promoted to prominent buttons. "New post" is the
   // hero action (always filled); "New reply" is secondary (tinted when active).
   const create = (
-    <div className="flex flex-col gap-2 px-3 pb-3">
+    <div className="flex shrink-0 flex-col gap-2 px-3 pb-3">
       <Link
         href="/app"
         onClick={() => setOpen(false)}
@@ -83,7 +84,7 @@ export function AppSidebar({
   )
 
   const nav = (
-    <nav className="flex flex-col gap-1 px-3" aria-label="Primary">
+    <nav className="flex shrink-0 flex-col gap-1 px-3" aria-label="Primary">
       {items.map((it) => {
         const active = isActive(it.href)
         return (
@@ -118,7 +119,7 @@ export function AppSidebar({
   )
 
   const footer = (
-    <div className="flex flex-col gap-2 border-t border-border-muted p-3">
+    <div className="flex shrink-0 flex-col gap-2 border-t border-border-muted p-3">
       <Link
         href="/app/profile"
         onClick={() => setOpen(false)}
@@ -134,8 +135,15 @@ export function AppSidebar({
         )}
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-body-sm text-body-sm text-on-surface">{profile.displayName}</span>
-          <span className="truncate font-code-label text-code-label text-on-surface-variant">
-            {unlimited ? 'Unlimited' : `${fmtCredits(balance)} credits`} · <span className="capitalize">{profile.plan}</span>
+          <span className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant">
+            <span className="truncate">
+              {unlimited ? 'Unlimited' : `${fmtCredits(balance)} credits`} · <span className="capitalize">{profile.plan}</span>
+            </span>
+            {!unlimited && (
+              <Tooltip label="credits are spent per chat session. start a new chat for each post so they go to drafting, not old context.">
+                <span aria-hidden="true" className="material-symbols-outlined shrink-0 text-[14px] text-on-surface-variant/60">info</span>
+              </Tooltip>
+            )}
           </span>
         </span>
       </Link>
@@ -189,7 +197,7 @@ export function AppSidebar({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button aria-label="Close menu" onClick={() => setOpen(false)} className="absolute inset-0 bg-charcoal-black/70" />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col bg-surface border-r border-border-muted py-4">
-            <div className="px-5 pb-4">
+            <div className="shrink-0 px-5 pb-4">
               <Logo />
             </div>
             {create}
@@ -202,7 +210,7 @@ export function AppSidebar({
 
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border-muted bg-surface py-5 lg:flex">
-        <div className="px-5 pb-5">
+        <div className="shrink-0 px-5 pb-5">
           <Link href="/app">
             <Logo />
           </Link>
