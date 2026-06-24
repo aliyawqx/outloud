@@ -23,47 +23,34 @@ export const TOURS: Record<TourKey, TourStep[]> = {
   // Global first-login pass over the core loop.
   welcome: [
     {
-      route: '/app',
       title: 'welcome to outloud',
       description: 'it drafts posts + replies in your real voice — not generic ai. here’s the 30-second tour.',
     },
     {
-      route: '/app',
       element: '[data-tour="voice-picker"]',
       title: 'your voice',
       description: 'pick or capture a voice. this is what makes posts sound like you, not generic ai.',
       side: 'top',
     },
     {
-      route: '/app',
       element: '[data-tour="composer"]',
       title: 'compose',
       description: 'drop a rough idea here — outloud asks what it needs, then writes it in your voice.',
       side: 'top',
     },
     {
-      route: '/app',
       element: '[data-tour="new-post"]',
       title: 'one post = one chat',
       description: 'each post lives in its own chat. start a new chat for every post so credits go to drafting, not old context.',
       side: 'right',
     },
     {
-      // Navigates to the profile page and shows the card there — the rest of the app
-      // stays locked behind the overlay while the tour drives.
-      route: '/app/profile',
-      element: '[data-tour="connections"]',
-      title: 'connect & publish',
-      description: 'connect x / threads here — then you can publish any draft in a click.',
-      side: 'bottom',
-    },
-    {
-      // Back to the composer to finish at home base, ready to post.
-      route: '/app',
-      element: '[data-tour="composer"]',
-      title: 'you’re all set',
-      description: 'drop your first idea here and outloud writes it in your voice. enjoy 🎉',
-      side: 'top',
+      // We don't switch pages automatically — point at the profile button and let the
+      // user click it. When they do, this tour ends and the profile tour takes over.
+      element: '[data-tour="profile-nav"]',
+      title: 'connect your accounts',
+      description: 'click your profile here to connect x / threads — that’s how you publish.',
+      side: 'right',
     },
   ],
 
