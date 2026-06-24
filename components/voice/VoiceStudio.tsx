@@ -157,6 +157,7 @@ export function VoiceStudio({ onboarding = false }: { onboarding?: boolean }) {
         </div>
         <button
           type="button"
+          data-tour="capture-own"
           onClick={createOwn}
           className="inline-flex items-center gap-1.5 rounded-full border border-cyber-lime/40 bg-cyber-lime/10 px-4 py-2 font-code-label text-code-label text-cyber-lime transition-all hover:bg-cyber-lime/20"
         >
@@ -166,7 +167,10 @@ export function VoiceStudio({ onboarding = false }: { onboarding?: boolean }) {
 
       {tab === 'library' && (
         <div className="reveal grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_360px]" style={{ transitionDelay: '80ms' }}>
-          <VoiceLibrary selectedIds={selectedIds} onToggle={toggle} />
+          <div data-tour="voice-library">
+            <VoiceLibrary selectedIds={selectedIds} onToggle={toggle} />
+          </div>
+          <div data-tour="blend-save">
           <BlendPreview
             selectedIds={selectedIds}
             weights={weights}
@@ -181,6 +185,7 @@ export function VoiceStudio({ onboarding = false }: { onboarding?: boolean }) {
             saving={saving}
             error={saveError}
           />
+          </div>
         </div>
       )}
 

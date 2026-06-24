@@ -60,6 +60,7 @@ export function AppSidebar({
     <div className="flex shrink-0 flex-col gap-2 px-3 pb-3">
       <Link
         href="/app"
+        data-tour="new-post"
         onClick={() => setOpen(false)}
         aria-current={isActive('/app') ? 'page' : undefined}
         className="flex items-center gap-2 rounded-xl bg-electric-indigo px-3 py-2.5 font-body-md text-body-md font-bold text-white transition-colors hover:bg-primary-container"
@@ -84,7 +85,7 @@ export function AppSidebar({
   )
 
   const nav = (
-    <nav className="flex shrink-0 flex-col gap-1 px-3" aria-label="Primary">
+    <nav data-tour="nav" className="flex shrink-0 flex-col gap-1 px-3" aria-label="Primary">
       {items.map((it) => {
         const active = isActive(it.href)
         return (
@@ -122,6 +123,7 @@ export function AppSidebar({
     <div className="flex shrink-0 flex-col gap-2 border-t border-border-muted p-3">
       <Link
         href="/app/profile"
+        data-tour="profile-nav"
         onClick={() => setOpen(false)}
         className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-white/[0.04]"
       >

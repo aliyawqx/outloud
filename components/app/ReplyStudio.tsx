@@ -126,6 +126,7 @@ function VariantCard({ tweetId, initialText, platform }: { tweetId: string; init
         ) : (
           <button
             type="button"
+            data-tour="publish"
             onClick={postReply}
             disabled={posting || !text.trim()}
             className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
@@ -481,7 +482,7 @@ export function ReplyStudio({
           <button type="button" className={tab('discover', 'Discover')} onClick={() => setMode('discover')}>Discover by topic</button>
         </div>
         {voices.length > 0 && (
-          <label className="ml-auto flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
+          <label data-tour="voice-picker" className="ml-auto flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
             Voice
             <select
               value={voiceId}
@@ -500,7 +501,7 @@ export function ReplyStudio({
       {/* ── Mode A: paste a link ───────────────────────────────────── */}
       {mode === 'link' && (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div data-tour="reply-source" className="flex flex-col gap-2 sm:flex-row">
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -529,6 +530,7 @@ export function ReplyStudio({
               {target?.id !== fetched.id && (
                 <button
                   type="button"
+                  data-tour="reply-write"
                   onClick={() => openReply({ id: fetched.id, text: fetched.text, authorHandle: fetched.authorHandle, url: fetched.url })}
                   className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-5 py-2.5 font-bold text-white transition-all active:scale-95 disabled:opacity-50"
                 >

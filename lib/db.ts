@@ -52,6 +52,9 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trial_used BOOLEAN NOT NULL DEFAUL
 -- customer-portal link (payment method, invoices, cancel); subscription id for ops.
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS polar_customer_id TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS polar_subscription_id TEXT;
+-- Per-tour onboarding completion, e.g. {"welcome":true,"new_post":true,...}. Each
+-- key is one tour; absence/false = not yet shown. Reset keys to replay a tour.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_state JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE TABLE IF NOT EXISTS credit_ledger (
   id           TEXT PRIMARY KEY,

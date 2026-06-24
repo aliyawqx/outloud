@@ -66,6 +66,64 @@ body {
   background-color: rgba(168, 85, 247, 0.55);
 }
 
+/* Onboarding tour (driver.js) — dark theme with the #A855F7 purple accent. */
+.driver-popover.outloud-tour {
+  background: #15131c;
+  color: #e2e2e8;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+  max-width: 320px;
+}
+.driver-popover.outloud-tour .driver-popover-title {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+}
+.driver-popover.outloud-tour .driver-popover-description {
+  color: #c9c5dc;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.driver-popover.outloud-tour .driver-popover-progress-text {
+  color: #8b8a99;
+  font-size: 11px;
+}
+.driver-popover.outloud-tour .driver-popover-close-btn {
+  color: #8b8a99;
+}
+.driver-popover.outloud-tour .driver-popover-close-btn:hover {
+  color: #ffffff;
+}
+.driver-popover.outloud-tour .driver-popover-next-btn {
+  background: #a855f7;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 16px;
+  font-weight: 700;
+  text-shadow: none;
+}
+.driver-popover.outloud-tour .driver-popover-next-btn:hover {
+  background: #9333ea;
+}
+.driver-popover.outloud-tour .driver-popover-prev-btn {
+  background: transparent;
+  color: #c9c5dc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  text-shadow: none;
+}
+.driver-popover.outloud-tour .driver-popover-prev-btn:hover {
+  color: #ffffff;
+  border-color: rgba(168, 85, 247, 0.6);
+}
+.driver-popover.outloud-tour .driver-popover-arrow-side-left.driver-popover-arrow { border-left-color: #15131c; }
+.driver-popover.outloud-tour .driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: #15131c; }
+.driver-popover.outloud-tour .driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: #15131c; }
+.driver-popover.outloud-tour .driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: #15131c; }
+
 .glass-card,
 .glass-panel {
   background: rgba(30, 32, 38, 0.7);

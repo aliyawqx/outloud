@@ -9,6 +9,7 @@ import { isEmailVerified } from '@/lib/auth/verify'
 import { AppSidebar } from '@/components/app/AppSidebar'
 import { CreditsProvider } from '@/components/app/CreditsContext'
 import { TrialGate } from '@/components/app/TrialGate'
+import { TourController } from '@/components/app/onboarding/TourController'
 import { VerifyEmail } from '@/components/app/VerifyEmail'
 import { isStaff } from '@/lib/appLock'
 import { resetIfDue, countDraftsMade, FREE_DRAFT_FLOOR } from '@/lib/credits'
@@ -106,6 +107,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         />
         <main className="relative min-w-0 flex-1 px-margin-mobile py-8 md:px-10 lg:px-12">{children}</main>
       </div>
+      <TourController initialState={profile?.onboardingState ?? {}} />
     </CreditsProvider>
   )
 }

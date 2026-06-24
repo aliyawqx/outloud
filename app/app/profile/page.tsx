@@ -4,6 +4,7 @@ import { ProfileForm } from '@/components/app/ProfileForm'
 import { XConnection } from '@/components/app/XConnection'
 import { ThreadsConnection } from '@/components/app/ThreadsConnection'
 import { DeleteAccount } from '@/components/app/DeleteAccount'
+import { ReplayTours } from '@/components/app/onboarding/ReplayTours'
 
 export const metadata = { title: 'Outloud | Profile' }
 
@@ -19,19 +20,22 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     <div className="mx-auto max-w-xl">
       <h1 className="mb-1 font-headline-xl text-headline-xl">Your profile</h1>
       <p className="mb-8 font-body-md text-body-md text-on-surface-variant">{session.email}</p>
-      <ProfileForm
-        initial={{
-          displayName: profile?.displayName ?? '',
-          handle: profile?.handle ?? '',
-          avatarUrl: profile?.avatarUrl ?? '',
-          plan: profile?.plan ?? 'free',
-        }}
-      />
+      <div data-tour="account-settings">
+        <ProfileForm
+          initial={{
+            displayName: profile?.displayName ?? '',
+            handle: profile?.handle ?? '',
+            avatarUrl: profile?.avatarUrl ?? '',
+            plan: profile?.plan ?? 'free',
+          }}
+        />
+      </div>
 
-      <div className="mt-8 flex flex-col gap-4">
+      <div data-tour="connections" className="mt-8 flex flex-col gap-4">
         <XConnection flash={flash} />
         <ThreadsConnection flash={threadsFlash} />
       </div>
+      <ReplayTours />
       <DeleteAccount />
     </div>
   )

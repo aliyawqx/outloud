@@ -20,6 +20,8 @@ export type Profile = {
   polarSubscriptionId: string | null
   /** When the current credits cycle/trial window ends (ISO). Null when not applicable. */
   creditsResetAt: string | null
+  /** Per-tour onboarding completion, e.g. {welcome:true,new_post:true}. */
+  onboardingState: Record<string, boolean>
   createdAt: string
   updatedAt: string
 }
@@ -38,6 +40,7 @@ type Row = {
   polar_customer_id: string | null
   polar_subscription_id: string | null
   credits_reset_at: Date | null
+  onboarding_state: Record<string, boolean> | null
   created_at: Date
   updated_at: Date
 }
@@ -57,9 +60,33 @@ function mapRow(r: Row): Profile {
     polarCustomerId: r.polar_customer_id ?? null,
     polarSubscriptionId: r.polar_subscription_id ?? null,
     creditsResetAt: r.credits_reset_at ? r.credits_reset_at.toISOString() : null,
+    onboardingState: r.onboarding_state ?? {},
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
   }
+}
+
+/** Mark one onboarding tour complete (merges the key into the JSONB map). Passing
+ *  value=false (used by "replay tours") clears it so the tour fires again. */
+export async function setTourDone(userId: string, tour: string, value = true): Promise<void> {
+  await ensureSchema()
+  await getPool().query(
+    `UPDATE profiles SET onboarding_state = COALESCE(onboarding_state, '{}'::jsonb) || jsonb_build_object($2::text, $3::boolean),
+            updated_at = now() WHERE user_id = $1`,
+    [userId, tour, value],
+  )
+}
+
+/** Reset multiple tours at once (replay). Sets each provided key to false. */
+export async function resetTours(userId: string, tours: string[]): Promise<void> {
+  await ensureSchema()
+  if (tours.length === 0) return
+  const patch = Object.fromEntries(tours.map((t) => [t, false]))
+  await getPool().query(
+    `UPDATE profiles SET onboarding_state = COALESCE(onboarding_state, '{}'::jsonb) || $2::jsonb,
+            updated_at = now() WHERE user_id = $1`,
+    [userId, JSON.stringify(patch)],
+  )
 }
 
 /** Set the user's plan (e.g. after a Polar payment). */

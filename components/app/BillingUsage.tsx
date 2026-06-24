@@ -98,7 +98,7 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Balance header */}
-      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+      <div data-tour="credit-balance" className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <div className="font-headline-sm text-headline-sm text-on-surface">
           {fmtCredits(usage.cycleUsed)} / {fmtCredits(total)} credits used
           <span className="font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
@@ -152,7 +152,7 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
 
       {/* Per-entry ledger: exactly where credits went, newest first. Onboarding / voice
           capture is intentionally absent — it doesn't consume credits. */}
-      <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
+      <div data-tour="usage-history" className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <h2 className="mb-1 font-code-label text-code-label uppercase text-on-surface-variant">activity</h2>
         <p className="mb-3 font-code-label text-code-label text-on-surface-variant/60">
           Credits are only used for drafting. Onboarding &amp; voice capture are free.
@@ -177,7 +177,7 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
       </div>
 
       {/* Buy more credits — only on an active paid plan (not free, not in trial) */}
-      <div>
+      <div data-tour="plans-topups">
         <AddCredits
           eligible={isPaidPlan(plan) && !trialing}
           reason={

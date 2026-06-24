@@ -293,6 +293,7 @@ function DraftCard({
       <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
+          data-tour="publish"
           onClick={publish}
           disabled={publishing || !text.trim() || chosen.length === 0}
           className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
@@ -582,7 +583,7 @@ export function ComposeHome({
 
   const modeDropdown = commands.length > 0 && (
     <DropdownMenu>
-      <DropdownMenuTrigger className={triggerClass} aria-label="Mode">
+      <DropdownMenuTrigger data-tour="mode-picker" className={triggerClass} aria-label="Mode">
         <span className="material-symbols-outlined text-[16px] text-electric-indigo">category</span>
         {modeTitle}
         <span className="material-symbols-outlined text-[16px] opacity-50">expand_more</span>
@@ -605,7 +606,7 @@ export function ComposeHome({
   const currentVoiceName = voices.find((v) => v.id === voiceId)?.name ?? 'Voice'
   const voiceDropdown = voices.length > 0 && (
     <DropdownMenu>
-      <DropdownMenuTrigger className={triggerClass} aria-label="Voice">
+      <DropdownMenuTrigger data-tour="voice-picker" className={triggerClass} aria-label="Voice">
         <span className="material-symbols-outlined text-[16px] text-electric-indigo">graphic_eq</span>
         {currentVoiceName}
         <span className="material-symbols-outlined text-[16px] opacity-50">expand_more</span>
@@ -640,7 +641,7 @@ export function ComposeHome({
         </div>
       )}
 
-      <div className="rounded-2xl border border-border-muted bg-surface-container-low focus-within:border-electric-indigo/50">
+      <div data-tour="composer" className="rounded-2xl border border-border-muted bg-surface-container-low focus-within:border-electric-indigo/50">
         <textarea
           ref={taRef}
           value={input}
