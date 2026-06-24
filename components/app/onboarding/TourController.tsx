@@ -61,9 +61,23 @@ export function TourController({ initialState }: { initialState: Record<string, 
         showProgress: true,
         overlayColor: 'rgba(8, 7, 13, 0.72)',
         popoverClass: 'outloud-tour',
+        // No skipping by clicking the dimmed area or pressing escape — the only way out
+        // is the explicit "skip" button injected below.
+        allowClose: false,
         nextBtnText: 'next',
         prevBtnText: 'back',
         doneBtnText: 'done',
+        // Replace the default "x" with a gray "skip" button in the top-right corner.
+        onPopoverRender: (popover) => {
+          if (popover.wrapper.querySelector('.outloud-skip')) return
+          const skip = document.createElement('button')
+          skip.type = 'button'
+          skip.className = 'outloud-skip'
+          skip.textContent = 'skip'
+          skip.setAttribute('aria-label', 'Skip tour')
+          skip.addEventListener('click', () => d.destroy())
+          popover.wrapper.appendChild(skip)
+        },
         steps: steps.map((s) => ({
           element: s.element,
           popover: { title: s.title, description: s.description, side: s.side, align: s.align },

@@ -79,6 +79,30 @@ body {
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
+  padding-right: 44px; /* clear space for the skip button */
+}
+/* Hide driver's default "x"; we inject our own "skip" button instead. */
+.driver-popover.outloud-tour .driver-popover-close-btn {
+  display: none !important;
+}
+.driver-popover.outloud-tour .outloud-skip {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #8b8a99;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+.driver-popover.outloud-tour .outloud-skip:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
 }
 .driver-popover.outloud-tour .driver-popover-description {
   color: #c9c5dc;
