@@ -11,6 +11,10 @@ export type TourStep = {
   description: string
   side?: 'top' | 'bottom' | 'left' | 'right'
   align?: 'start' | 'center' | 'end'
+  /** Route this step lives on. When it differs from the current page, the tour
+   *  navigates there first (and the overlay keeps the user on rails). Omit for steps
+   *  on the tour's own page. */
+  route?: string
 }
 
 export const ALL_TOURS: TourKey[] = ['welcome', 'new_post', 'new_reply', 'profile', 'billing', 'voices']
@@ -19,38 +23,47 @@ export const TOURS: Record<TourKey, TourStep[]> = {
   // Global first-login pass over the core loop.
   welcome: [
     {
+      route: '/app',
       title: 'welcome to outloud',
       description: 'it drafts posts + replies in your real voice — not generic ai. here’s the 30-second tour.',
     },
     {
+      route: '/app',
       element: '[data-tour="voice-picker"]',
       title: 'your voice',
       description: 'pick or capture a voice. this is what makes posts sound like you, not generic ai.',
       side: 'top',
     },
     {
+      route: '/app',
       element: '[data-tour="composer"]',
       title: 'compose',
       description: 'drop a rough idea here — outloud asks what it needs, then writes it in your voice.',
       side: 'top',
     },
     {
+      route: '/app',
       element: '[data-tour="new-post"]',
       title: 'one post = one chat',
       description: 'each post lives in its own chat. start a new chat for every post so credits go to drafting, not old context.',
       side: 'right',
     },
     {
-      element: '[data-tour="profile-nav"]',
+      // Navigates to the profile page and shows the card there — the rest of the app
+      // stays locked behind the overlay while the tour drives.
+      route: '/app/profile',
+      element: '[data-tour="connections"]',
       title: 'connect & publish',
-      description: 'connect x / threads in your profile, then publish any draft in a click.',
-      side: 'right',
+      description: 'connect x / threads here — then you can publish any draft in a click.',
+      side: 'bottom',
     },
     {
-      element: '[data-tour="nav"]',
-      title: 'where to go next',
-      description: 'voices, prompts and billing all live here whenever you need them.',
-      side: 'right',
+      // Back to the composer to finish at home base, ready to post.
+      route: '/app',
+      element: '[data-tour="composer"]',
+      title: 'you’re all set',
+      description: 'drop your first idea here and outloud writes it in your voice. enjoy 🎉',
+      side: 'top',
     },
   ],
 

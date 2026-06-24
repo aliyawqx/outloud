@@ -124,6 +124,29 @@ body {
 .driver-popover.outloud-tour .driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: #15131c; }
 .driver-popover.outloud-tour .driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: #15131c; }
 
+/* Roomier tour cards on desktop; mobile keeps the compact base sizing above. */
+@media (min-width: 768px) {
+  .driver-popover.outloud-tour {
+    max-width: 384px;
+    padding: 22px 24px;
+  }
+  .driver-popover.outloud-tour .driver-popover-title {
+    font-size: 19px;
+  }
+  .driver-popover.outloud-tour .driver-popover-description {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .driver-popover.outloud-tour .driver-popover-progress-text {
+    font-size: 12px;
+  }
+  .driver-popover.outloud-tour .driver-popover-next-btn,
+  .driver-popover.outloud-tour .driver-popover-prev-btn {
+    font-size: 14px;
+    padding: 8px 18px;
+  }
+}
+
 .glass-card,
 .glass-panel {
   background: rgba(30, 32, 38, 0.7);

@@ -178,20 +178,22 @@ export function AppSidebar({
 
   return (
     <>
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border-muted bg-surface-glass px-margin-mobile py-3 backdrop-blur-md lg:hidden">
-        <Link href="/app">
-          <Logo />
-        </Link>
+      {/* Mobile top bar: menu on the LEFT (matches the left-opening drawer), mascot
+          centered. Only the mascot here — the wordmark lives inside the open drawer. */}
+      <header className="sticky top-0 z-40 flex h-14 items-center border-b border-border-muted bg-surface-glass px-margin-mobile backdrop-blur-md lg:hidden">
         <button
           type="button"
           aria-label="Open menu"
           aria-expanded={open}
           onClick={() => setOpen(true)}
-          className="rounded-lg p-2 text-on-surface-variant hover:text-on-surface"
+          className="-ml-1.5 flex h-11 w-11 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-white/[0.06] hover:text-on-surface"
         >
-          <span className="material-symbols-outlined">menu</span>
+          <span aria-hidden="true" className="material-symbols-outlined">menu</span>
         </button>
+        <Link href="/app" aria-label="Outloud home" className="absolute left-1/2 -translate-x-1/2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mascot.svg" alt="Outloud" className="h-8 w-8" />
+        </Link>
       </header>
 
       {/* Mobile drawer */}
