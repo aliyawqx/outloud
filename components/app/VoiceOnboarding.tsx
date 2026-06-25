@@ -211,10 +211,20 @@ export function VoiceOnboarding({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [justConnectedX, xStatus])
 
-  // Surface a failed connect (e.g. denied authorization) instead of silently doing nothing.
+  // Surface a failed connect (with the reason) instead of silently doing nothing.
   useEffect(() => {
-    if (xError) setError('Couldn’t connect X. Try again, or paste your writing instead.')
-  }, [xError])
+    if (!xError) return
+    const reason = searchParams.get('xr')
+    const msg =
+      reason === 'denied'
+        ? 'X sign-in was cancelled. Try again, or paste your writing instead.'
+        : reason === 'state'
+          ? 'That connection timed out. Tap Connect X again, or paste your writing instead.'
+          : reason === 'auth'
+            ? 'Couldn’t connect X right now. Paste your writing instead — it works just as well.'
+            : 'Couldn’t connect X. Try again, or paste your writing instead.'
+    setError(msg)
+  }, [xError, searchParams])
 
   async function onDelete(id: string) {
     if (!profileId) return

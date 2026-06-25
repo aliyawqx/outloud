@@ -55,7 +55,7 @@ describe('exchangeCode', () => {
 
   it('throws XAuthError on a non-2xx response', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 400 })))
-    await expect(exchangeCode({ code: 'c', verifier: 'v', clientId: 'cid', clientSecret: 'sec', redirectUri: 'r' })).rejects.toThrow(/X authorization/)
+    await expect(exchangeCode({ code: 'c', verifier: 'v', clientId: 'cid', clientSecret: 'sec', redirectUri: 'r' })).rejects.toThrow(/token request failed/)
   })
 })
 

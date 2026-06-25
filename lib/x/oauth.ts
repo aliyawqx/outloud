@@ -58,7 +58,13 @@ async function tokenRequest(body: URLSearchParams, clientId: string, clientSecre
     headers: { 'content-type': 'application/x-www-form-urlencoded', authorization: basicAuth(clientId, clientSecret) },
     body,
   })
-  if (!res.ok) throw new XAuthError()
+  if (!res.ok) {
+    // Surface WHY (don't swallow) — X returns the real reason here, almost always a
+    // redirect_uri mismatch or invalid_client. Logged so it shows in server logs.
+    const detail = await res.text().catch(() => '')
+    console.error('[x/oauth] token request failed:', res.status, detail.slice(0, 500))
+    throw new XAuthError(`X token request failed (${res.status})`)
+  }
   return (await res.json()) as TokenResponse
 }
 

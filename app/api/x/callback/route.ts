@@ -20,8 +20,17 @@ export async function GET(req: Request) {
   // Return to wherever the connect started (onboarding vs profile); default profile.
   const back = new URL(safeReturnTo(tx?.returnTo), req.url)
 
-  if (!code || !state || !tx || tx.state !== state) {
+  // The denial / state-mismatch case (no usable code, or the CSRF/cookie didn't survive
+  // the round-trip — often an expired tx cookie or a host mismatch on the redirect URL).
+  if (url.searchParams.get('error') || !code || !state || !tx || tx.state !== state) {
+    console.error('[x/callback] state/denied:', {
+      providerError: url.searchParams.get('error'),
+      hasCode: Boolean(code),
+      hasTx: Boolean(tx),
+      stateMatch: tx ? tx.state === state : false,
+    })
     back.searchParams.set('x', 'error')
+    back.searchParams.set('xr', url.searchParams.get('error') ? 'denied' : 'state')
     const res = NextResponse.redirect(back)
     res.cookies.delete(X_OAUTH_COOKIE)
     return res
@@ -42,8 +51,12 @@ export async function GET(req: Request) {
     })
     back.searchParams.set('x', 'connected')
   } catch (err) {
-    console.error('[x/callback] failed:', err)
+    // Token exchange / profile fetch failed — almost always a redirect_uri or client
+    // credential mismatch between this app's env and the X app settings. The real reason
+    // is logged in lib/x/oauth tokenRequest.
+    console.error('[x/callback] auth failed:', err)
     back.searchParams.set('x', 'error')
+    back.searchParams.set('xr', 'auth')
   }
 
   const res = NextResponse.redirect(back)
