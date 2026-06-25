@@ -4,27 +4,20 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
+import { DemoVideo } from '@/components/landing/DemoVideo'
 import { addSample, createOwnVoice, deleteSample, generateStyleGuide } from '@/lib/voice/client'
 import type { SampleSource } from '@/lib/voice/types'
 
 type Sample = { id: string; source: SampleSource; text: string }
 type XStatus = { connected: boolean; username?: string }
 
-// "Enough to get started" threshold. Extraction works on less, but this is the
-// point where a Style Guide has real signal to learn from.
+// Enough signal to build a real Style Guide. Used to gate the build button — never shown
+// as a raw "x / 150" number (reads as machine-made); we show a friendly state instead.
 const WORD_GOAL = 150
-
 const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 
-// Human label for a sample's origin, shown as a small badge in the list.
-const SOURCE_LABEL: Record<SampleSource, string> = {
-  paste: 'pasted',
-  upload: 'file',
-  url: 'link',
-  x: 'X',
-}
+const SOURCE_LABEL: Record<SampleSource, string> = { paste: 'pasted', upload: 'file', url: 'link', x: 'X' }
 
-// Official X (Twitter) glyph — used to make the fastest path instantly recognizable.
 function XLogo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
@@ -33,39 +26,30 @@ function XLogo({ className }: { className?: string }) {
   )
 }
 
-// Two-dot step indicator so users always know where they are in the flow.
-function Stepper({ step }: { step: 1 | 2 }) {
-  const dot = (n: 1 | 2, label: string) => {
-    const active = step === n
-    const done = step > n
-    return (
-      <div className="flex items-center gap-2">
-        <span
-          className={`flex h-6 w-6 items-center justify-center rounded-full border font-code-label text-[11px] transition-colors ${
-            active
-              ? 'border-cyber-lime bg-cyber-lime/10 text-cyber-lime'
-              : done
-                ? 'border-cyber-lime/40 bg-cyber-lime/10 text-cyber-lime'
-                : 'border-border-muted text-on-surface-variant/60'
-          }`}
-        >
-          {done ? <span className="material-symbols-outlined text-[14px]">check</span> : n}
-        </span>
-        <span
-          className={`font-code-label text-code-label transition-colors ${
-            active ? 'text-on-surface' : 'text-on-surface-variant/60'
-          }`}
-        >
-          {label}
-        </span>
-      </div>
-    )
-  }
+type Step = 1 | 2 | 3
+const STEP_LABELS = ['Name', 'Source', 'Build'] as const
+
+function Stepper({ step }: { step: Step }) {
   return (
-    <div className="mb-6 flex items-center gap-3">
-      {dot(1, 'Name')}
-      <span className="h-px w-6 bg-border-muted" />
-      {dot(2, 'Teach')}
+    <div className="mb-8 flex items-center gap-2">
+      {STEP_LABELS.map((label, i) => {
+        const n = (i + 1) as Step
+        const active = step === n
+        const done = step > n
+        return (
+          <div key={label} className="flex items-center gap-2">
+            {i > 0 && <span className="h-px w-5 bg-border-muted" />}
+            <span
+              className={`flex h-6 w-6 items-center justify-center rounded-full border font-code-label text-[11px] ${
+                active || done ? 'border-cyber-lime bg-cyber-lime/10 text-cyber-lime' : 'border-border-muted text-on-surface-variant/60'
+              }`}
+            >
+              {done ? <span className="material-symbols-outlined text-[14px]">check</span> : n}
+            </span>
+            <span className={`font-code-label text-code-label ${active ? 'text-on-surface' : 'text-on-surface-variant/60'}`}>{label}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -82,9 +66,9 @@ export function VoiceOnboarding({
   const router = useRouter()
   const [profileId, setProfileId] = useState(initialProfileId)
   const [samples, setSamples] = useState<Sample[]>(initialSamples)
-  // Step 1 = name the voice (pre-filled with the account name, editable, required).
-  // Step 2 = give it a source. A returning in-progress draft skips straight to step 2.
-  const [step, setStep] = useState<1 | 2>(initialProfileId ? 2 : 1)
+  // 1 = name · 2 = pick a method · 3 = add writing + build. A returning draft skips
+  // naming; if it already has samples, jump to the build step.
+  const [step, setStep] = useState<Step>(initialProfileId ? (initialSamples.length > 0 ? 3 : 2) : 1)
   const [voiceName, setVoiceName] = useState(authorName)
   const [mode, setMode] = useState<'paste' | 'url'>('paste')
   const [draft, setDraft] = useState('')
@@ -96,8 +80,8 @@ export function VoiceOnboarding({
   const fileRef = useRef<HTMLInputElement>(null)
 
   const totalWords = samples.reduce((n, s) => n + wordCount(s.text), 0)
-  const pct = Math.min(100, Math.round((totalWords / WORD_GOAL) * 100))
   const enough = totalWords >= WORD_GOAL
+  const displayName = voiceName.trim() || authorName
 
   useEffect(() => {
     fetch('/api/x/status')
@@ -106,18 +90,13 @@ export function VoiceOnboarding({
       .catch(() => setXStatus({ connected: false }))
   }, [])
 
-  /** Create the own-voice draft with the user-chosen name. Called when finishing step 1
-   *  (so the name persists even if they drop off later), or lazily if a sample is added
-   *  before a profile exists. */
   async function ensureProfile(): Promise<string> {
     if (profileId) return profileId
-    const name = voiceName.trim() || authorName || 'My voice'
-    const { profile } = await createOwnVoice(name)
+    const { profile } = await createOwnVoice(voiceName.trim() || authorName || 'My voice')
     setProfileId(profile.id)
     return profile.id
   }
 
-  // Step 1 → step 2: lock in the name by creating the draft now (persists it).
   async function onNameContinue() {
     if (!voiceName.trim() || busy) return
     setError('')
@@ -175,7 +154,15 @@ export function VoiceOnboarding({
     }
   }
 
-  async function importFromX() {
+  // Pick "Connect X": not connected → start the read-only connect flow; connected →
+  // import recent posts, then move to the build step.
+  async function chooseX() {
+    if (busy) return
+    if (!xStatus?.connected) {
+      await ensureProfile().catch(() => {})
+      window.location.href = '/api/x/connect?returnTo=/app/onboarding'
+      return
+    }
     setError('')
     setBusy(true)
     try {
@@ -187,11 +174,13 @@ export function VoiceOnboarding({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(res.status === 409 ? data.error ?? 'Connect your X account first.' : data.error ?? 'Could not import.')
+        setError(data.error ?? 'Could not import your posts.')
+        setStep(3)
         return
       }
       const added: Sample[] = (data.samples ?? []).map((s: Sample) => ({ id: s.id, source: s.source, text: s.text }))
       setSamples((s) => [...added, ...s])
+      setStep(3)
     } catch {
       setError('Network error. Try again.')
     } finally {
@@ -210,12 +199,12 @@ export function VoiceOnboarding({
     }
   }
 
-  async function onContinue() {
+  async function onBuild() {
     if (!profileId || !enough) return
     setError('')
     setContinuing(true)
     try {
-      await generateStyleGuide(profileId) // the ONE universal extraction prompt
+      await generateStyleGuide(profileId)
       router.push('/app')
       router.refresh()
     } catch (e) {
@@ -224,56 +213,116 @@ export function VoiceOnboarding({
     }
   }
 
-  // ── Step 1: name the voice (pre-filled, editable, required) ──
+  const shell = 'mx-auto flex min-h-screen flex-col justify-center px-margin-mobile py-12'
+  const creatorLink = (
+    <p className="mt-6 text-center font-body-sm text-body-sm text-on-surface-variant">
+      Or write in a creator’s voice —{' '}
+      <Link href="/app/voices" className="text-electric-indigo hover:underline">browse the library</Link>
+    </p>
+  )
+
+  // ── Step 1: name ──
   if (step === 1) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-margin-mobile py-12">
+      <div className={`${shell} max-w-md`}>
         <Stepper step={1} />
+        {/* Quick look at what you're about to set up (hidden until the clip exists). */}
+        <DemoVideo caption="30 seconds: how voice capture works." />
         <h1 className="mb-2 font-headline-xl text-headline-xl">Name your voice</h1>
-        <p className="mb-6 font-body-md text-body-md text-on-surface-variant">
-          This is how it shows up in your library. We pre-filled your name — keep it or change it.
-        </p>
-
-        <label htmlFor="voice-name" className="mb-2 block font-code-label text-code-label text-on-surface-variant">
-          Voice name
-        </label>
+        <p className="mb-6 font-body-md text-body-md text-on-surface-variant">Keep your name or pick anything.</p>
         <input
-          id="voice-name"
           value={voiceName}
           onChange={(e) => setVoiceName(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') onNameContinue() }}
+          aria-label="Voice name"
           placeholder="e.g. Aliya"
           autoFocus
           className="w-full rounded-xl border border-border-muted bg-surface-container-lowest p-4 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none focus:ring-2 focus:ring-electric-indigo/30"
         />
         {error && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
-
         <button
           type="button"
           onClick={onNameContinue}
           disabled={!voiceName.trim() || busy}
-          className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-colors duration-200 hover:bg-primary-container active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-colors hover:bg-primary-container active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? <><Spinner size={18} /> Saving…</> : <>Continue<span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span></>}
         </button>
-
-        <p className="mt-6 text-center font-body-sm text-body-sm text-on-surface-variant">
-          Want to write in a creator’s voice instead?{' '}
-          <Link href="/app/voices" className="text-electric-indigo hover:underline">Browse the voice library</Link>
-        </p>
+        {creatorLink}
       </div>
     )
   }
 
-  // ── Step 2: give the voice a source (connect X / paste / URL / upload) ──
-  const displayName = voiceName.trim() || authorName
+  // ── Step 2: pick ONE method (clear either/or) ──
+  if (step === 2) {
+    return (
+      <div className={`${shell} max-w-2xl`}>
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <Stepper step={2} />
+          <button
+            type="button"
+            onClick={() => { setError(''); setStep(1) }}
+            className="inline-flex cursor-pointer items-center gap-1 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
+            Back
+          </button>
+        </div>
+
+        <h1 className="mb-2 font-headline-xl text-headline-xl">How should we learn your style?</h1>
+        <p className="mb-6 font-body-md text-body-md text-on-surface-variant">Pick one — you only need one.</p>
+
+        {error && <p className="mb-4 font-body-sm text-body-sm text-error">{error}</p>}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Option A — Connect X (fastest) */}
+          <button
+            type="button"
+            onClick={chooseX}
+            disabled={busy}
+            className="group relative flex cursor-pointer flex-col items-start gap-3 rounded-2xl border border-electric-indigo/40 bg-electric-indigo/5 p-5 text-left transition-colors hover:border-electric-indigo disabled:opacity-60"
+          >
+            <span className="absolute right-4 top-4 rounded-full bg-cyber-lime/15 px-2 py-0.5 font-code-label text-[10px] text-cyber-lime">FASTEST</span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-on-surface/5 text-on-surface">
+              <XLogo className="h-5 w-5" />
+            </span>
+            <span className="font-headline-sm text-lg font-bold text-on-surface">
+              {busy ? 'Working…' : xStatus?.connected ? `Import from @${xStatus.username}` : 'Connect X'}
+            </span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              We read your recent posts to learn how you write. Read-only — we never post for you.
+            </span>
+            {busy && <Spinner size={16} className="text-electric-indigo" />}
+          </button>
+
+          {/* Option B — Paste your writing */}
+          <button
+            type="button"
+            onClick={() => { setError(''); setMode('paste'); setStep(3) }}
+            className="group flex cursor-pointer flex-col items-start gap-3 rounded-2xl border border-border-muted bg-surface-container-low p-5 text-left transition-colors hover:border-electric-indigo/60"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-on-surface/5 text-on-surface">
+              <span aria-hidden="true" className="material-symbols-outlined">content_paste</span>
+            </span>
+            <span className="font-headline-sm text-lg font-bold text-on-surface">Paste your writing</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              Drop in a few posts or paragraphs you’ve already written. No account needed.
+            </span>
+          </button>
+        </div>
+        {creatorLink}
+      </div>
+    )
+  }
+
+  // ── Step 3: add writing + build ──
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-margin-mobile py-12">
+    <div className={`${shell} max-w-2xl`}>
       <div className="mb-6 flex items-center justify-between gap-3">
-        <Stepper step={2} />
+        <Stepper step={3} />
         <button
           type="button"
-          onClick={() => { setError(''); setStep(1) }}
+          onClick={() => { setError(''); setStep(2) }}
           className="inline-flex cursor-pointer items-center gap-1 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
         >
           <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
@@ -281,83 +330,20 @@ export function VoiceOnboarding({
         </button>
       </div>
 
-      <h1 className="mb-2 font-headline-xl text-headline-xl">Teach “{displayName}” how you write</h1>
+      <h1 className="mb-2 font-headline-xl text-headline-xl">Add a few things you’ve written</h1>
       <p className="mb-6 font-body-md text-body-md text-on-surface-variant">
-        Add a few things you’ve written and we’ll learn your style. Everything you generate after this
-        will sound like you — not like generic AI.
+        A couple of posts or a paragraph or two is plenty. We’ll learn your style and build “{displayName}”.
       </p>
-
-      {/* progress */}
-      <div className="mb-6 rounded-2xl border border-border-muted bg-surface-container-low p-4">
-        <div className="mb-2 flex items-center justify-between font-code-label text-code-label">
-          <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant'}>
-            {enough ? '✓ Enough to get started' : 'Add a bit more to get started'}
-          </span>
-          <span className="text-on-surface-variant tabular-nums">{totalWords} / {WORD_GOAL} words</span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${enough ? 'bg-cyber-lime' : 'bg-electric-indigo'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
 
       {error && <p className="mb-4 font-body-sm text-body-sm text-error">{error}</p>}
 
-      {/* Fastest path: import straight from X */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-electric-indigo/40 bg-electric-indigo/5 p-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-on-surface/5 text-on-surface">
-            <XLogo className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="flex items-center gap-2 font-body-sm text-body-sm text-on-surface">
-              Import your recent X posts
-              <span className="rounded-full bg-cyber-lime/15 px-2 py-0.5 font-code-label text-[10px] text-cyber-lime">FASTEST</span>
-            </p>
-            <p className="font-code-label text-code-label text-on-surface-variant/70">
-              Read-only. We never post on your behalf.
-            </p>
-          </div>
-        </div>
-        {xStatus?.connected ? (
-          <button
-            type="button"
-            onClick={importFromX}
-            disabled={busy}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-colors duration-200 hover:bg-primary-container disabled:opacity-60"
-          >
-            {busy && <Spinner size={14} />}
-            Import from @{xStatus.username}
-          </button>
-        ) : (
-          <a
-            href="/api/x/connect?returnTo=/app/onboarding"
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border-muted px-4 py-2 font-code-label text-code-label text-on-surface transition-colors duration-200 hover:border-electric-indigo"
-          >
-            <XLogo className="h-3.5 w-3.5" />
-            Connect X
-          </a>
-        )}
-      </div>
-
-      {/* Divider */}
-      <div className="mb-4 flex items-center gap-3">
-        <span className="h-px flex-1 bg-border-muted" />
-        <span className="font-code-label text-code-label text-on-surface-variant/50">or add writing yourself</span>
-        <span className="h-px flex-1 bg-border-muted" />
-      </div>
-
-      {/* Manual sources */}
-      <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border-muted bg-surface-container-low p-4">
-        {/* paste / url toggle */}
+      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-border-muted bg-surface-container-low p-4">
         <div className="inline-flex w-fit items-center gap-1 rounded-full border border-border-muted bg-surface-container-lowest p-1">
           <button
             type="button"
             onClick={() => { setMode('paste'); setDraft('') }}
             aria-pressed={mode === 'paste'}
-            className={`cursor-pointer rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors duration-200 ${mode === 'paste' ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`cursor-pointer rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${mode === 'paste' ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
             Paste text
           </button>
@@ -365,9 +351,9 @@ export function VoiceOnboarding({
             type="button"
             onClick={() => { setMode('url'); setDraft('') }}
             aria-pressed={mode === 'url'}
-            className={`cursor-pointer rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors duration-200 ${mode === 'url' ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`cursor-pointer rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${mode === 'url' ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
-            Add URL
+            Add a link
           </button>
         </div>
 
@@ -375,15 +361,15 @@ export function VoiceOnboarding({
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Paste a few of your posts, a blog excerpt, anything you’ve written in your own words…"
-            className="h-28 w-full resize-none rounded-lg border border-border-muted bg-surface-container-lowest p-3 font-body-sm text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none focus:ring-2 focus:ring-electric-indigo/30"
+            placeholder="Paste a few of your posts, or a paragraph or two you’ve written…"
+            className="h-32 w-full resize-none rounded-lg border border-border-muted bg-surface-container-lowest p-3 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none focus:ring-2 focus:ring-electric-indigo/30"
           />
         ) : (
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="https://… (an X post link, blog, or page you wrote)"
-            className="w-full rounded-lg border border-border-muted bg-surface-container-lowest p-3 font-body-sm text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none focus:ring-2 focus:ring-electric-indigo/30"
+            placeholder="https://… an X post, blog, or page you wrote"
+            className="w-full rounded-lg border border-border-muted bg-surface-container-lowest p-3 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none focus:ring-2 focus:ring-electric-indigo/30"
           />
         )}
 
@@ -392,86 +378,63 @@ export function VoiceOnboarding({
             type="button"
             onClick={onAdd}
             disabled={busy || !draft.trim()}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-colors duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-colors active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? <><Spinner size={16} /> Adding…</> : 'Add'}
           </button>
-
-          {/* upload + drag&drop */}
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => { e.preventDefault(); setDragOver(false); onFiles(e.dataTransfer.files) }}
-            className={`flex-1 rounded-lg border border-dashed px-3 py-2.5 text-center font-code-label text-code-label transition-colors duration-200 ${dragOver ? 'border-electric-indigo bg-electric-indigo/5 text-on-surface' : 'border-border-muted text-on-surface-variant/70'}`}
+            className={`flex-1 rounded-lg border border-dashed px-3 py-2.5 text-center font-code-label text-code-label transition-colors ${dragOver ? 'border-electric-indigo bg-electric-indigo/5 text-on-surface' : 'border-border-muted text-on-surface-variant/70'}`}
           >
             <button type="button" onClick={() => fileRef.current?.click()} className="inline-flex cursor-pointer items-center gap-1.5 hover:text-on-surface">
               <span aria-hidden="true" className="material-symbols-outlined text-[16px]">upload_file</span>
-              Drop files or click to upload
+              or drop a file
             </button>
-            <input
-              ref={fileRef}
-              type="file"
-              multiple
-              accept=".txt,.md,.markdown,text/*"
-              className="hidden"
-              onChange={(e) => { onFiles(e.target.files); e.target.value = '' }}
-            />
+            <input ref={fileRef} type="file" multiple accept=".txt,.md,.markdown,text/*" className="hidden" onChange={(e) => { onFiles(e.target.files); e.target.value = '' }} />
           </div>
         </div>
       </div>
 
-      {/* samples list / empty state */}
+      {/* samples / empty — no raw word counts */}
       {samples.length > 0 ? (
-        <div className="mb-6 flex flex-col gap-2">
-          <p className="font-code-label text-code-label text-on-surface-variant/70">
-            {samples.length} sample{samples.length === 1 ? '' : 's'} added
-          </p>
+        <div className="mb-4 flex flex-col gap-2">
           {samples.map((s) => (
             <div key={s.id} className="flex items-start justify-between gap-3 rounded-xl border border-border-muted bg-surface-container-low p-3">
               <div className="min-w-0 flex-1">
-                <span className="mb-1 inline-block rounded-full bg-surface-container-high px-2 py-0.5 font-code-label text-[10px] uppercase tracking-wide text-on-surface-variant/70">
-                  {SOURCE_LABEL[s.source]}
-                </span>
+                <span className="mb-1 inline-block rounded-full bg-surface-container-high px-2 py-0.5 font-code-label text-[10px] uppercase tracking-wide text-on-surface-variant/70">{SOURCE_LABEL[s.source]}</span>
                 <p className="line-clamp-2 whitespace-pre-wrap font-body-sm text-body-sm text-on-surface-variant">{s.text}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => onDelete(s.id)}
-                aria-label="Delete sample"
-                className="shrink-0 cursor-pointer text-on-surface-variant/60 transition-colors hover:text-error"
-              >
+              <button type="button" onClick={() => onDelete(s.id)} aria-label="Delete sample" className="shrink-0 cursor-pointer text-on-surface-variant/60 transition-colors hover:text-error">
                 <span aria-hidden="true" className="material-symbols-outlined text-[18px]">delete</span>
               </button>
             </div>
           ))}
         </div>
       ) : (
-        <div className="mb-6 flex flex-col items-center gap-1 rounded-2xl border border-dashed border-border-muted bg-surface-container-lowest px-4 py-8 text-center">
+        <div className="mb-4 flex flex-col items-center gap-1 rounded-2xl border border-dashed border-border-muted bg-surface-container-lowest px-4 py-8 text-center">
           <span aria-hidden="true" className="material-symbols-outlined text-[28px] text-on-surface-variant/40">draw</span>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">Nothing added yet</p>
-          <p className="font-code-label text-code-label text-on-surface-variant/60">
-            Import from X or paste a few posts above — about 150 words is enough to start.
-          </p>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">Nothing added yet — paste a post above.</p>
         </div>
       )}
 
-      {/* continue */}
+      {/* readiness — friendly, no numbers */}
+      {samples.length > 0 && (
+        <p className={`mb-4 font-code-label text-code-label ${enough ? 'text-cyber-lime' : 'text-on-surface-variant/70'}`}>
+          {enough ? '✓ Looks good — ready to build your voice.' : 'Add a little more so we can capture your style.'}
+        </p>
+      )}
+
       <button
         type="button"
-        onClick={onContinue}
+        onClick={onBuild}
         disabled={!enough || continuing}
-        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-cyber-lime px-6 py-3 font-bold text-charcoal-black transition-all duration-200 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-cyber-lime px-6 py-3 font-bold text-charcoal-black transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {continuing ? <><Spinner size={18} /> Building your voice…</> : enough ? 'Build my voice' : 'Add more to continue'}
+        {continuing ? <><Spinner size={18} /> Building your voice…</> : enough ? 'Build my voice' : 'Add a bit more to continue'}
       </button>
-
-      {/* celebrity path → existing voice library */}
-      <p className="mt-6 text-center font-body-sm text-body-sm text-on-surface-variant">
-        Want to write in a creator’s voice instead?{' '}
-        <Link href="/app/voices" className="text-electric-indigo hover:underline">
-          Browse the voice library
-        </Link>
-      </p>
+      {creatorLink}
     </div>
   )
 }
