@@ -467,8 +467,8 @@ export function VoiceOnboarding({
         <div className="mb-3">
           <div className="mb-1.5 flex items-center justify-between font-code-label text-code-label">
             <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant'}>min 150 words</span>
-            <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant/60'}>
-              {enough ? '✓ ready to build' : 'a couple of posts is plenty'}
+            <span className={`tabular-nums ${enough ? 'text-cyber-lime' : 'text-on-surface-variant/60'}`}>
+              {totalWords} {totalWords === 1 ? 'word' : 'words'}{enough ? ' · ✓ ready' : ''}
             </span>
           </div>
           <div
