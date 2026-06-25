@@ -45,7 +45,7 @@ function Title({ text, accent, color }: { text: string; accent: string; color: s
 
 export function FeaturesDark() {
   return (
-    <section id="features" className="mx-auto max-w-container-max px-margin-mobile py-16 md:px-margin-desktop">
+    <section id="what-you-get" className="mx-auto max-w-container-max px-margin-mobile py-16 md:px-margin-desktop">
       <div className="reveal relative overflow-hidden rounded-[2rem] bg-charcoal-black px-6 py-14 md:px-12 md:py-20">
         <Sparkle className="absolute right-10 top-10 text-cyber-lime" size={24} />
         <Sparkle className="absolute right-24 top-20 text-electric-indigo" size={16} />
