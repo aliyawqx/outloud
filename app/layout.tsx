@@ -1,11 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono, Hanken_Grotesk } from 'next/font/google'
+import { Inter, JetBrains_Mono, Hanken_Grotesk, Cormorant_Garamond } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-inter' })
 const jetbrains = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-jetbrains' })
 const hanken = Hanken_Grotesk({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-hanken' })
+// Editorial serif display for big headlines (DESIGN.md principle), kept on the existing
+// dark + purple/green palette. Body stays Inter, code stays JetBrains Mono.
+const serif = Cormorant_Garamond({ subsets: ['latin'], weight: ['500', '600'], variable: '--font-serif' })
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://tryoutloud.app'),
@@ -29,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${jetbrains.variable} ${hanken.variable}`}>
+    <html lang="en" className={`dark ${inter.variable} ${jetbrains.variable} ${hanken.variable} ${serif.variable}`}>
       <head>
         <link
           rel="stylesheet"
