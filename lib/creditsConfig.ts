@@ -57,11 +57,11 @@ export function fmtCredits(n: number): string {
  *  product id env var. priceUsd is display-only (Polar holds the real charge).
  *  TODO: confirm final prices. */
 // priceUsd is DISPLAY ONLY — the real charge is the Polar product's price. Keep these
-// in sync with Polar. The bestValue pack ($50 / 500k) is the default-selected "main"
-// top-up shown first in the top-up card.
+// in sync with Polar ($10 / $40 / $70). The bestValue pack ($40 / 500k) is the
+// default-selected "main" top-up shown first in the top-up card.
 export const CREDIT_PACKS = [
   { id: 'pack_100k', label: '100,000 credits', credits: 100_000, priceUsd: 10, bestValue: false, productEnv: 'POLAR_PACK_100K_PRODUCT_ID' },
-  { id: 'pack_500k', label: '500,000 credits', credits: 500_000, priceUsd: 50, bestValue: true, productEnv: 'POLAR_PACK_500K_PRODUCT_ID' },
+  { id: 'pack_500k', label: '500,000 credits', credits: 500_000, priceUsd: 40, bestValue: true, productEnv: 'POLAR_PACK_500K_PRODUCT_ID' },
   { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 70, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
 ] as const
 
