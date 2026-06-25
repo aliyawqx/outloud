@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto'
+import { randomUUID, randomBytes } from 'node:crypto'
+import type { PoolClient } from 'pg'
 import { ensureSchema, getPool } from '@/lib/db'
 import { hashPassword } from './password'
 import { PLAN_ALLOWANCE, FREE_RESET_DAYS } from '@/lib/creditsConfig'
@@ -13,7 +14,25 @@ export class EmailTakenError extends Error {
   }
 }
 
-/** Create a user + their 1:1 profile in one transaction. */
+/** Provision the 1:1 profile + opening trial grant for a freshly inserted user.
+ *  Every new account starts on a card-free trial: a 3-day window with 10k credits and
+ *  NO Polar / no card capture. `trialing` + no subscription id → resetIfDue ends it when
+ *  the window elapses; spending the 10k also ends it. Then the user picks a paid plan. */
+async function provisionTrialProfile(client: PoolClient, id: string, displayName: string, email: string): Promise<void> {
+  const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
+  const pool = PLAN_ALLOWANCE.free
+  await client.query(
+    `INSERT INTO profiles (user_id, display_name, email, trialing, trial_used, credit_balance, credits_reset_at)
+     VALUES ($1, $2, $3, true, true, $4, $5)`,
+    [id, displayName, email, pool, resetAt],
+  )
+  await client.query(
+    'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
+    [randomUUID(), id, pool, 'grant', pool, JSON.stringify({ cardFreeWindow: true })],
+  )
+}
+
+/** Create an email/password user + their 1:1 profile in one transaction. */
 export async function createUser(input: {
   email: string
   password: string
@@ -25,26 +44,36 @@ export async function createUser(input: {
     await client.query('BEGIN')
     const id = randomUUID()
     const hash = await hashPassword(input.password)
-    await client.query('INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)', [
-      id,
-      input.email,
-      hash,
-    ])
-    // Every new account starts on a card-free trial: a 3-day window with 10k credits and
-    // NO Polar / no card capture. `trialing` + no subscription id → resetIfDue ends it
-    // when the window elapses; spending the 10k also ends it (balance hits 0). Either way
-    // the user is then asked to pick a paid plan (charged immediately, since trial_used).
-    const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
-    const pool = PLAN_ALLOWANCE.free
+    await client.query('INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)', [id, input.email, hash])
+    await provisionTrialProfile(client, id, input.displayName, input.email)
+    await client.query('COMMIT')
+    return { id, email: input.email }
+  } catch (err) {
+    await client.query('ROLLBACK')
+    if ((err as { code?: string }).code === '23505') throw new EmailTakenError()
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
+/** Create a user from a verified OAuth identity (e.g. Google). No usable password
+ *  (a random hash satisfies the NOT NULL column; the user signs in via the provider),
+ *  and email_verified=true since the provider already verified ownership — so they skip
+ *  the email-code gate. Same card-free trial as email signup. */
+export async function createOAuthUser(input: { email: string; displayName: string }): Promise<AuthUser> {
+  await ensureSchema()
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const id = randomUUID()
+    // Random, unknown-to-anyone hash — there's no password to log in with.
+    const hash = await hashPassword(randomBytes(24).toString('hex'))
     await client.query(
-      `INSERT INTO profiles (user_id, display_name, email, trialing, trial_used, credit_balance, credits_reset_at)
-       VALUES ($1, $2, $3, true, true, $4, $5)`,
-      [id, input.displayName, input.email, pool, resetAt],
+      'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, true)',
+      [id, input.email, hash],
     )
-    await client.query(
-      'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
-      [randomUUID(), id, pool, 'grant', pool, JSON.stringify({ cardFreeWindow: true })],
-    )
+    await provisionTrialProfile(client, id, input.displayName, input.email)
     await client.query('COMMIT')
     return { id, email: input.email }
   } catch (err) {
