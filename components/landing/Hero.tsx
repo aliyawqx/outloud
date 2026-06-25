@@ -25,14 +25,14 @@ export function Hero() {
               </div>
 
               <h1 className="font-headline-xl text-headline-xl leading-tight">
-                posts in your style,
+                Posts in your style,
                 <span className="mt-1 block bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">
-                  never generic ai.
+                  never generic AI.
                 </span>
               </h1>
 
               <p className="max-w-xl font-body-md text-body-md text-on-surface-variant">
-                outloud learns how you actually write, so every post sounds like you.
+                Outloud learns how you actually write, so every post sounds like you.
               </p>
 
               {/* Single primary CTA. Full-width on mobile so it can never clip at small
@@ -42,7 +42,7 @@ export function Hero() {
                   href="/signup"
                   className="indigo-glow w-full rounded-full bg-electric-indigo px-8 py-4 text-center text-lg font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95 sm:w-auto"
                 >
-                  start free, no card needed
+                  Start free, no card needed
                 </Link>
                 <a
                   href="#how"
