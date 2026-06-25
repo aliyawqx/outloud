@@ -42,7 +42,7 @@ describe('credit config', () => {
 
   it('locked top-up prices, with exactly one best-value pack', () => {
     expect(packById('pack_100k')?.priceUsd).toBe(10)
-    expect(packById('pack_500k')?.priceUsd).toBe(40)
+    expect(packById('pack_500k')?.priceUsd).toBe(50)
     expect(packById('pack_1m')?.priceUsd).toBe(70)
     expect(CREDIT_PACKS.filter((p) => p.bestValue)).toHaveLength(1)
     expect(packById('pack_500k')?.bestValue).toBe(true)

@@ -5,6 +5,10 @@ import { useEffect, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import { replyIntentUrl } from '@/lib/x/replyIntent'
 import { useCredits } from '@/components/app/CreditsContext'
+import { UpgradeModal } from '@/components/app/UpgradeModal'
+import { TopUpModal } from '@/components/app/TopUpModal'
+import { isPaidPlan } from '@/lib/billing/plans'
+import { COST_PER_REPLY } from '@/lib/creditsConfig'
 
 type VoiceOption = { id: string; name: string; isActive: boolean }
 type FetchedPost = { id: string; url: string; authorHandle: string; authorName: string; text: string; postedAt: string }
@@ -288,15 +292,29 @@ export function ReplyStudio({
   voices,
   xConnected,
   threadsConnected,
+  plan = 'free',
 }: {
   voices: VoiceOption[]
   xConnected: boolean
   threadsConnected: boolean
+  plan?: string
 }) {
   const router = useRouter()
+  const { balance, unlimited } = useCredits()
   const active = voices.find((v) => v.isActive) ?? voices[0]
   const [voiceId, setVoiceId] = useState(active?.id ?? '')
   const [mode, setMode] = useState<'link' | 'discover'>('link')
+  // Out-of-credits walls: paid plan → top-up packs; trial/free → subscribe (same as
+  // New Post). Shown before we ever fetch a post the user couldn't afford to reply to.
+  const [showUpgrade, setShowUpgrade] = useState(false)
+  const [showTopUp, setShowTopUp] = useState(false)
+  const canAfford = unlimited || balance >= COST_PER_REPLY
+  function gateForReply(): boolean {
+    if (canAfford) return true
+    if (isPaidPlan(plan)) setShowTopUp(true)
+    else setShowUpgrade(true)
+    return false
+  }
 
   // Mode A
   const [url, setUrl] = useState('')
@@ -346,6 +364,8 @@ export function ReplyStudio({
   async function onFetch() {
     const u = url.trim()
     if (!u || fetching) return
+    // Don't fetch a post the user can't afford to reply to — show the right wall instead.
+    if (!gateForReply()) return
     setFetchError('')
     setFetched(null)
     resetGeneration()
@@ -725,6 +745,8 @@ export function ReplyStudio({
         </div>
       )}
 
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      {showTopUp && <TopUpModal onClose={() => setShowTopUp(false)} />}
     </div>
   )
 }
