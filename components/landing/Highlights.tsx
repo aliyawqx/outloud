@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { ComposerMockup } from './ComposerMockup'
-import { ReplyFinderMockup } from './ReplyFinderMockup'
+import { HighlightsCarousel } from './HighlightsCarousel'
 import { Sparkle } from './Doodles'
 
 export function Highlights() {
@@ -13,29 +12,7 @@ export function Highlights() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* card 1: reply finder (grow) */}
-        <div className="reveal glass-card group rounded-3xl p-6 transition-all hover:-translate-y-1 hover:border-cyber-lime/40">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyber-lime/20">
-              <span className="material-symbols-outlined text-cyber-lime">travel_explore</span>
-            </span>
-            <h3 className="font-headline-sm text-headline-sm">Reply finder</h3>
-          </div>
-          <ReplyFinderMockup />
-        </div>
-
-        {/* card 2: idea -> post (ship) */}
-        <div className="reveal glass-card group rounded-3xl p-6 transition-all hover:-translate-y-1 hover:border-electric-indigo/40" style={{ transitionDelay: '100ms' }}>
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-electric-indigo/20">
-              <span className="material-symbols-outlined text-electric-indigo">edit_square</span>
-            </span>
-            <h3 className="font-headline-sm text-headline-sm">Idea → finished post</h3>
-          </div>
-          <ComposerMockup compact />
-        </div>
-      </div>
+      <HighlightsCarousel />
 
       {/* full-width accent banner */}
       <div className="reveal relative mt-6 flex flex-col items-start justify-between gap-6 overflow-hidden rounded-3xl bg-electric-indigo p-8 sm:flex-row sm:items-center md:p-10">
