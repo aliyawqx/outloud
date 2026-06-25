@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import { DemoVideo } from '@/components/landing/DemoVideo'
@@ -64,6 +64,7 @@ export function VoiceOnboarding({
   initialSamples: Sample[]
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [profileId, setProfileId] = useState(initialProfileId)
   const [samples, setSamples] = useState<Sample[]>(initialSamples)
   // 1 = name · 2 = pick a method · 3 = add writing + build. A returning draft skips
@@ -81,7 +82,12 @@ export function VoiceOnboarding({
 
   const totalWords = samples.reduce((n, s) => n + wordCount(s.text), 0)
   const enough = totalWords >= WORD_GOAL
+  const pct = Math.min(100, Math.round((totalWords / WORD_GOAL) * 100))
   const displayName = voiceName.trim() || authorName
+  // Did we just come back from the X connect round-trip? Then auto-import.
+  const justConnectedX = searchParams.get('x') === 'connected'
+  const xError = searchParams.get('x') === 'error'
+  const autoImported = useRef(false)
 
   useEffect(() => {
     fetch('/api/x/status')
@@ -154,15 +160,9 @@ export function VoiceOnboarding({
     }
   }
 
-  // Pick "Connect X": not connected → start the read-only connect flow; connected →
-  // import recent posts, then move to the build step.
-  async function chooseX() {
-    if (busy) return
-    if (!xStatus?.connected) {
-      await ensureProfile().catch(() => {})
-      window.location.href = '/api/x/connect?returnTo=/app/onboarding'
-      return
-    }
+  // Import the connected account's recent posts, then move to the build step. Shared by
+  // the "Import" button and the auto-import after the connect round-trip.
+  async function importFromX() {
     setError('')
     setBusy(true)
     try {
@@ -174,12 +174,13 @@ export function VoiceOnboarding({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error ?? 'Could not import your posts.')
+        setError(data.error ?? 'Could not import your posts. Paste your writing instead.')
         setStep(3)
         return
       }
       const added: Sample[] = (data.samples ?? []).map((s: Sample) => ({ id: s.id, source: s.source, text: s.text }))
       setSamples((s) => [...added, ...s])
+      if (added.length === 0) setError('No posts found on your X — paste a few things you’ve written instead.')
       setStep(3)
     } catch {
       setError('Network error. Try again.')
@@ -187,6 +188,33 @@ export function VoiceOnboarding({
       setBusy(false)
     }
   }
+
+  // Pick "Connect X": not connected → start the read-only connect flow (we come back to
+  // ?x=connected and auto-import below); connected → import now.
+  async function chooseX() {
+    if (busy) return
+    if (!xStatus?.connected) {
+      await ensureProfile().catch(() => {})
+      window.location.href = '/api/x/connect?returnTo=/app/onboarding'
+      return
+    }
+    await importFromX()
+  }
+
+  // Back from the X connect round-trip → import automatically once status confirms, so
+  // the user isn't left staring at the screen after authorizing.
+  useEffect(() => {
+    if (!justConnectedX || autoImported.current) return
+    if (!xStatus?.connected) return // wait until /api/x/status confirms the connection
+    autoImported.current = true
+    importFromX()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justConnectedX, xStatus])
+
+  // Surface a failed connect (e.g. denied authorization) instead of silently doing nothing.
+  useEffect(() => {
+    if (xError) setError('Couldn’t connect X. Try again, or paste your writing instead.')
+  }, [xError])
 
   async function onDelete(id: string) {
     if (!profileId) return
@@ -419,12 +447,29 @@ export function VoiceOnboarding({
         </div>
       )}
 
-      {/* readiness — friendly, no numbers */}
-      {samples.length > 0 && (
-        <p className={`mb-4 font-code-label text-code-label ${enough ? 'text-cyber-lime' : 'text-on-surface-variant/70'}`}>
-          {enough ? '✓ Looks good — ready to build your voice.' : 'Add a little more so we can capture your style.'}
-        </p>
-      )}
+      {/* Progress toward the minimum — framed as a target ("min 150 words"), not a
+          running "x / 150" limit. */}
+      <div className="mb-4">
+        <div className="mb-1.5 flex items-center justify-between font-code-label text-code-label">
+          <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant'}>min 150 words</span>
+          <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant/60'}>
+            {enough ? '✓ ready to build' : 'a couple of posts is plenty'}
+          </span>
+        </div>
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="progress toward minimum 150 words"
+        >
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${enough ? 'bg-cyber-lime' : 'bg-electric-indigo'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
 
       <button
         type="button"
