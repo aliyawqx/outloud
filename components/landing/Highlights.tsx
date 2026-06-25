@@ -14,26 +14,19 @@ export function Highlights() {
 
       <HighlightsCarousel />
 
-      {/* full-width accent banner */}
-      <div className="reveal relative mt-6 flex flex-col items-start justify-between gap-6 overflow-hidden rounded-3xl bg-electric-indigo p-8 sm:flex-row sm:items-center md:p-10">
-        <Sparkle className="absolute right-32 top-4 text-white/40" size={18} />
+      {/* accent banner — width matched to the carousel so it doesn't dwarf it */}
+      <div className="reveal relative mx-auto mt-10 flex max-w-4xl flex-col items-start justify-between gap-4 overflow-hidden rounded-3xl bg-electric-indigo p-6 sm:flex-row sm:items-center md:px-8">
+        <Sparkle className="absolute right-24 top-3 text-white/40" size={16} />
         <div className="relative z-10">
-          <h3 className="mb-1 font-headline-lg text-headline-lg text-white">Your voice, on tap.</h3>
-          <p className="font-body-md text-body-md text-white/80">Write a week of posts in the time it takes to write one.</p>
+          <h3 className="mb-1 font-headline-sm text-xl font-bold text-white">Your voice, on tap.</h3>
+          <p className="font-body-sm text-body-sm text-white/80">Write a week of posts in the time it takes to write one.</p>
         </div>
-        <div className="relative z-10 flex items-center gap-6">
-          <Link
-            href="/signup"
-            className="whitespace-nowrap rounded-full bg-white px-7 py-3 font-bold text-electric-indigo transition-transform hover:-translate-y-0.5 active:scale-95"
-          >
-            Start free
-          </Link>
-          <span className="hidden h-16 w-16 shrink-0 place-items-center rounded-2xl bg-white/15 sm:grid">
-            <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-white">
-              <span className="h-2.5 w-2.5 rounded-full bg-white" />
-            </span>
-          </span>
-        </div>
+        <Link
+          href="/signup"
+          className="relative z-10 whitespace-nowrap rounded-full bg-white px-6 py-2.5 font-bold text-electric-indigo transition-transform hover:-translate-y-0.5 active:scale-95"
+        >
+          Start free
+        </Link>
       </div>
     </section>
   )
