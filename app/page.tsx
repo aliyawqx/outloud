@@ -4,6 +4,7 @@ import { TrialBanner } from '@/components/TrialBanner'
 import { SiteNav } from '@/components/landing/SiteNav'
 import { Hero } from '@/components/landing/Hero'
 import { Highlights } from '@/components/landing/Highlights'
+import { FeaturesDark } from '@/components/landing/FeaturesDark'
 import { Faq } from '@/components/landing/Faq'
 import { FinalCta } from '@/components/landing/FinalCta'
 import { SiteFooter } from '@/components/landing/SiteFooter'
@@ -16,6 +17,7 @@ export default function Page() {
       <main>
         <Hero />
         <Highlights />
+        <FeaturesDark />
         <div className="reveal">
           <Pricing condensed />
         </div>
