@@ -25,15 +25,14 @@ export function Hero() {
               </div>
 
               <h1 className="font-headline-xl text-headline-xl leading-tight">
-                Post in your voice.
+                posts in your style,
                 <span className="mt-1 block bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">
-                  Or start from Sam Altman’s.
+                  never generic ai.
                 </span>
               </h1>
 
               <p className="max-w-xl font-body-md text-body-md text-on-surface-variant">
-                Outloud captures how you actually write, so every post sounds like you — never generic
-                AI. No voice yet? Start from a real creator’s captured voice and make it your own.
+                outloud learns how you actually write, so every post sounds like you.
               </p>
 
               {/* Single primary CTA. Full-width on mobile so it can never clip at small
@@ -43,7 +42,7 @@ export function Hero() {
                   href="/signup"
                   className="indigo-glow w-full rounded-full bg-electric-indigo px-8 py-4 text-center text-lg font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95 sm:w-auto"
                 >
-                  Start free — no card needed
+                  start free, no card needed
                 </Link>
                 <a
                   href="#how"
