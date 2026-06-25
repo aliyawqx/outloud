@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 
 const COLUMNS = [
-  { title: 'Product', links: [{ label: 'How it works', href: '#how' }, { label: 'Features', href: '#features' }, { label: 'Examples', href: '#examples' }, { label: 'Pricing', href: '#pricing' }, { label: 'FAQ', href: '#faq' }] },
+  { title: 'Product', links: [{ label: 'Pricing', href: '#pricing' }, { label: 'FAQ', href: '#faq' }] },
   { title: 'Company', links: [{ label: 'Log in', href: '/login' }, { label: 'Get started', href: '/signup' }] },
   { title: 'Legal', links: [{ label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' }] },
 ]

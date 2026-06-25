@@ -6,9 +6,9 @@ export function Highlights() {
   return (
     <section className="mx-auto max-w-container-max px-margin-mobile py-20 md:px-margin-desktop">
       <div className="reveal mx-auto mb-12 max-w-2xl text-center">
-        <h2 className="mb-3 font-headline-lg text-headline-lg">Two loops, one voice: grow with replies, ship with posts.</h2>
+        <h2 className="mb-3 font-headline-lg text-headline-lg">Grow with replies, ship with posts.</h2>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Outloud finds posts worth replying to in your niche and turns what you ship into posts — all in your own captured voice.
+          Find posts worth replying to, and turn what you ship into posts. All in your own voice.
         </p>
       </div>
 

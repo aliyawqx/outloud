@@ -63,7 +63,9 @@ export function HighlightsCarousel() {
   return (
     <div className="reveal relative">
       {/* stage — top-aligned cards so the card chrome is always visible */}
-      <div className="relative mx-auto h-[480px] max-w-3xl overflow-hidden sm:h-[540px]">
+      <div className="relative mx-auto h-[480px] max-w-4xl overflow-hidden sm:h-[540px]">
+        {/* soft glow lifting the active card off the dark page so its text reads clearly */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -z-0 h-[65%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-electric-indigo/15 blur-[90px]" />
         {SLIDES.map((s, i) => {
           const raw = (i - index + n) % n
           const pos = raw === 0 ? 0 : raw === n - 1 ? -1 : raw // n=3 → {0, 1, -1}
@@ -73,14 +75,17 @@ export function HighlightsCarousel() {
             <div
               key={s.key}
               aria-hidden={!active}
-              className="absolute left-1/2 top-0 w-[82%] sm:w-3/5"
+              className="absolute left-1/2 top-0 w-[86%] sm:w-[70%]"
               style={{
-                transform: `translateX(calc(-50% + ${pos * 100}%)) scale(${active ? 1 : 0.92})`,
+                // Side slides are pushed back (smaller, blurred, faded) rather than
+                // darkened — keeps them as quiet context without making the area murky.
+                transform: `translateX(calc(-50% + ${pos * 86}%)) scale(${active ? 1 : 0.88})`,
                 transformOrigin: 'top center',
-                opacity: active ? 1 : 0.4,
+                opacity: active ? 1 : 0.35,
+                filter: active ? 'none' : 'blur(2px)',
                 zIndex: active ? 20 : 10,
                 pointerEvents: active ? 'auto' : 'none',
-                transition: 'transform .5s cubic-bezier(.22,1,.36,1), opacity .5s',
+                transition: 'transform .5s cubic-bezier(.22,1,.36,1), opacity .5s, filter .5s',
               }}
             >
               <div className="mb-3 flex items-center gap-2">
@@ -89,11 +94,7 @@ export function HighlightsCarousel() {
                 </span>
                 <h3 className="font-headline-sm text-headline-sm">{s.title}</h3>
               </div>
-              <div className="relative">
-                {s.node}
-                {/* dim veil on the side slides so the center reads as the focus */}
-                {!active && <div className="absolute inset-0 rounded-3xl bg-charcoal-black/40" />}
-              </div>
+              {s.node}
             </div>
           )
         })}
