@@ -353,9 +353,10 @@ export function VoiceOnboarding({
     )
   }
 
-  // ── Step 3: add writing + build ──
+  // ── Step 3: add writing + build (content scrolls; bar + button pinned at bottom) ──
   return (
-    <div className={`${shell} max-w-2xl`}>
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col">
+      <div className="flex-1 px-margin-mobile pt-12 pb-4">
       <div className="mb-6 flex items-center justify-between gap-3">
         <Stepper step={3} />
         <button
@@ -457,39 +458,43 @@ export function VoiceOnboarding({
         </div>
       )}
 
-      {/* Progress toward the minimum — framed as a target ("min 150 words"), not a
-          running "x / 150" limit. */}
-      <div className="mb-4">
-        <div className="mb-1.5 flex items-center justify-between font-code-label text-code-label">
-          <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant'}>min 150 words</span>
-          <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant/60'}>
-            {enough ? '✓ ready to build' : 'a couple of posts is plenty'}
-          </span>
-        </div>
-        <div
-          className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high"
-          role="progressbar"
-          aria-valuenow={pct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="progress toward minimum 150 words"
-        >
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${enough ? 'bg-cyber-lime' : 'bg-electric-indigo'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+      {creatorLink}
       </div>
 
-      <button
-        type="button"
-        onClick={onBuild}
-        disabled={!enough || continuing}
-        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-cyber-lime px-6 py-3 font-bold text-charcoal-black transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {continuing ? <><Spinner size={18} /> Building your voice…</> : enough ? 'Build my voice' : 'Add a bit more to continue'}
-      </button>
-      {creatorLink}
+      {/* Sticky footer — the "min 150 words" bar + build button stay pinned to the
+          bottom of the screen while the content above scrolls. */}
+      <div className="sticky bottom-0 border-t border-border-muted bg-surface/90 px-margin-mobile py-4 backdrop-blur-sm">
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center justify-between font-code-label text-code-label">
+            <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant'}>min 150 words</span>
+            <span className={enough ? 'text-cyber-lime' : 'text-on-surface-variant/60'}>
+              {enough ? '✓ ready to build' : 'a couple of posts is plenty'}
+            </span>
+          </div>
+          <div
+            className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high"
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="progress toward minimum 150 words"
+          >
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${enough ? 'bg-cyber-lime' : 'bg-electric-indigo'}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onBuild}
+          disabled={!enough || continuing}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-cyber-lime px-6 py-3 font-bold text-charcoal-black transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {continuing ? <><Spinner size={18} /> Building your voice…</> : enough ? 'Build my voice' : 'Add a bit more to continue'}
+        </button>
+      </div>
     </div>
   )
 }
