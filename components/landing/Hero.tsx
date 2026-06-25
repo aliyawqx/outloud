@@ -15,7 +15,7 @@ export function Hero() {
             // One clear hierarchy: eyebrow → headline (the voice differentiator) →
             // one supporting line → a single primary CTA. Nothing else competes above
             // the fold (mascot/secondary buttons removed to give the hook room).
-            <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 px-margin-mobile pt-20 pb-24 md:pt-28 md:pb-32">
+            <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 px-margin-mobile pt-16 pb-24 md:pt-14 md:pb-32">
               <div className="inline-flex items-center gap-2 rounded-full border border-border-muted bg-surface-container-low px-3 py-1">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-electric-indigo opacity-75" />
