@@ -69,20 +69,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Hard floor (P2): never wall a user who hasn't yet made their guaranteed first drafts —
   // they must be able to reach the composer and experience drafting before any paywall,
   // regardless of balance. countDraftsMade is only queried when a gate is otherwise due.
-  if (
+  //
+  // When the trial is over we do NOT replace the whole app with the paywall: the user
+  // should LAND IN their actual account (sidebar, history, drafts all visible) and only
+  // then meet the "keep going" card, rendered as a blocking overlay on top. So we just
+  // compute a `gated` flag here and render the card over the normal shell below.
+  const gated =
     !unlimited &&
     !onVoices &&
     (profile?.plan ?? 'free') === 'free' &&
     !inCardFreeWindow &&
     (await countDraftsMade(session.userId)) >= FREE_DRAFT_FLOOR
-  ) {
-    return (
-      <TrialGate
-        name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]}
-        trialUsed={Boolean(profile?.trialUsed)}
-      />
-    )
-  }
 
   // Live credit balance for the header; expire a card-free window that has run its
   // course (no-op for paid/staff and for windows still in progress).
@@ -107,6 +104,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         />
         <main className="relative min-w-0 flex-1 px-margin-mobile py-8 md:px-10 lg:px-12">{children}</main>
       </div>
+      {gated && (
+        <TrialGate
+          name={(profile?.displayName || session.email).split('@')[0].split(' ')[0]}
+          trialUsed={Boolean(profile?.trialUsed)}
+        />
+      )}
       <TourController initialState={profile?.onboardingState ?? {}} />
     </CreditsProvider>
   )

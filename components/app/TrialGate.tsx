@@ -10,6 +10,11 @@ import { PlanCard, Toggle } from '@/components/Pricing'
 // is billed immediately (they've already had their free trial). Uses the same plan cards
 // as the landing pricing section. `trialUsed` is accepted for back-compat but the copy is
 // now always continuation-framed.
+//
+// Rendered as a blocking OVERLAY over the real app (not a full-page replacement): the user
+// has genuinely logged into their account — sidebar, history and drafts sit behind this —
+// and only then meets the "keep going" card. The backdrop blocks interaction until they
+// pick a plan or log out, so it still gates usage without hiding the account.
 const PAID_PLANS = PLANS.filter((p) => p.id === 'starter' || p.id === 'pro')
 
 export function TrialGate({ name }: { name?: string; trialUsed?: boolean }) {
@@ -23,40 +28,48 @@ export function TrialGate({ name }: { name?: string; trialUsed?: boolean }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-margin-mobile py-12 text-center">
-      <div className="mb-3 inline-block border-b border-cyber-lime/30 pb-1 font-code-label text-code-label text-cyber-lime">
-        0x02 // KEEP GOING
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 overflow-y-auto bg-charcoal-black/80 backdrop-blur-sm"
+    >
+      {/* min-h-full + justify-center centers the card when it fits and lets it scroll when
+          it doesn't (short viewports), instead of clipping the top. */}
+      <div className="flex min-h-full flex-col items-center justify-center px-margin-mobile py-12 text-center">
+        <div className="mb-3 inline-block border-b border-cyber-lime/30 pb-1 font-code-label text-code-label text-cyber-lime">
+          0x02 // KEEP GOING
+        </div>
+        <h1 className="font-headline-xl text-headline-xl">
+          Keep posting in your voice{name ? `, ${name}` : ''}
+        </h1>
+        <p className="mt-3 max-w-xl font-body-md text-body-md text-on-surface-variant">
+          Your free trial credits are used up. Pick a plan to keep going — your voice, drafts, and
+          history are all saved, so you pick up right where you left off.
+        </p>
+
+        <div className="mt-8">
+          <Toggle mode={mode} setMode={setMode} />
+        </div>
+
+        <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-8 md:grid-cols-2">
+          {PAID_PLANS.map((p) => (
+            <PlanCard key={p.id} plan={p} mode={mode} />
+          ))}
+        </div>
+
+        <p className="mt-6 font-code-label text-code-label text-on-surface-variant/60">
+          billed today · cancel anytime
+        </p>
+
+        <button
+          type="button"
+          onClick={signOut}
+          className="mt-8 inline-flex items-center gap-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">logout</span>
+          Log out
+        </button>
       </div>
-      <h1 className="font-headline-xl text-headline-xl">
-        Keep posting in your voice{name ? `, ${name}` : ''}
-      </h1>
-      <p className="mt-3 max-w-xl font-body-md text-body-md text-on-surface-variant">
-        Your free trial credits are used up. Pick a plan to keep going — your voice, drafts, and
-        history are all saved, so you pick up right where you left off.
-      </p>
-
-      <div className="mt-8">
-        <Toggle mode={mode} setMode={setMode} />
-      </div>
-
-      <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-8 md:grid-cols-2">
-        {PAID_PLANS.map((p) => (
-          <PlanCard key={p.id} plan={p} mode={mode} />
-        ))}
-      </div>
-
-      <p className="mt-6 font-code-label text-code-label text-on-surface-variant/60">
-        billed today · cancel anytime
-      </p>
-
-      <button
-        type="button"
-        onClick={signOut}
-        className="mt-8 inline-flex items-center gap-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
-      >
-        <span aria-hidden="true" className="material-symbols-outlined text-[16px]">logout</span>
-        Log out
-      </button>
     </div>
   )
 }
