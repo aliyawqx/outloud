@@ -4,7 +4,12 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 const { createMock } = vi.hoisted(() => ({ createMock: vi.fn() }))
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class {
-    messages = { create: createMock }
+    // `stream(...).finalMessage()` routes through the same mock as `create`, so a
+    // single mockResolvedValue covers both the non-streaming and streaming paths.
+    messages = {
+      create: createMock,
+      stream: (params: unknown) => ({ finalMessage: () => createMock(params) }),
+    }
   },
 }))
 

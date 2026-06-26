@@ -209,11 +209,15 @@ export async function generateStyleGuide(samples: string[]): Promise<StyleGuide>
 
   const model = getModel()
   const effort = supportsEffort(model)
-  const msg = await createMessage({
+  // Style-guide extraction is a bounded, single-shot task — not open-ended reasoning.
+  // Adaptive thinking + medium effort here could push the call past the 60s function
+  // limit (→ 504). Use low effort, no adaptive thinking, and STREAM the response so the
+  // connection stays alive throughout. Quality stays high; latency becomes predictable.
+  const msg = await createMessageStreaming({
     model,
     max_tokens: 4000,
     system: [{ type: 'text', text: STYLE_ANALYSIS_PROMPT, cache_control: { type: 'ephemeral' } }],
-    ...(effort ? { thinking: { type: 'adaptive' as const }, output_config: { effort: 'medium' as const } } : {}),
+    ...(effort ? { output_config: { effort: 'low' as const } } : {}),
     messages: [
       {
         role: 'user',
@@ -504,6 +508,25 @@ function createMessage(params: Anthropic.MessageCreateParamsNonStreaming): Promi
     const c = getClient()
     try {
       return await c.messages.create(params)
+    } catch (err) {
+      if (err instanceof Anthropic.APIError && (err.status === 429 || err.status === 529)) {
+        throw new ModelBusyError()
+      }
+      throw err
+    }
+  })
+}
+
+/** Streaming variant of {@link createMessage}: streams the response and returns the
+ *  assembled final message. Use for long single-shot generations (e.g. the Style Guide)
+ *  so the HTTP connection stays active throughout — a buffered non-streaming request can
+ *  exceed a gateway/function timeout and surface as a 504. Same concurrency limit and
+ *  429/529 → ModelBusyError mapping as the non-streaming path. */
+function createMessageStreaming(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
+  return limit(async () => {
+    const c = getClient()
+    try {
+      return await c.messages.stream(params).finalMessage()
     } catch (err) {
       if (err instanceof Anthropic.APIError && (err.status === 429 || err.status === 529)) {
         throw new ModelBusyError()
