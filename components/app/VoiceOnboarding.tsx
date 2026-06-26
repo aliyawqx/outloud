@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
-import { DemoVideo } from '@/components/landing/DemoVideo'
 import { addSample, createOwnVoice, deleteSample, generateStyleGuide } from '@/lib/voice/client'
 import type { SampleSource } from '@/lib/voice/types'
 
@@ -264,8 +263,6 @@ export function VoiceOnboarding({
     return (
       <div className={`${shell} max-w-md`}>
         <Stepper step={1} />
-        {/* Quick look at what you're about to set up (hidden until the clip exists). */}
-        <DemoVideo caption="30 seconds: how voice capture works." />
         <h1 className="mb-2 font-headline-xl text-headline-xl">Name your voice</h1>
         <p className="mb-6 font-body-md text-body-md text-on-surface-variant">Keep your name or pick anything.</p>
         <input
