@@ -36,9 +36,6 @@ export function TrialGate({ name }: { name?: string; trialUsed?: boolean }) {
       {/* min-h-full + justify-center centers the card when it fits and lets it scroll when
           it doesn't (short viewports), instead of clipping the top. */}
       <div className="flex min-h-full flex-col items-center justify-center px-margin-mobile py-12 text-center">
-        <div className="mb-3 inline-block border-b border-cyber-lime/30 pb-1 font-code-label text-code-label text-cyber-lime">
-          0x02 // KEEP GOING
-        </div>
         <h1 className="font-headline-xl text-headline-xl">
           Keep posting in your voice{name ? `, ${name}` : ''}
         </h1>
