@@ -90,7 +90,7 @@ export function HighlightsCarousel() {
                 transform: `translateX(calc(-50% + ${pos * 86}%)) scale(${active ? 1 : 0.88})`,
                 transformOrigin: 'top center',
                 opacity: active ? 1 : 0.35,
-                filter: active ? 'none' : 'blur(2px)',
+                filter: active ? 'none' : 'blur(1px)',
                 zIndex: active ? 20 : 10,
                 pointerEvents: active ? 'auto' : 'none',
                 transition: 'transform .5s cubic-bezier(.22,1,.36,1), opacity .5s, filter .5s',
