@@ -1,12 +1,17 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { INTRO_VIDEO_URL } from '@/lib/media'
 import { ComposerMockup } from './ComposerMockup'
 import { ReplyFinderMockup } from './ReplyFinderMockup'
 
-// A short demo-video slide playing the hosted intro clip.
+// A short demo-video slide playing the hosted intro clip. Until it's started, a
+// branded poster (mascot on a soft glow) covers the frame so the slide never shows
+// a black box; clicking it starts playback and reveals the native controls.
 function VideoSlide() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [started, setStarted] = useState(false)
+
   return (
     <div className="glass-card overflow-hidden rounded-3xl border-white/10 shadow-2xl">
       <div className="flex items-center gap-2 border-b border-border-muted px-5 py-3">
@@ -17,12 +22,29 @@ function VideoSlide() {
       </div>
       <div className="relative aspect-video bg-surface-container-lowest">
         <video
+          ref={videoRef}
           className="h-full w-full object-cover"
           src={INTRO_VIDEO_URL}
-          controls
+          controls={started}
           playsInline
           preload="metadata"
+          onPlay={() => setStarted(true)}
         />
+        {!started && (
+          <button
+            type="button"
+            aria-label="Play demo video"
+            onClick={() => videoRef.current?.play()}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container-lowest"
+          >
+            <span className="pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-electric-indigo/15 blur-[70px]" />
+            <img src="/mascot.svg" alt="" className="relative h-20 w-20" />
+            <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-electric-indigo text-white shadow-lg">
+              <span aria-hidden="true" className="material-symbols-outlined text-[28px]">play_arrow</span>
+            </span>
+            <span className="relative font-code-label text-code-label text-on-surface-variant">see it in action</span>
+          </button>
+        )}
       </div>
     </div>
   )
@@ -31,9 +53,9 @@ function VideoSlide() {
 type Slide = { key: string; icon: string; color: string; ring: string; title: string; node: ReactNode }
 
 const SLIDES: Slide[] = [
+  { key: 'demo', icon: 'play_circle', color: 'text-electric-indigo', ring: 'bg-electric-indigo/20', title: 'See it in action', node: <VideoSlide /> },
   { key: 'reply', icon: 'travel_explore', color: 'text-cyber-lime', ring: 'bg-cyber-lime/20', title: 'Reply finder', node: <ReplyFinderMockup /> },
   { key: 'post', icon: 'edit_square', color: 'text-electric-indigo', ring: 'bg-electric-indigo/20', title: 'Idea → finished post', node: <ComposerMockup compact /> },
-  { key: 'demo', icon: 'play_circle', color: 'text-electric-indigo', ring: 'bg-electric-indigo/20', title: 'See it in action', node: <VideoSlide /> },
 ]
 
 // Center-stage carousel: the active slide is bright and centered, the other two peek
