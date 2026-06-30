@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCheckout } from '@/lib/billing/polar'
 import { isPaidPlanId } from '@/lib/billing/plans'
 import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
-import { grantPlan, grantTrialPool, addCredits, packById } from '@/lib/credits'
+import { grantPlan, addCredits, packById } from '@/lib/credits'
 
 // GET /api/billing/success?checkout_id=... — where Polar redirects after checkout.
 // We activate immediately (plan + credits) so it works even before the webhook lands
@@ -36,11 +36,10 @@ export async function GET(req: Request) {
           await setTrialing(userId, false)
           await grantPlan(userId, plan)
         } else {
-          // No charge → a Polar trial started: 10k pool + trial flags. (Dead path now
-          // that signup grants the card-free trial and checkout always charges, but kept
-          // as a safe backstop in case a $0 trial product is ever used again.)
+          // No charge → a Polar trial started. Subscribers get the FULL plan allowance
+          // up front (not the 10k pool); the trial flags still block top-ups + mark it used.
           await markTrialStarted(userId)
-          await grantTrialPool(userId)
+          await grantPlan(userId, plan)
         }
         home.searchParams.set('upgraded', plan)
       }

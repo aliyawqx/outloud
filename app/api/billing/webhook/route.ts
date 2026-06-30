@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
 import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
-import { addCredits, grantPlan, grantTrialPool, zeroPlanCredits, packByProductId } from '@/lib/credits'
+import { addCredits, grantPlan, zeroPlanCredits, packByProductId } from '@/lib/credits'
 
 // POST /api/billing/webhook — Polar's durable activation path (Standard Webhooks).
 // Verifies the signature, then flips the user's plan on subscribe / cancel. Set
@@ -82,13 +82,14 @@ export async function POST(req: Request) {
       }
     } else if (type === 'subscription.created' && status === 'trialing') {
       // Trial start (card added, no charge): set the plan label so the gate is passed,
-      // grant the 10k trial pool (NOT the full plan), and flag the trial (no top-ups).
+      // grant the FULL plan allowance immediately (subscribers get their plan's credits
+      // up front, not the 10k trial pool), and flag the trial (no top-ups during it).
       const userId = await resolveUserId(data)
       const plan = planForProductId(productId)
       if (userId && plan) {
         await setPlan(userId, plan)
         await markTrialStarted(userId) // trialing now + trial_used forever
-        await grantTrialPool(userId)
+        await grantPlan(userId, plan) // full plan allowance from day one
         await setPolarRefs(userId, { customerId, subscriptionId: (data.id as string) ?? undefined, periodEnd })
       }
     } else if (type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled' || type === 'subscription.updated') {
