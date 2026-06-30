@@ -5,6 +5,7 @@ import { XConnection } from '@/components/app/XConnection'
 import { ThreadsConnection } from '@/components/app/ThreadsConnection'
 import { DeleteAccount } from '@/components/app/DeleteAccount'
 import { ReplayTours } from '@/components/app/onboarding/ReplayTours'
+import { WatchIntroButton } from '@/components/app/onboarding/WatchIntroButton'
 
 export const metadata = { title: 'Outloud | Profile' }
 
@@ -36,6 +37,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <ThreadsConnection flash={threadsFlash} />
       </div>
       <ReplayTours />
+      <div className="mt-3 flex justify-end">
+        <WatchIntroButton />
+      </div>
       <DeleteAccount />
     </div>
   )
