@@ -10,6 +10,7 @@ import { AppSidebar } from '@/components/app/AppSidebar'
 import { CreditsProvider } from '@/components/app/CreditsContext'
 import { TrialGate } from '@/components/app/TrialGate'
 import { TourController } from '@/components/app/onboarding/TourController'
+import { WelcomeVideoOverlay } from '@/components/app/onboarding/WelcomeVideoOverlay'
 import { VerifyEmail } from '@/components/app/VerifyEmail'
 import { isStaff } from '@/lib/appLock'
 import { resetIfDue, countDraftsMade, FREE_DRAFT_FLOOR } from '@/lib/credits'
@@ -110,6 +111,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           trialUsed={Boolean(profile?.trialUsed)}
         />
       )}
+      <WelcomeVideoOverlay initialState={profile?.onboardingState ?? {}} />
       <TourController initialState={profile?.onboardingState ?? {}} />
     </CreditsProvider>
   )

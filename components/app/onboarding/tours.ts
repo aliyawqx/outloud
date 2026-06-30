@@ -87,11 +87,20 @@ export const TOURS: Record<TourKey, TourStep[]> = {
 /** Which tour (if any) should fire on a route, given completion state. /app staggers:
  *  the global welcome first, then the new-post tour on a later visit. */
 export function tourForRoute(pathname: string, done: Record<string, boolean>): TourKey | null {
-  if (pathname === '/app') return !done.welcome ? 'welcome' : !done.new_post ? 'new_post' : null
+  if (pathname === '/app') {
+    // The intro video plays first; the welcome tour waits until it's dismissed.
+    if (!done.welcome_video) return null
+    return !done.welcome ? 'welcome' : !done.new_post ? 'new_post' : null
+  }
   if (pathname.startsWith('/app/reply')) return !done.new_reply ? 'new_reply' : null
   if (pathname.startsWith('/app/settings/billing')) return !done.billing ? 'billing' : null
   if (pathname === '/app/voices') return !done.voices ? 'voices' : null
   // /app/profile (but not /app/profile/usage, which has no tour of its own)
   if (pathname === '/app/profile') return !done.profile ? 'profile' : null
   return null
+}
+
+/** Whether the one-time intro video should still play (before any /app tour). */
+export function shouldShowIntro(done: Record<string, boolean>): boolean {
+  return done.welcome_video !== true
 }

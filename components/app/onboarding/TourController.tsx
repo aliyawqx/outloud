@@ -98,5 +98,18 @@ export function TourController({ initialState }: { initialState: Record<string, 
     return () => clearTimeout(timer)
   }, [pathname])
 
+  // The intro video hands off here: once it's dismissed, mark welcome_video done in
+  // our local mirror and (re)evaluate the current route's tour so welcome can fire.
+  useEffect(() => {
+    function onIntroDone() {
+      doneRef.current.welcome_video = true
+      if (runningRef.current) return
+      const key = tourForRoute(window.location.pathname, doneRef.current)
+      if (key) startRef.current(key)
+    }
+    window.addEventListener('outloud:intro-done', onIntroDone)
+    return () => window.removeEventListener('outloud:intro-done', onIntroDone)
+  }, [])
+
   return null
 }
