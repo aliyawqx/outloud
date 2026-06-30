@@ -1,21 +1,12 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { INTRO_VIDEO_URL } from '@/lib/media'
 import { ComposerMockup } from './ComposerMockup'
 import { ReplyFinderMockup } from './ReplyFinderMockup'
 
-// A short demo-video slide. Probes for the real clip and shows it when present;
-// otherwise a clean placeholder so the carousel slot is never empty/broken.
+// A short demo-video slide playing the hosted intro clip.
 function VideoSlide() {
-  const [ready, setReady] = useState(false)
-  useEffect(() => {
-    let alive = true
-    fetch('/demo/voice-capture.mp4', { method: 'HEAD' })
-      .then((r) => { if (alive && r.ok) setReady(true) })
-      .catch(() => {})
-    return () => { alive = false }
-  }, [])
-
   return (
     <div className="glass-card overflow-hidden rounded-3xl border-white/10 shadow-2xl">
       <div className="flex items-center gap-2 border-b border-border-muted px-5 py-3">
@@ -25,18 +16,13 @@ function VideoSlide() {
         <span className="ml-3 font-code-label text-code-label text-on-surface-variant">outloud · demo</span>
       </div>
       <div className="relative aspect-video bg-surface-container-lowest">
-        {ready ? (
-          <video className="h-full w-full object-cover" controls playsInline preload="none" poster="/demo/voice-capture-poster.jpg">
-            <source src="/demo/voice-capture.mp4" type="video/mp4" />
-          </video>
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-on-surface-variant">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-electric-indigo/15 text-electric-indigo">
-              <span aria-hidden="true" className="material-symbols-outlined text-[30px]">play_arrow</span>
-            </span>
-            <span className="font-code-label text-code-label">see it in action</span>
-          </div>
-        )}
+        <video
+          className="h-full w-full object-cover"
+          src={INTRO_VIDEO_URL}
+          controls
+          playsInline
+          preload="metadata"
+        />
       </div>
     </div>
   )
