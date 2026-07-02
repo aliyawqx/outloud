@@ -17,8 +17,8 @@ export default function Page() {
       <SiteNav />
       <main>
         <Hero />
-        <BeforeAfter />
         <Highlights />
+        <BeforeAfter />
         <HowItWorks />
         <div className="reveal">
           <Pricing condensed />
