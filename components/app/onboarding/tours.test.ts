@@ -17,8 +17,8 @@ describe('tourForRoute /app intro gating', () => {
   it('welcome fires after intro video is seen', () => {
     expect(tourForRoute('/app', { welcome_video: true })).toBe('welcome')
   })
-  it('new_post fires when welcome also done', () => {
-    expect(tourForRoute('/app', { welcome_video: true, welcome: true })).toBe('new_post')
+  it('no /app tour once welcome is done (new_post tour removed)', () => {
+    expect(tourForRoute('/app', { welcome_video: true, welcome: true })).toBeNull()
   })
   it('other routes are unaffected by welcome_video', () => {
     expect(tourForRoute('/app/voices', {})).toBe('voices')

@@ -3,7 +3,7 @@
 // match the brand voice. Steps whose target isn't present/visible are filtered out
 // at run time, so conditionally-rendered targets (publish, etc.) degrade cleanly.
 
-export type TourKey = 'welcome' | 'new_post' | 'new_reply' | 'profile' | 'billing' | 'voices'
+export type TourKey = 'welcome' | 'new_reply' | 'profile' | 'billing' | 'voices'
 
 export type TourStep = {
   element?: string
@@ -17,7 +17,7 @@ export type TourStep = {
   route?: string
 }
 
-export const ALL_TOURS: TourKey[] = ['welcome', 'new_post', 'new_reply', 'profile', 'billing', 'voices']
+export const ALL_TOURS: TourKey[] = ['welcome', 'new_reply', 'profile', 'billing', 'voices']
 
 export const TOURS: Record<TourKey, TourStep[]> = {
   // Global first-login pass over the core loop.
@@ -55,12 +55,6 @@ export const TOURS: Record<TourKey, TourStep[]> = {
   ],
 
   // Per-page tours (first visit each).
-  new_post: [
-    { element: '[data-tour="composer"]', title: 'draft a post', description: 'type a rough idea — outloud writes it in your voice.', side: 'top' },
-    { element: '[data-tour="voice-picker"]', title: 'voice for this post', description: 'switch the voice this post is written in.', side: 'top' },
-    { element: '[data-tour="mode-picker"]', title: 'format', description: 'pick a format — thread, hot take, and more.', side: 'top' },
-    { element: '[data-tour="new-post"]', title: 'new chat per post', description: 'finished one? start a new chat for the next post so credits stay on drafting.', side: 'right' },
-  ],
   new_reply: [
     { element: '[data-tour="reply-source"]', title: 'pick a post', description: 'paste a link to the post you want to reply to.', side: 'bottom' },
     { element: '[data-tour="voice-picker"]', title: 'your voice, on replies', description: 'your captured voice applies to replies too.', side: 'bottom' },
@@ -90,7 +84,7 @@ export function tourForRoute(pathname: string, done: Record<string, boolean>): T
   if (pathname === '/app') {
     // The intro video plays first; the welcome tour waits until it's dismissed.
     if (!done.welcome_video) return null
-    return !done.welcome ? 'welcome' : !done.new_post ? 'new_post' : null
+    return !done.welcome ? 'welcome' : null
   }
   if (pathname.startsWith('/app/reply')) return !done.new_reply ? 'new_reply' : null
   if (pathname.startsWith('/app/settings/billing')) return !done.billing ? 'billing' : null
