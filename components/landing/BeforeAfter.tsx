@@ -13,38 +13,32 @@ export function BeforeAfter() {
 
       <div className="mx-auto grid max-w-4xl grid-cols-1 items-stretch gap-5 md:grid-cols-2">
         {/* LEFT — generic AI: flat, muted, forgettable */}
-        <div className="reveal flex flex-col rounded-3xl border border-border-muted bg-surface-container-low p-6">
+        <div className="reveal flex flex-col rounded-3xl border border-border-muted bg-surface-container-low p-6 md:p-7">
           <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-border-muted bg-white/5 px-3 py-1">
             <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-on-surface-variant/70">robot_2</span>
             <span className="font-code-label text-code-label tracking-wide text-on-surface-variant/70">Generic AI</span>
           </div>
-          <div className="overflow-hidden rounded-xl border border-border-muted bg-surface-container-lowest">
-            <img
-              src="/before-after/generic-ai.png"
-              alt="Generic AI writing a bland, forgettable founder post"
-              className="h-[300px] w-full object-contain md:h-[340px]"
-              loading="lazy"
-            />
-          </div>
+          <p className="font-body-md text-body-md leading-relaxed text-on-surface-variant/70 md:text-lg">
+            Shipped something small today. I wasn&apos;t even sure this feature would work. Built it anyway,
+            tested it, and... it works. A good reminder that the fastest way to answer &apos;will this work?&apos;
+            is usually to ship the smallest version and find out.
+          </p>
         </div>
 
         {/* RIGHT — your voice, via Outloud: violet border + soft glow, alive */}
         <div
-          className="reveal flex flex-col rounded-3xl border border-electric-indigo bg-surface-container-low p-6"
-          style={{ transitionDelay: '110ms', boxShadow: '0 0 28px rgba(176, 107, 255, 0.28)' }}
+          className="reveal flex flex-col rounded-3xl border border-[#8447F0] bg-surface-container-low p-6 shadow-[0_0_28px_rgba(132,71,240,0.28)] md:p-7"
+          style={{ transitionDelay: '110ms' }}
         >
-          <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-electric-indigo/40 bg-electric-indigo/10 px-3 py-1">
-            <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-electric-indigo">check_circle</span>
-            <span className="font-code-label text-code-label tracking-wide text-electric-indigo">Your voice, via Outloud</span>
+          <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-[#8447F0]/50 bg-[#8447F0]/10 px-3 py-1">
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-[#8447F0]">check_circle</span>
+            <span className="font-code-label text-code-label tracking-wide text-[#8447F0]">Your voice, via Outloud</span>
           </div>
-          <div className="overflow-hidden rounded-xl border border-electric-indigo/30 bg-surface-container-lowest">
-            <img
-              src="/before-after/outloud-draft.png"
-              alt="Outloud drafting the same post in your writing voice"
-              className="h-[300px] w-full object-contain md:h-[340px]"
-              loading="lazy"
-            />
-          </div>
+          <p className="font-body-md text-body-md leading-relaxed text-on-surface md:text-lg">
+            shipped the <span className="text-[#9CCC48]">search and filter</span> for{' '}
+            <span className="text-[#9CCC48]">messages</span> today. wasn&apos;t sure it would work. tested it.
+            it works. that&apos;s it, the <span className="text-[#9CCC48]">personal crm</span> is getting there.
+          </p>
         </div>
       </div>
     </section>
