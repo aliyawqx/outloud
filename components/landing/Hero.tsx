@@ -32,8 +32,8 @@ export function Hero() {
               </h1>
 
               <p className="max-w-xl font-body-md text-body-md text-on-surface-variant">
-                the second a post reads as ai, the account gets weaker. quiet unfollows, lost trust.
-                outloud writes in your real voice, so that never happens.
+                The moment a post reads as AI, the account gets weaker. Outloud writes in your writing
+                voice, the way you actually post, so that never happens.
               </p>
 
               {/* Single primary CTA. Full-width on mobile so it can never clip at small

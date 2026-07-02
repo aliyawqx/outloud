@@ -31,7 +31,7 @@ export const PLANS: Plan[] = [
   {
     id: 'trial',
     name: 'Free trial',
-    tagline: 'try Outloud in your own voice',
+    tagline: 'Try Outloud in your own writing voice',
     trial: true,
     badge: '3 days free',
     monthly: { perMo: 0, sub: '3 days free' },
@@ -39,7 +39,7 @@ export const PLANS: Plan[] = [
     features: [
       '3 days free, no card needed',
       '10,000 credits to start',
-      'Posts in your voice across X, LinkedIn & Telegram',
+      'Posts in your voice across X, LinkedIn & Threads',
       'Voice capture from your existing posts',
       'X Reply engine included',
       '1 connected account per platform',
@@ -50,11 +50,11 @@ export const PLANS: Plan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    tagline: 'for solo builders posting in their own voice',
-    monthly: { perMo: 15, sub: 'billed monthly' },
-    annual: { perMo: 10, sub: 'billed annually · $120/year', save: 'save 33%' },
+    tagline: 'For solo builders posting in their own voice',
+    monthly: { perMo: 15, sub: 'Billed monthly' },
+    annual: { perMo: 10, sub: 'Billed annually · $120/year', save: 'Save 33%' },
     features: [
-      'Posts in your voice across X, LinkedIn & Telegram',
+      'Posts in your voice across X, LinkedIn & Threads',
       'Voice capture from your existing posts',
       'X Reply engine included',
       'Topic search to find what to reply to',
@@ -65,11 +65,11 @@ export const PLANS: Plan[] = [
   {
     id: 'pro',
     name: 'Pro',
-    tagline: 'for founders & creators going all-in on growth',
+    tagline: 'For founders & creators going all-in on growth',
     highlight: true,
     badge: 'Most popular',
-    monthly: { perMo: 30, sub: 'billed monthly' },
-    annual: { perMo: 20, sub: 'billed annually · $240/year', save: 'save 33%' },
+    monthly: { perMo: 30, sub: 'Billed monthly' },
+    annual: { perMo: 20, sub: 'Billed annually · $240/year', save: 'Save 33%' },
     features: [
       'Everything in Starter',
       'X Reply engine + trending discovery',
