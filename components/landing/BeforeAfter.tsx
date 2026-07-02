@@ -12,26 +12,32 @@ export function BeforeAfter() {
       </div>
 
       <div className="mx-auto grid max-w-4xl grid-cols-1 items-stretch gap-5 md:grid-cols-2">
-        {/* LEFT — generic AI (deliberately slop) */}
-        <div className="reveal flex flex-col rounded-3xl border border-error/30 bg-surface-container-low p-6">
-          <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-error/30 bg-error/10 px-3 py-1">
-            <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-error/80">robot_2</span>
-            <span className="font-code-label text-code-label tracking-wide text-error/80">Generic AI</span>
+        {/* LEFT — generic AI: flat, muted, forgettable */}
+        <div className="reveal flex flex-col rounded-3xl border border-border-muted bg-surface-container-low p-6">
+          <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-border-muted bg-white/5 px-3 py-1">
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-on-surface-variant/70">robot_2</span>
+            <span className="font-code-label text-code-label tracking-wide text-on-surface-variant/70">Generic AI</span>
           </div>
-          <p className="font-body-md text-body-md leading-relaxed text-on-surface-variant/80">
-            In today&apos;s fast-paced startup landscape, we&apos;re thrilled to unveil a game-changing update
-            that will revolutionize, streamline, and elevate your workflow — because innovation never sleeps.
+          <p className="font-body-md text-body-md leading-relaxed text-on-surface-variant/60">
+            Shipped something small today. I wasn&apos;t even sure this feature would work. Built it anyway,
+            tested it, and... it works. A good reminder that the fastest way to answer &apos;will this work?&apos;
+            is usually to ship the smallest version and find out.
           </p>
         </div>
 
-        {/* RIGHT — your voice, via Outloud */}
-        <div className="reveal flex flex-col rounded-3xl border border-electric-indigo/50 bg-surface-container-low p-6 shadow-xl" style={{ transitionDelay: '110ms' }}>
+        {/* RIGHT — your voice, via Outloud: violet border + soft glow, alive */}
+        <div
+          className="reveal flex flex-col rounded-3xl border border-electric-indigo bg-surface-container-low p-6"
+          style={{ transitionDelay: '110ms', boxShadow: '0 0 28px rgba(176, 107, 255, 0.28)' }}
+        >
           <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-electric-indigo/40 bg-electric-indigo/10 px-3 py-1">
             <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-electric-indigo">check_circle</span>
             <span className="font-code-label text-code-label tracking-wide text-electric-indigo">Your voice, via Outloud</span>
           </div>
           <p className="font-body-md text-body-md leading-relaxed text-on-surface">
-            shipped a thing today i wasn&apos;t sure would work. it works. small win but i&apos;ll take it.
+            shipped the <span className="text-cyber-lime">search and filter</span> for{' '}
+            <span className="text-cyber-lime">messages</span> today. wasn&apos;t sure it would work. tested it.
+            it works. that&apos;s it, the <span className="text-cyber-lime">personal crm</span> is getting there.
           </p>
         </div>
       </div>
