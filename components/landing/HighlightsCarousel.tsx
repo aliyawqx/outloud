@@ -15,8 +15,12 @@ function AppShotSlide() {
         <span className="h-3 w-3 rounded-full bg-electric-indigo/40" />
         <span className="ml-3 font-code-label text-code-label text-on-surface-variant">outloud · app</span>
       </div>
-      <div className="relative aspect-video bg-surface">
-        <AppShot />
+      {/* Render the app UI larger, then scale it down so the WHOLE screen fits
+          (zoomed out) instead of a cropped close-up. */}
+      <div className="relative aspect-video overflow-hidden bg-surface">
+        <div className="absolute left-0 top-0 h-[143%] w-[143%] origin-top-left scale-[0.7]">
+          <AppShot />
+        </div>
       </div>
     </div>
   )
