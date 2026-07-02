@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 import { LampGlow } from '@/components/ui/lamp'
-import { AppShot } from './AppShot'
+import { IntroVideoPlayer } from './IntroVideoPlayer'
 
 export function Hero() {
   return (
@@ -55,7 +55,7 @@ export function Hero() {
             </div>
           }
         >
-          <AppShot />
+          <IntroVideoPlayer />
         </ContainerScroll>
       </div>
     </section>
