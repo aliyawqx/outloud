@@ -3,11 +3,15 @@ import { Logo } from '@/components/Logo'
 
 const COLUMNS = [
   { title: 'Product', links: [{ label: 'Features', href: '#features' }, { label: 'Pricing', href: '#pricing' }, { label: 'FAQ', href: '#faq' }] },
-  { title: 'Company', links: [{ label: 'Log in', href: '/login' }, { label: 'Get started', href: '/signup' }] },
+  { title: 'Company', links: [{ label: 'Log in', href: '/login' }, { label: 'Get started', href: '/signup' }, { label: 'Contact', href: 'mailto:support@tryoutloud.app' }] },
   { title: 'Legal', links: [{ label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' }] },
 ]
 
-const SOCIALS = ['link', 'alternate_email', 'rss_feed']
+const SOCIALS = [
+  { icon: 'link', href: '#', label: 'Website' },
+  { icon: 'alternate_email', href: 'mailto:support@tryoutloud.app', label: 'Email support' },
+  { icon: 'rss_feed', href: '#', label: 'RSS' },
+]
 
 export function SiteFooter() {
   return (
@@ -23,12 +27,12 @@ export function SiteFooter() {
             <div className="mt-5 flex gap-3">
               {SOCIALS.map((s) => (
                 <a
-                  key={s}
-                  href="#"
-                  aria-label={s}
+                  key={s.icon}
+                  href={s.href}
+                  aria-label={s.label}
                   className="grid h-10 w-10 place-items-center rounded-full border border-border-muted text-on-surface-variant transition-colors hover:border-electric-indigo hover:text-on-surface"
                 >
-                  <span className="material-symbols-outlined text-[20px]">{s}</span>
+                  <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
                 </a>
               ))}
             </div>
