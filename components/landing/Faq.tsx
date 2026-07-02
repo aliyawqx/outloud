@@ -26,7 +26,7 @@ const FAQS = [
   },
   {
     q: 'What happens after the free trial?',
-    a: 'You get 3 days free, no card needed, with 10,000 credits to capture your voice and start posting. After that (or once your credits run out), pick a plan to keep going. Cancel anytime.',
+    a: '3 days free, no card needed. 10,000 credits (about 10 post drafts) to set up your writing style and start posting. Pick a plan when the trial ends or credits run out. Cancel anytime.',
   },
 ]
 
