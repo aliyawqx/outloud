@@ -18,8 +18,8 @@ export default function Page() {
       <main>
         <Hero />
         <Highlights />
-        <BeforeAfter />
         <HowItWorks />
+        <BeforeAfter />
         <div className="reveal">
           <Pricing condensed />
         </div>
