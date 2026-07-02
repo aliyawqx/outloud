@@ -25,15 +25,14 @@ export function Hero() {
               </div>
 
               <h1 className="font-headline-xl text-headline-xl leading-tight">
-                POSTS THAT SOUND LIKE YOU.
+                Posts that sound like you.
                 <span className="mt-1 block bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">
-                  NEVER SMELLABLE AS AI.
+                  Never smellable as AI.
                 </span>
               </h1>
 
               <p className="max-w-xl font-body-md text-body-md text-on-surface-variant">
-                The moment a post reads as AI, the account gets weaker. Outloud writes in your writing
-                voice, the way you actually post, so that never happens.
+                The second a post reads as AI, you lose followers and trust. Outloud makes sure it never does.
               </p>
 
               {/* Single primary CTA. Full-width on mobile so it can never clip at small
