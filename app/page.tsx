@@ -3,7 +3,6 @@ import { Pricing } from '@/components/Pricing'
 import { TrialBanner } from '@/components/TrialBanner'
 import { SiteNav } from '@/components/landing/SiteNav'
 import { Hero } from '@/components/landing/Hero'
-import { BeforeAfter } from '@/components/landing/BeforeAfter'
 import { Highlights } from '@/components/landing/Highlights'
 import { HowItWorks } from '@/components/landing/HowItWorks'
 import { Faq } from '@/components/landing/Faq'
@@ -19,7 +18,6 @@ export default function Page() {
         <Hero />
         <Highlights />
         <HowItWorks />
-        <BeforeAfter />
         <div className="reveal">
           <Pricing condensed />
         </div>
