@@ -10,7 +10,7 @@ export function TrialBanner({ sticky = false }: { sticky?: boolean }) {
       <div className="mx-auto flex max-w-container-max flex-wrap items-center justify-center gap-x-3 gap-y-2 px-margin-mobile py-2.5 text-center md:px-margin-desktop">
         <span aria-hidden="true" className="material-symbols-outlined text-[18px]">bolt</span>
         <span className="font-body-sm text-body-sm font-bold uppercase tracking-wide">
-          Start free — 3 days, 10k credits, no card needed
+          Start free. 3 days, 10k credits, no card needed
         </span>
         <Link
           href="/signup"

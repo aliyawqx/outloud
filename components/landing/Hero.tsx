@@ -25,14 +25,15 @@ export function Hero() {
               </div>
 
               <h1 className="font-headline-xl text-headline-xl leading-tight">
-                Posts in your style,
+                POSTS THAT SOUND LIKE YOU.
                 <span className="mt-1 block bg-gradient-to-r from-electric-indigo to-secondary bg-clip-text text-transparent">
-                  never generic AI.
+                  NEVER SMELLABLE AS AI.
                 </span>
               </h1>
 
               <p className="max-w-xl font-body-md text-body-md text-on-surface-variant">
-                Outloud learns how you actually write, so every post sounds like you.
+                the second a post reads as ai, the account gets weaker. quiet unfollows, lost trust.
+                outloud writes in your real voice, so that never happens.
               </p>
 
               {/* Single primary CTA. Full-width on mobile so it can never clip at small

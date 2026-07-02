@@ -6,15 +6,15 @@ import { Underline } from './Doodles'
 const FAQS = [
   {
     q: 'Does Outloud post for me automatically?',
-    a: 'No. Outloud drafts in your voice and you stay in control — review, tweak, then publish to X or Threads with one click. Nothing goes out without you.',
+    a: 'No. Outloud drafts in your voice, you stay in control. Review each draft, then publish to X or Threads yourself, one click. Nothing goes out without you.',
   },
   {
     q: 'Is connecting my X account safe?',
-    a: 'Yes. The X connection is read-only. We use it to learn how you write and to find posts worth replying to — we never post on your behalf without your explicit action.',
+    a: 'Yes. The X connection is read-only. We use it to learn how you write and to find posts worth replying to. We never post on your behalf without your explicit action.',
   },
   {
     q: 'How does it learn my voice?',
-    a: 'Paste a few things you’ve written or import your recent posts. Outloud builds a style guide from your real writing — your cadence, phrasing, and tone — and keeps every draft on-voice.',
+    a: 'Paste a few things you’ve written, or import your recent posts. Outloud builds a style guide from how you actually write, and keeps every draft on-voice.',
   },
   {
     q: 'Can I write in someone else’s voice?',
@@ -22,11 +22,11 @@ const FAQS = [
   },
   {
     q: 'Will I get shadowbanned?',
-    a: 'No. Outloud doesn’t auto-post, spam, or mass-reply — you publish each draft yourself, one at a time, in your own voice. Because posts read like you (not generic AI), they look exactly like normal human activity to the platform.',
+    a: 'No. Outloud doesn’t auto-post or mass-reply. You publish each draft yourself, one at a time, in your own voice. And because posts read like you, not generic AI, they look like normal human activity to the platform.',
   },
   {
     q: 'What happens after the free trial?',
-    a: 'You get 3 days free — no card needed — to capture your voice and start posting, with 10,000 credits to use. After that (or once your credits run out), pick a plan to keep going — cancel anytime.',
+    a: 'You get 3 days free, no card needed, with 10,000 credits to capture your voice and start posting. After that (or once your credits run out), pick a plan to keep going. Cancel anytime.',
   },
 ]
 
