@@ -91,7 +91,8 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
   // Total = plan allowance + persistent top-up. Show what's been USED out of it; the
   // bar fills as credits are spent.
   const total = usage.cycleTotal + usage.topupBalance
-  const pct = total > 0 ? Math.min(100, Math.round((usage.cycleUsed / total) * 100)) : 0
+  // Bar fills with what's LEFT, not what's used.
+  const leftPct = total > 0 ? Math.min(100, Math.round((usage.balance / total) * 100)) : 0
   const planName = (PLAN_META[plan] ?? PLAN_META.free).name
   const maxDay = Math.max(1, ...usage.daily.map((d) => d.used))
 
@@ -104,10 +105,10 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
           <span className="ml-2 font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
-          <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${leftPct}%` }} />
         </div>
         <p className="mt-3 font-code-label text-code-label text-on-surface-variant">
-          {fmtCredits(usage.cycleUsed)} of {fmtCredits(total)} used · {planName} plan
+          {planName} plan
           {usage.topupBalance > 0 && (
             <> · <span className="text-cyber-lime">{fmtCredits(usage.topupBalance)} top-up · never expires</span></>
           )}
