@@ -14,7 +14,7 @@ export function IntroVideoPlayer() {
     <div className="relative h-full w-full bg-surface-container-lowest">
       <video
         ref={videoRef}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-contain"
         src={INTRO_VIDEO_URL}
         poster="/intro-poster.jpg"
         controls={started}
