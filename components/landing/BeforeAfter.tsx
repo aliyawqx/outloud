@@ -18,11 +18,14 @@ export function BeforeAfter() {
             <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-on-surface-variant/70">robot_2</span>
             <span className="font-code-label text-code-label tracking-wide text-on-surface-variant/70">Generic AI</span>
           </div>
-          <p className="font-body-md text-body-md leading-relaxed text-on-surface-variant/60">
-            Shipped something small today. I wasn&apos;t even sure this feature would work. Built it anyway,
-            tested it, and... it works. A good reminder that the fastest way to answer &apos;will this work?&apos;
-            is usually to ship the smallest version and find out.
-          </p>
+          <div className="overflow-hidden rounded-xl border border-border-muted bg-surface-container-lowest">
+            <img
+              src="/before-after/generic-ai.png"
+              alt="Generic AI writing a bland, forgettable founder post"
+              className="h-[300px] w-full object-contain md:h-[340px]"
+              loading="lazy"
+            />
+          </div>
         </div>
 
         {/* RIGHT — your voice, via Outloud: violet border + soft glow, alive */}
@@ -34,11 +37,14 @@ export function BeforeAfter() {
             <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-electric-indigo">check_circle</span>
             <span className="font-code-label text-code-label tracking-wide text-electric-indigo">Your voice, via Outloud</span>
           </div>
-          <p className="font-body-md text-body-md leading-relaxed text-on-surface">
-            shipped the <span className="text-cyber-lime">search and filter</span> for{' '}
-            <span className="text-cyber-lime">messages</span> today. wasn&apos;t sure it would work. tested it.
-            it works. that&apos;s it, the <span className="text-cyber-lime">personal crm</span> is getting there.
-          </p>
+          <div className="overflow-hidden rounded-xl border border-electric-indigo/30 bg-surface-container-lowest">
+            <img
+              src="/before-after/outloud-draft.png"
+              alt="Outloud drafting the same post in your writing voice"
+              className="h-[300px] w-full object-contain md:h-[340px]"
+              loading="lazy"
+            />
+          </div>
         </div>
       </div>
     </section>
