@@ -97,17 +97,17 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Balance header */}
+      {/* Balance header — lead with what's LEFT to spend, not what's used */}
       <div data-tour="credit-balance" className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <div className="font-headline-sm text-headline-sm text-on-surface">
-          {fmtCredits(usage.cycleUsed)} / {fmtCredits(total)} credits used
-          <span className="font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
+          {fmtCredits(usage.balance)} credits left
+          <span className="ml-2 font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
           <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-3 font-code-label text-code-label text-on-surface-variant">
-          {fmtCredits(usage.cycleTotal)} from your {planName} plan
+          {fmtCredits(usage.cycleUsed)} of {fmtCredits(total)} used · {planName} plan
           {usage.topupBalance > 0 && (
             <> · <span className="text-cyber-lime">{fmtCredits(usage.topupBalance)} top-up · never expires</span></>
           )}
