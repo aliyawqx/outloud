@@ -8,9 +8,7 @@ const COLUMNS = [
 ]
 
 const SOCIALS = [
-  { icon: 'link', href: '#', label: 'Website' },
   { icon: 'alternate_email', href: 'mailto:support@tryoutloud.app', label: 'Email support' },
-  { icon: 'rss_feed', href: '#', label: 'RSS' },
 ]
 
 export function SiteFooter() {
