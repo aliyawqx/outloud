@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg'
 import { ensureSchema, getPool } from '@/lib/db'
 import { hashPassword } from './password'
 import { PLAN_ALLOWANCE, FREE_RESET_DAYS } from '@/lib/creditsConfig'
+import { isStaff } from '@/lib/appLock'
 
 export type AuthUser = { id: string; email: string }
 
@@ -19,6 +20,23 @@ export class EmailTakenError extends Error {
  *  NO Polar / no card capture. `trialing` + no subscription id → resetIfDue ends it when
  *  the window elapses; spending the 10k also ends it. Then the user picks a paid plan. */
 async function provisionTrialProfile(client: PoolClient, id: string, displayName: string, email: string): Promise<void> {
+  // Founder/staff emails get the Founder plan (unlimited via isStaff) provisioned up
+  // front, so it's ready the moment they sign up — no manual DB step, whether they've
+  // registered yet or not. Resets a month out; metering is skipped for staff anyway.
+  if (isStaff(email)) {
+    const founderReset = new Date(Date.now() + 30 * 86_400_000)
+    const founderPool = PLAN_ALLOWANCE.founder
+    await client.query(
+      `INSERT INTO profiles (user_id, display_name, email, plan, trialing, trial_used, credit_balance, credits_reset_at)
+       VALUES ($1, $2, $3, 'founder', false, true, $4, $5)`,
+      [id, displayName, email, founderPool, founderReset],
+    )
+    await client.query(
+      'INSERT INTO credit_ledger (id, user_id, amount, reason, balance_after, metadata) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
+      [randomUUID(), id, founderPool, 'grant', founderPool, JSON.stringify({ founder: true })],
+    )
+    return
+  }
   const resetAt = new Date(Date.now() + FREE_RESET_DAYS * 86_400_000)
   const pool = PLAN_ALLOWANCE.free
   await client.query(
