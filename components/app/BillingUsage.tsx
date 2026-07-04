@@ -72,9 +72,10 @@ const PLAN_META: Record<string, { name: string; price: number; allowance: number
   free: { name: 'Free', price: 0, allowance: 0 },
   starter: { name: 'Starter', price: STARTER_PRICE, allowance: PLAN_ALLOWANCE.starter },
   pro: { name: 'Pro', price: PRO_PRICE, allowance: PLAN_ALLOWANCE.pro },
+  founder: { name: 'Founder', price: 0, allowance: PLAN_ALLOWANCE.founder },
 }
 
-function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
+function UsageTab({ trialing, plan, unlimited }: { trialing: boolean; plan: string; unlimited: boolean }) {
   const [usage, setUsage] = useState<Usage | null>(null)
   const [error, setError] = useState('')
 
@@ -101,12 +102,14 @@ function UsageTab({ trialing, plan }: { trialing: boolean; plan: string }) {
       {/* Balance header — lead with what's LEFT to spend, not what's used */}
       <div data-tour="credit-balance" className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <div className="font-headline-sm text-headline-sm text-on-surface">
-          {fmtCredits(usage.balance)} credits left
+          {unlimited ? 'Unlimited' : `${fmtCredits(usage.balance)} credits left`}
           <span className="ml-2 font-code-label text-code-label text-on-surface-variant">{resetLabel(usage.resetAt)}</span>
         </div>
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
-          <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${leftPct}%` }} />
-        </div>
+        {!unlimited && (
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
+            <div className="h-full rounded-full bg-electric-indigo" style={{ width: `${leftPct}%` }} />
+          </div>
+        )}
         <p className="mt-3 font-code-label text-code-label text-on-surface-variant">
           {planName} plan
           {usage.topupBalance > 0 && (
@@ -308,7 +311,7 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
   )
 }
 
-export function BillingUsage({ plan, trialing, hasBilling }: { plan: string; trialing: boolean; hasBilling: boolean }) {
+export function BillingUsage({ plan, trialing, hasBilling, unlimited = false }: { plan: string; trialing: boolean; hasBilling: boolean; unlimited?: boolean }) {
   const [tab, setTab] = useState<'usage' | 'billing'>('usage')
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
@@ -322,7 +325,7 @@ export function BillingUsage({ plan, trialing, hasBilling }: { plan: string; tri
         <button type="button" className={pill(tab === 'usage')} onClick={() => setTab('usage')}>Usage</button>
         <button type="button" className={pill(tab === 'billing')} onClick={() => setTab('billing')}>Billing</button>
       </div>
-      {tab === 'usage' ? <UsageTab trialing={trialing} plan={plan} /> : <BillingTab plan={plan} trialing={trialing} hasBilling={hasBilling} />}
+      {tab === 'usage' ? <UsageTab trialing={trialing} plan={plan} unlimited={unlimited} /> : <BillingTab plan={plan} trialing={trialing} hasBilling={hasBilling} />}
     </div>
   )
 }

@@ -3,7 +3,7 @@
 // access gate or waitlist; anyone can sign up and use the platform.
 
 /** Staff emails (lowercase): unlimited credits, skip the trial gate. */
-export const STAFF_EMAILS = ['zhanabayaliya@gmail.com']
+export const STAFF_EMAILS = ['zhanabayaliya@gmail.com', 'heyitsmechoudhary@gmail.com']
 
 export function isStaff(email: string | null | undefined): boolean {
   if (!email) return false

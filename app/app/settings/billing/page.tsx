@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
 import { resetIfDue } from '@/lib/credits'
+import { isStaff } from '@/lib/appLock'
 import { BillingUsage } from '@/components/app/BillingUsage'
 
 export const metadata = { title: 'Outloud | Billing & usage' }
@@ -15,6 +16,7 @@ export default async function BillingPage() {
       plan={profile?.plan ?? 'free'}
       trialing={Boolean(profile?.trialing)}
       hasBilling={Boolean(profile?.polarCustomerId)}
+      unlimited={isStaff(session.email)}
     />
   )
 }

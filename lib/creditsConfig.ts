@@ -25,6 +25,7 @@ export const PLAN_ALLOWANCE: Record<string, number> = {
   free: 10_000,
   starter: 200_000, // $15/mo
   pro: 600_000, // $30/mo
+  founder: 1_000_000_000, // comp / staff — effectively unlimited
 }
 
 /** Length of the card-free trial window granted at signup (days). The trial ends on
