@@ -6,6 +6,9 @@
 // monetization spec (§1). Searches are ALL-IN: the bundled draft is not charged
 // again on top of the search.
 export const COST_PER_POST = 1_000
+// An autopilot-generated post costs the same as a manually generated one. ONE
+// config constant so pricing changes in a single place (monetization spec §12).
+export const COST_PER_AUTO_POST = COST_PER_POST
 export const COST_PER_REPLY = 5_000
 export const COST_PER_TOPIC_SEARCH = 10_000 // scan a topic → draft (all-in)
 // Image actions (config only for now; wiring lands with outloud-image-actions-spec).
