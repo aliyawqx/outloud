@@ -25,8 +25,8 @@ function XLogo({ className }: { className?: string }) {
   )
 }
 
-type Step = 1 | 2 | 3
-const STEP_LABELS = ['Name', 'Source', 'Build'] as const
+type Step = 1 | 2 | 3 | 4
+const STEP_LABELS = ['Name', 'Source', 'Build', 'Autopilot'] as const
 
 function Stepper({ step }: { step: Step }) {
   return (
@@ -242,11 +242,52 @@ export function VoiceOnboarding({
     setContinuing(true)
     try {
       await generateStyleGuide(profileId)
-      router.push('/app')
-      router.refresh()
+      setContinuing(false)
+      setStep(4) // voice is ready — offer autopilot before entering the app
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not build your voice. Try again.')
       setContinuing(false)
+    }
+  }
+
+  // Step 4 — autopilot setup (skippable). Defaults: browser timezone, 09:00 daily,
+  // review-before-publish ON (spec §12).
+  const [apInterests, setApInterests] = useState('')
+  const [apTime, setApTime] = useState('09:00')
+  const [apTimezone, setApTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
+  const [apEnabled, setApEnabled] = useState(false)
+  const [apReview, setApReview] = useState(true)
+
+  async function finishOnboarding(skip: boolean) {
+    setError('')
+    setBusy(true)
+    try {
+      const interests = apInterests.split(',').map((s) => s.trim()).filter(Boolean)
+      if (!skip && (interests.length > 0 || apEnabled)) {
+        const res = await fetch('/api/autopilot', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            interests,
+            postingTimes: [{ time: apTime }],
+            timezone: apTimezone,
+            platforms: ['x', 'threads'],
+            reviewBeforePublish: apReview,
+            enabled: apEnabled && interests.length > 0,
+          }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          setError(data.error ?? 'Could not save autopilot settings.')
+          setBusy(false)
+          return
+        }
+      }
+      router.push('/app')
+      router.refresh()
+    } catch {
+      setError('Network error. Try again.')
+      setBusy(false)
     }
   }
 
@@ -346,6 +387,64 @@ export function VoiceOnboarding({
           </button>
         </div>
         {creatorLink}
+      </div>
+    )
+  }
+
+  // ── Step 4: autopilot (skippable) ──
+  if (step === 4) {
+    const inputCls =
+      'w-full rounded-xl border border-border-muted bg-surface-container-lowest p-3 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none'
+    return (
+      <div className={`${shell} max-w-md`}>
+        <Stepper step={4} />
+        <h1 className="mb-2 font-headline-xl text-headline-xl">Put posting on autopilot?</h1>
+        <p className="mb-6 font-body-md text-body-md text-on-surface-variant">
+          Outloud can keep your calendar full — writing posts in your voice about your interests. You stay in control: review anything before it goes out.
+        </p>
+
+        <label className="mb-1 block font-code-label text-code-label uppercase text-on-surface-variant/70" htmlFor="ap-interests">
+          Interests (comma-separated)
+        </label>
+        <input id="ap-interests" value={apInterests} onChange={(e) => setApInterests(e.target.value)} placeholder="e.g. building in public, ai tools" className={inputCls} />
+
+        <div className="mt-4 flex gap-3">
+          <div className="flex-1">
+            <label className="mb-1 block font-code-label text-code-label uppercase text-on-surface-variant/70" htmlFor="ap-time">Posting time</label>
+            <input id="ap-time" type="time" value={apTime} onChange={(e) => setApTime(e.target.value)} className={`${inputCls} [color-scheme:dark]`} />
+          </div>
+          <div className="flex-1">
+            <label className="mb-1 block font-code-label text-code-label uppercase text-on-surface-variant/70" htmlFor="ap-tz">Timezone</label>
+            <select id="ap-tz" value={apTimezone} onChange={(e) => setApTimezone(e.target.value)} className={inputCls}>
+              {Intl.supportedValuesOf('timeZone').map((tz) => (
+                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <label className="mt-5 flex cursor-pointer items-center justify-between gap-4">
+          <span className="font-body-md text-body-md text-on-surface">Turn autopilot on</span>
+          <input type="checkbox" checked={apEnabled} onChange={(e) => setApEnabled(e.target.checked)} className="h-5 w-5 accent-[#b06bff]" />
+        </label>
+        <label className="mt-3 flex cursor-pointer items-center justify-between gap-4">
+          <span className="font-body-md text-body-md text-on-surface">Review posts before they publish</span>
+          <input type="checkbox" checked={apReview} onChange={(e) => setApReview(e.target.checked)} className="h-5 w-5 accent-[#b06bff]" />
+        </label>
+
+        {error && <p className="mt-3 font-body-sm text-body-sm text-error">{error}</p>}
+
+        <button
+          type="button"
+          onClick={() => finishOnboarding(false)}
+          disabled={busy}
+          className="mt-6 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-colors hover:bg-primary-container active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? <><Spinner size={18} /> Saving…</> : <>Continue<span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span></>}
+        </button>
+        <button type="button" onClick={() => finishOnboarding(true)} disabled={busy} className="mt-3 w-full text-center font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface">
+          skip for now — you can set this up later in Autopilot
+        </button>
       </div>
     )
   }
