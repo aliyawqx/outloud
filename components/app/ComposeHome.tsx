@@ -48,7 +48,11 @@ function DraftCard({
   // Finishing an edit ("Done" or blurring the textarea) persists the new text to the
   // saved chat so it survives a reload — without this, a reload restores the original.
   function finishEdit() {
-    if (text !== draft.fullText) onTextChange?.(text)
+    if (text !== draft.fullText) {
+      onTextChange?.(text)
+      // The schedule confirmation refers to the content at schedule time — edits clear it.
+      setScheduledFor(null)
+    }
   }
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
@@ -68,6 +72,8 @@ function DraftCard({
   function changeImages(imgs: DraftImage[]) {
     setImages(imgs)
     onImagesChange?.(imgs)
+    // The schedule confirmation refers to the content at schedule time — image changes clear it.
+    setScheduledFor(null)
   }
   // Per-platform outcome after a publish attempt (url on success, error on failure).
   const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string; note?: string }>>>({})
