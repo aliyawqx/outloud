@@ -21,6 +21,8 @@ type NavItem = { href: string; label: string; icon: string; badge?: number; soon
 // promoted out of this list into prominent buttons at the top of the sidebar.
 function navItems(voiceCount: number): NavItem[] {
   return [
+    { href: '/app/calendar', label: 'Calendar', icon: 'calendar_month' },
+    { href: '/app/autopilot', label: 'Autopilot', icon: 'auto_awesome' },
     { href: '/app/voices', label: 'Voices', icon: 'graphic_eq', badge: voiceCount },
     { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks' },
     { href: '/app/knowledge', label: 'Knowledge', icon: 'menu_book', soon: true },
