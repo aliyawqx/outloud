@@ -72,4 +72,10 @@ describe('upcomingSlots', () => {
     const cfg = { postingTimes: [{ time: 'garbage' }], timezone: 'Asia/Almaty', slotsPerDay: 1 }
     expect(upcomingSlots(cfg, new Date('2026-01-15T02:00:00Z'), 1440)).toEqual([])
   })
+
+  it('falls back to 1 slot/day when slotsPerDay is NaN', () => {
+    const cfg = { postingTimes: [{ time: '09:00' }], timezone: 'Asia/Almaty', slotsPerDay: Number.NaN }
+    const slots = upcomingSlots(cfg, new Date('2026-01-15T02:00:00Z'), 240)
+    expect(slots.map((s) => s.toISOString())).toEqual(['2026-01-15T04:00:00.000Z'])
+  })
 })

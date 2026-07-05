@@ -90,7 +90,8 @@ export function upcomingSlots(cfg: SlotConfig, now: Date, horizonMinutes: number
       daySlots.push(zonedTimeToUtc(y, m, d, hh, mm, cfg.timezone))
     }
     daySlots.sort((a, b) => a.getTime() - b.getTime())
-    for (const t of daySlots.slice(0, Math.max(1, cfg.slotsPerDay))) {
+    const quota = Number.isFinite(cfg.slotsPerDay) ? Math.max(1, cfg.slotsPerDay) : 1
+    for (const t of daySlots.slice(0, quota)) {
       if (t.getTime() > now.getTime() && t.getTime() <= end) out.push(t)
     }
   }
