@@ -88,7 +88,13 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     if (!post) {
       const existing = await getScheduledPost(session.userId, id)
       if (!existing) return NextResponse.json({ error: 'Post not found.' }, { status: 404 })
-      return NextResponse.json({ error: 'This post is already publishing and can no longer be cancelled.' }, { status: 409 })
+      const reason =
+        existing.status === 'cancelled'
+          ? 'This post is already cancelled.'
+          : existing.status === 'published'
+            ? 'This post has already been published.'
+            : 'This post is already publishing and can no longer be cancelled.'
+      return NextResponse.json({ error: reason }, { status: 409 })
     }
     if (post.chargeLedgerId && post.creditsCharged > 0 && !post.publishedAt) {
       await refund(session.userId, post.chargeLedgerId).catch((e) => console.error('[scheduled-posts] refund failed:', e))
