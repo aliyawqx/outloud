@@ -28,6 +28,9 @@ export function PostEditorModal({
   onChanged: () => void
 }) {
   const editable = post.status === 'scheduled' || post.status === 'draft'
+  // The API also allows cancelling FAILED posts (they'd otherwise sit on the
+  // calendar forever) — so cancel is offered beyond the editable statuses.
+  const cancellable = editable || post.status === 'failed'
   const [content, setContent] = useState(post.content)
   const [when, setWhen] = useState(toLocalInput(post.scheduledFor))
   const [platforms, setPlatforms] = useState<SchedulePlatform[]>(post.platforms)
@@ -155,17 +158,19 @@ export function PostEditorModal({
 
         {error && <p className="mt-3 font-body-sm text-body-sm text-error">{error}</p>}
 
-        {editable && (
+        {cancellable && (
           <div className="mt-5 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={save}
-              disabled={busy !== null}
-              className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2.5 font-code-label text-code-label font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
-            >
-              {busy === 'save' ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">check</span>}
-              Save
-            </button>
+            {editable && (
+              <button
+                type="button"
+                onClick={save}
+                disabled={busy !== null}
+                className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2.5 font-code-label text-code-label font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+              >
+                {busy === 'save' ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">check</span>}
+                Save
+              </button>
+            )}
             {confirmCancel ? (
               <button
                 type="button"
