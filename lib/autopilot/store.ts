@@ -74,34 +74,31 @@ export type AutopilotSettingsPatch = Partial<
 
 export async function upsertAutopilotSettings(userId: string, patch: AutopilotSettingsPatch): Promise<AutopilotSettings> {
   await ensureSchema()
-  const cur = await getAutopilotSettings(userId)
-  const next = { ...cur, ...patch }
+  // Per-column COALESCE patch (not read-merge-write) so concurrent partial saves can't overwrite each other's columns.
+  await getPool().query(`INSERT INTO autopilot_settings (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [userId])
   const r = await getPool().query<Row>(
-    `INSERT INTO autopilot_settings
-       (user_id, enabled, interests, posting_times, timezone, platforms,
-        review_before_publish, slots_per_day, lead_time_minutes)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-     ON CONFLICT (user_id) DO UPDATE SET
-       enabled = EXCLUDED.enabled,
-       interests = EXCLUDED.interests,
-       posting_times = EXCLUDED.posting_times,
-       timezone = EXCLUDED.timezone,
-       platforms = EXCLUDED.platforms,
-       review_before_publish = EXCLUDED.review_before_publish,
-       slots_per_day = EXCLUDED.slots_per_day,
-       lead_time_minutes = EXCLUDED.lead_time_minutes,
-       updated_at = now()
+    `UPDATE autopilot_settings SET
+       enabled               = COALESCE($2::boolean, enabled),
+       interests             = COALESCE($3::jsonb, interests),
+       posting_times         = COALESCE($4::jsonb, posting_times),
+       timezone              = COALESCE($5::text, timezone),
+       platforms             = COALESCE($6::jsonb, platforms),
+       review_before_publish = COALESCE($7::boolean, review_before_publish),
+       slots_per_day         = COALESCE($8::int, slots_per_day),
+       lead_time_minutes     = COALESCE($9::int, lead_time_minutes),
+       updated_at            = now()
+     WHERE user_id = $1
      RETURNING *`,
     [
       userId,
-      next.enabled,
-      JSON.stringify(next.interests),
-      JSON.stringify(next.postingTimes),
-      next.timezone,
-      JSON.stringify(next.platforms),
-      next.reviewBeforePublish,
-      next.slotsPerDay,
-      next.leadTimeMinutes,
+      patch.enabled ?? null,
+      patch.interests !== undefined ? JSON.stringify(patch.interests) : null,
+      patch.postingTimes !== undefined ? JSON.stringify(patch.postingTimes) : null,
+      patch.timezone ?? null,
+      patch.platforms !== undefined ? JSON.stringify(patch.platforms) : null,
+      patch.reviewBeforePublish ?? null,
+      patch.slotsPerDay ?? null,
+      patch.leadTimeMinutes ?? null,
     ],
   )
   return mapRow(r.rows[0])
