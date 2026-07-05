@@ -38,7 +38,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (!platforms) return NextResponse.json({ error: 'Pick at least one platform.' }, { status: 400 })
     patch.platforms = platforms
   }
-  if (b.media !== undefined) patch.media = parseMedia(b.media)
+  if (b.media !== undefined) {
+    const media = parseMedia(b.media)
+    if (media === 'invalid') return NextResponse.json({ error: 'Invalid media.' }, { status: 400 })
+    patch.media = media
+  }
   if (b.scheduledFor !== undefined) {
     const when = typeof b.scheduledFor === 'string' ? new Date(b.scheduledFor) : null
     if (!when || Number.isNaN(when.getTime())) return NextResponse.json({ error: 'Invalid date.' }, { status: 400 })

@@ -42,6 +42,7 @@ export async function POST(req: Request) {
 
   const firstReply = typeof b.firstReply === 'string' && b.firstReply.trim() ? b.firstReply.trim().slice(0, TEXT_MAX) : null
   const media = parseMedia(b.media)
+  if (media === 'invalid') return NextResponse.json({ error: 'Invalid media.' }, { status: 400 })
 
   try {
     const evicted = await releaseSlotForManual(session.userId, scheduledFor)
