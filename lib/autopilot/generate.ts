@@ -113,7 +113,7 @@ export async function fillSlot(
     const check = validateAutopilotPost(text)
     if (!check.ok) {
       // Empty/garbage output is refunded and skipped — NEVER scheduled (spec §6a.4).
-      if (chargeLedgerId) await refund(user.userId, chargeLedgerId).catch(() => {})
+      if (chargeLedgerId) await refund(user.userId, chargeLedgerId).catch((e) => console.error('[autopilot] refund failed:', e))
       console.warn('[autopilot] invalid output (%s) for user %s — will retry next cycle', check.reason, user.userId)
       return 'invalid_output'
     }
@@ -145,7 +145,7 @@ export async function fillSlot(
     }
     return 'generated'
   } catch (err) {
-    if (chargeLedgerId) await refund(user.userId, chargeLedgerId).catch(() => {})
+    if (chargeLedgerId) await refund(user.userId, chargeLedgerId).catch((e) => console.error('[autopilot] refund failed:', e))
     // Unique-index race: another cron run filled this slot between the occupancy
     // check and the insert — treat as occupied, credits already refunded.
     if ((err as { code?: string })?.code === '23505') return 'occupied'
