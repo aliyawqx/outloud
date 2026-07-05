@@ -26,6 +26,10 @@ generation, coarse for publishing. Keep cron-job.org as the primary publish trig
 
 - `CRON_SECRET` — long random hex; set in `.env.local`, Vercel project env (Production),
   GitHub repo secrets, and the cron-job.org header. Rotate everywhere at once.
+- LinkedIn (see `.env.example`): `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`,
+  `LINKEDIN_REDIRECT_URI` (register the prod HTTPS URI on the app's Auth tab),
+  `LINKEDIN_API_VERSION` (YYYYMM, bump ~yearly), `LINKEDIN_TOKEN_ENC_KEY` (32 bytes base64),
+  optional `LINKEDIN_FORCE_UGC=1` to pin the /v2/ugcPosts fallback.
 
 ## Upgrade path (not built)
 
