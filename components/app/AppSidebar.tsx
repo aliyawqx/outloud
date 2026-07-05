@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
+import { NotificationsBell } from '@/components/app/NotificationsBell'
 import { useCredits } from '@/components/app/CreditsContext'
 import { Tooltip } from '@/components/ui/tooltip'
 import { fmtCredits } from '@/lib/creditsConfig'
@@ -151,6 +152,8 @@ export function AppSidebar({
           </span>
         </span>
       </Link>
+
+      <NotificationsBell />
 
       <Link
         href="/app/settings/billing"
