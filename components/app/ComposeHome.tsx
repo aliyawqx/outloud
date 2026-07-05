@@ -8,6 +8,7 @@ import { UpgradeModal } from '@/components/app/UpgradeModal'
 import { useCredits } from '@/components/app/CreditsContext'
 import { GenerationStatus, type FeedStep } from '@/components/app/GenerationStatus'
 import { DraftImageControls, type DraftImage } from '@/components/app/DraftImageControls'
+import { ScheduleModal } from '@/components/app/ScheduleModal'
 import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
 import type { ComposeEvent, DoneEvent } from '@/lib/compose/stream'
 
@@ -51,6 +52,8 @@ function DraftCard({
   }
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null)
   // One optional image per draft (AI / stock / upload), attached client-side and
   // sent to the publishers. Seeded from the draft in case it was ever persisted.
   const [images, setImages] = useState<DraftImage[]>(
@@ -202,6 +205,16 @@ function DraftCard({
           {publishing ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">send</span>}
           {publishing ? 'Publishing…' : 'Publish'}
         </button>
+        <button
+          type="button"
+          data-tour="schedule"
+          onClick={() => setScheduleOpen(true)}
+          disabled={publishing || !text.trim() || chosen.length === 0}
+          className="flex items-center gap-1.5 rounded-full border border-electric-indigo/60 px-4 py-2 font-code-label text-code-label text-electric-indigo transition-all hover:bg-electric-indigo/10 active:scale-95 disabled:opacity-60"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">event</span>
+          Schedule
+        </button>
         <span className="font-code-label text-code-label text-on-surface-variant/60">{text.length} chars</span>
       </div>
 
@@ -222,6 +235,30 @@ function DraftCard({
           )
         })}
       </div>
+
+      {scheduledFor && (
+        <div className="mt-3 flex flex-col gap-1 rounded-xl border border-cyber-lime/30 bg-cyber-lime/5 p-3">
+          <p className="font-body-sm text-body-sm text-on-surface">
+            scheduled for {new Date(scheduledFor).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} — it&apos;s on your calendar.
+          </p>
+          <a href="/app/calendar" className="font-code-label text-code-label text-cyber-lime hover:underline">
+            View calendar →
+          </a>
+        </div>
+      )}
+
+      {scheduleOpen && (
+        <ScheduleModal
+          text={text}
+          images={images}
+          platforms={chosen.map((d) => d.key)}
+          onClose={() => setScheduleOpen(false)}
+          onScheduled={(when) => {
+            setScheduleOpen(false)
+            setScheduledFor(when)
+          }}
+        />
+      )}
 
       {/* Post-publish nudge: each post should live in its own chat, so credits go to
           drafting rather than carrying old context. Non-blocking. */}
