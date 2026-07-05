@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { isCronAuthorized } from '@/lib/cron/auth'
 import { addNotification } from '@/lib/notifications/store'
 import { publishScheduledPost } from '@/lib/schedule/publish'
-import { claimForPublishing, finishPublish, listDuePostIds } from '@/lib/schedule/store'
+import { claimForPublishing, listDuePostIds, recordInternalPublishError } from '@/lib/schedule/store'
 
 // Publish cron (spec §6b): scan due posts, claim each atomically, publish.
 // Triggered externally (cron-job.org / GitHub Actions) every 1-5 minutes —
@@ -37,10 +37,8 @@ async function run(req: Request) {
       // or fail it terminally WITH the user notification (never silently).
       console.error('[cron/publish] unexpected failure:', err)
       const terminal = post.retryCount >= 2
-      await finishPublish(post.id, {
+      await recordInternalPublishError(post.id, {
         status: terminal ? 'failed' : 'scheduled',
-        externalPostIds: post.externalPostIds ?? {},
-        error: 'internal error',
         retryCount: terminal ? post.retryCount : post.retryCount + 1,
       }).catch(() => {})
       if (terminal) {

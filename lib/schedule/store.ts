@@ -245,3 +245,18 @@ export async function finishPublish(id: string, outcome: PublishOutcome): Promis
     [id, outcome.status, JSON.stringify(outcome.externalPostIds), outcome.error, outcome.retryCount],
   )
 }
+
+/** Record an internal (unexpected) publish error WITHOUT touching
+ *  external_post_ids — a crashed attempt may have partially succeeded, and the
+ *  ids the executor already persisted must survive the requeue. */
+export async function recordInternalPublishError(
+  id: string,
+  outcome: { status: 'scheduled' | 'failed'; retryCount: number },
+): Promise<void> {
+  await ensureSchema()
+  await getPool().query(
+    `UPDATE scheduled_posts SET status = $2, error = 'internal error', retry_count = $3, updated_at = now()
+     WHERE id = $1`,
+    [id, outcome.status, outcome.retryCount],
+  )
+}
