@@ -23,9 +23,11 @@ function parsePostingTimes(raw: unknown): PostingTime[] | null {
     const time = (t as { time?: unknown }).time
     if (typeof time !== 'string' || !TIME_RE.test(time)) return null
     const rawDays = (t as { days?: unknown }).days
+    if (rawDays !== undefined && !Array.isArray(rawDays)) return null
     const days = Array.isArray(rawDays)
-      ? [...new Set(rawDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))]
+      ? [...new Set(rawDays)]
       : undefined
+    if (days && !days.every((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6)) return null
     out.push({ time, ...(days && days.length ? { days } : {}) })
   }
   return out
