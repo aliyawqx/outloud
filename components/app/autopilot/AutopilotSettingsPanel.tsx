@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import type { AutopilotSettings } from '@/lib/autopilot/store'
 import type { PostingTime } from '@/lib/schedule/slots'
-import type { ScheduledPost, SchedulePlatform } from '@/lib/schedule/types'
+import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
 
 const DAY_LABELS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
@@ -28,11 +28,13 @@ export function AutopilotSettingsPanel({
   upcoming,
   xConnected,
   threadsConnected,
+  linkedInConnected,
 }: {
   initial: AutopilotSettings
   upcoming: ScheduledPost[]
   xConnected: boolean
   threadsConnected: boolean
+  linkedInConnected: boolean
 }) {
   const [s, setS] = useState(initial)
   const [interestDraft, setInterestDraft] = useState('')
@@ -40,7 +42,11 @@ export function AutopilotSettingsPanel({
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
 
-  const connected: Record<SchedulePlatform, boolean> = { x: xConnected, threads: threadsConnected }
+  const connected: Record<SchedulePlatform, boolean> = {
+    x: xConnected,
+    threads: threadsConnected,
+    linkedin: linkedInConnected,
+  }
   const pausedForCredits = s.pausedAt && s.pauseReason === 'insufficient_credits'
 
   function patch(p: Partial<AutopilotSettings>) {
@@ -238,7 +244,7 @@ export function AutopilotSettingsPanel({
       <div className={card}>
         <p className="mb-3 font-body-md text-body-md font-bold text-on-surface">Publish to</p>
         <div className="flex gap-2">
-          {(['x', 'threads'] as SchedulePlatform[]).map((p) => {
+          {SCHEDULE_PLATFORMS.map((p) => {
             const on = s.platforms.includes(p)
             const isConnected = connected[p]
             return (
@@ -248,14 +254,14 @@ export function AutopilotSettingsPanel({
                 role="checkbox"
                 aria-checked={on}
                 disabled={!isConnected}
-                title={isConnected ? undefined : `Connect ${p === 'x' ? 'X' : 'Threads'} in Profile to enable`}
+                title={isConnected ? undefined : `Connect ${platformLabel(p)} in Profile to enable`}
                 onClick={() => patch({ platforms: on ? s.platforms.filter((x) => x !== p) : [...s.platforms, p] })}
                 className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   on ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
                 }`}
               >
                 <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{on ? 'check_circle' : 'radio_button_unchecked'}</span>
-                {p === 'x' ? 'X' : 'Threads'}
+                {platformLabel(p)}
               </button>
             )
           })}

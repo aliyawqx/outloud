@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import type { DraftImage } from '@/components/app/DraftImageControls'
+import { platformLabel, type SchedulePlatform } from '@/lib/schedule/types'
 
 // Hand-rolled modal, matching the TopUpModal pattern (no shared Modal primitive).
 // The datetime-local input reads in the browser's local time; we convert to UTC
@@ -102,7 +103,7 @@ export function ScheduleModal({
         />
 
         <p className="mt-3 font-code-label text-code-label text-on-surface-variant/60">
-          Posting to: {platforms.map((p) => (p === 'x' ? 'X' : 'Threads')).join(' + ')}
+          Posting to: {platforms.map((p) => platformLabel(p as SchedulePlatform)).join(' + ')}
         </p>
 
         {error && <p className="mt-3 font-body-sm text-body-sm text-error">{error}</p>}

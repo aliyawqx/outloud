@@ -8,6 +8,7 @@ const KIND_ICON: Record<string, string> = {
   autopilot_queued: 'auto_awesome',
   autopilot_paused: 'pause_circle',
   publish_failed: 'error',
+  reconnect_needed: 'link_off',
 }
 
 // Lightweight in-app notifications surface (spec §8): a bell + dropdown panel.
@@ -62,7 +63,7 @@ export function NotificationsBell() {
           ) : (
             items.map((n) => (
               <div key={n.id} className="flex items-start gap-2 rounded-xl p-2.5 hover:bg-white/[0.04]">
-                <span aria-hidden="true" className={`material-symbols-outlined mt-0.5 text-[18px] ${n.kind === 'publish_failed' ? 'text-error' : 'text-electric-indigo'}`}>
+                <span aria-hidden="true" className={`material-symbols-outlined mt-0.5 text-[18px] ${n.kind === 'publish_failed' || n.kind === 'reconnect_needed' ? 'text-error' : 'text-electric-indigo'}`}>
                   {KIND_ICON[n.kind] ?? 'info'}
                 </span>
                 <span className="min-w-0">

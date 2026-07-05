@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Spinner } from '@/components/Spinner'
-import type { ScheduledPost, SchedulePlatform } from '@/lib/schedule/types'
+import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
 
 // Edit/cancel a queued post. Published/publishing posts are read-only — the
 // API enforces it too (409), this is just honest UI.
@@ -13,10 +13,10 @@ function toLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const ALL_PLATFORMS: { key: SchedulePlatform; label: string }[] = [
-  { key: 'x', label: 'X' },
-  { key: 'threads', label: 'Threads' },
-]
+const ALL_PLATFORMS: { key: SchedulePlatform; label: string }[] = SCHEDULE_PLATFORMS.map((p) => ({
+  key: p,
+  label: platformLabel(p),
+}))
 
 export function PostEditorModal({
   post,

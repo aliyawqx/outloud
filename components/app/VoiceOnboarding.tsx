@@ -271,7 +271,7 @@ export function VoiceOnboarding({
             interests,
             postingTimes: [{ time: apTime }],
             timezone: apTimezone,
-            platforms: ['x', 'threads'],
+            platforms: ['x', 'threads', 'linkedin'],
             reviewBeforePublish: apReview,
             enabled: apEnabled && interests.length > 0,
           }),

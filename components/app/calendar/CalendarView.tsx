@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
-import type { ScheduledPost } from '@/lib/schedule/types'
+import { platformShort, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
 import { PostEditorModal } from './PostEditorModal'
 
 // ONE calendar, two sources: manual (violet) and autopilot (lime). Month and
@@ -40,7 +40,7 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 function PlatformIcons({ platforms }: { platforms: string[] }) {
   return (
     <span className="font-code-label text-[10px] uppercase text-on-surface-variant/70">
-      {platforms.map((p) => (p === 'x' ? 'X' : 'Th')).join('·')}
+      {platforms.map((p) => platformShort(p as SchedulePlatform)).join('·')}
     </span>
   )
 }
