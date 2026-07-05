@@ -1,3 +1,16 @@
+import { publishLinkedInPost } from '@/lib/linkedin/client'
+import {
+  LinkedInAuthError,
+  LinkedInNotConnectedError,
+  LinkedInPostTooLongError,
+  LinkedInRateLimitError,
+  LinkedInVersionError,
+} from '@/lib/linkedin/errors'
+import {
+  getAccount as getLinkedInAccount,
+  getValidAccessToken as getLinkedInToken,
+  markNeedsReconnect,
+} from '@/lib/linkedin/store'
 import { addNotification } from '@/lib/notifications/store'
 import { getAccount as getThreadsAccount, getValidAccessToken as getThreadsToken } from '@/lib/threads/store'
 import { publishThread } from '@/lib/threads/client'
@@ -28,6 +41,8 @@ export type AttemptResult = {
   /** true = worth retrying (rate limit, 5xx, network); false = terminal
    *  (disconnected, expired auth, too long) — retrying can't fix it. */
   transient?: boolean
+  /** 429s get special treatment (spec §6): defer instead of burning a retry. */
+  rateLimited?: boolean
 }
 
 /** Pure outcome policy (spec §6b.4-5): retry transient failures up to 2 times,
@@ -44,6 +59,12 @@ export function decideOutcome(retryCount: number, results: AttemptResult[], prio
     }
   }
   const error = errors.length ? errors.join(' | ') : null
+  const failures = results.filter((r) => !r.ok)
+  const onlyRateLimited = failures.length > 0 && failures.every((r) => r.rateLimited)
+  if (onlyRateLimited) {
+    // 429s never fail a post and never burn retries — back off one cycle (spec §6).
+    return { status: 'scheduled', externalPostIds: ids, error, retryCount, deferMinutes: 60 }
+  }
   if (transient && retryCount < 2) {
     return { status: 'scheduled', externalPostIds: ids, error, retryCount: retryCount + 1 }
   }
@@ -99,6 +120,51 @@ async function publishToThreads(post: ScheduledPost): Promise<AttemptResult> {
   }
 }
 
+async function publishToLinkedIn(post: ScheduledPost): Promise<AttemptResult> {
+  try {
+    const token = await getLinkedInToken(post.userId)
+    const account = await getLinkedInAccount(post.userId)
+    if (!account) throw new LinkedInNotConnectedError()
+    // No first_reply chaining here — link-in-first-reply is an X reach
+    // workaround; on LinkedIn links belong in the body (spec §8).
+    const urls = (post.media ?? []).map((m) => m.url)
+    const alts = (post.media ?? []).map((m) => m.alt ?? '')
+    const { id } = await publishLinkedInPost(token, account.personUrn, post.content, {
+      imageUrls: urls,
+      imageAlts: alts,
+    })
+    return { platform: 'linkedin', ok: true, id }
+  } catch (err) {
+    if (err instanceof LinkedInNotConnectedError) {
+      return { platform: 'linkedin', ok: false, error: 'LinkedIn not connected', transient: false }
+    }
+    if (err instanceof LinkedInAuthError) {
+      // Dead token: flag reconnect + tell the user; NEVER burn retries on it (spec §5).
+      await markNeedsReconnect(post.userId).catch(() => {})
+      await addNotification({
+        userId: post.userId,
+        kind: 'reconnect_needed',
+        title: 'reconnect linkedin',
+        body: 'your linkedin connection expired — reconnect in profile to keep posting.',
+        refId: post.id,
+      }).catch((e) => console.error('[schedule/publish] notify failed:', e))
+      return { platform: 'linkedin', ok: false, error: 'linkedin_needs_reconnect', transient: false }
+    }
+    if (err instanceof LinkedInPostTooLongError) {
+      return { platform: 'linkedin', ok: false, error: `too long for LinkedIn (limit ${err.limit})`, transient: false }
+    }
+    if (err instanceof LinkedInRateLimitError) {
+      return { platform: 'linkedin', ok: false, error: 'LinkedIn rate limit', transient: true, rateLimited: true }
+    }
+    if (err instanceof LinkedInVersionError) {
+      console.error('[schedule/publish] LinkedIn version rejected — bump LINKEDIN_API_VERSION')
+      return { platform: 'linkedin', ok: false, error: 'linkedin api version outdated', transient: false }
+    }
+    console.error('[schedule/publish] LinkedIn failed:', err)
+    return { platform: 'linkedin', ok: false, error: 'LinkedIn publish failed', transient: true }
+  }
+}
+
 /** Publish ONE already-claimed post. Skips platforms that succeeded on an
  *  earlier attempt (their ids are in externalPostIds). Records the outcome and
  *  notifies on terminal failure. Returns the resulting status. */
@@ -107,7 +173,9 @@ export async function publishScheduledPost(post: ScheduledPost): Promise<'publis
   const results: AttemptResult[] = []
   for (const platform of post.platforms) {
     if (prior[platform]) continue
-    results.push(platform === 'x' ? await publishToX(post) : await publishToThreads(post))
+    if (platform === 'x') results.push(await publishToX(post))
+    else if (platform === 'threads') results.push(await publishToThreads(post))
+    else results.push(await publishToLinkedIn(post))
   }
   const outcome = decideOutcome(post.retryCount, results, prior)
   await finishPublish(post.id, outcome)

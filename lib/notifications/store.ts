@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
 
 // Lightweight in-app notifications (spec §8) — a table + a bell, no heavy system.
-export type NotificationKind = 'autopilot_queued' | 'autopilot_paused' | 'publish_failed'
+export type NotificationKind = 'autopilot_queued' | 'autopilot_paused' | 'publish_failed' | 'reconnect_needed'
 
 export type AppNotification = {
   id: string

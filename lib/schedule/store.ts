@@ -229,6 +229,9 @@ export type PublishOutcome = {
   externalPostIds: ExternalPostIds
   error: string | null
   retryCount: number
+  /** Rate-limit backoff (spec §6): push scheduled_for forward so the requeue
+   *  doesn't hammer the API on the very next cron cycle. */
+  deferMinutes?: number
 }
 
 export async function finishPublish(id: string, outcome: PublishOutcome): Promise<void> {
@@ -239,10 +242,18 @@ export async function finishPublish(id: string, outcome: PublishOutcome): Promis
        external_post_ids = $3,
        error = $4,
        retry_count = $5,
+       scheduled_for = CASE WHEN $6::int IS NOT NULL THEN now() + make_interval(mins => $6::int) ELSE scheduled_for END,
        published_at = CASE WHEN $2 = 'published' THEN now() ELSE published_at END,
        updated_at = now()
      WHERE id = $1`,
-    [id, outcome.status, JSON.stringify(outcome.externalPostIds), outcome.error, outcome.retryCount],
+    [
+      id,
+      outcome.status,
+      JSON.stringify(outcome.externalPostIds),
+      outcome.error,
+      outcome.retryCount,
+      outcome.deferMinutes ?? null,
+    ],
   )
 }
 

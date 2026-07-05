@@ -7,6 +7,7 @@ import { addNotification } from '@/lib/notifications/store'
 import { slotOccupied } from '@/lib/schedule/conflict'
 import { createScheduledPost } from '@/lib/schedule/store'
 import type { SchedulePlatform } from '@/lib/schedule/types'
+import { getAccount as getLinkedInAccount } from '@/lib/linkedin/store'
 import { getAccount as getThreadsAccount } from '@/lib/threads/store'
 import { generatePost } from '@/lib/voice/generate'
 import { isVoiceReady } from '@/lib/voice/ready'
@@ -47,6 +48,11 @@ export async function fillSlot(
   for (const p of settings.platforms) {
     if (p === 'x' && (await getXAccount(user.userId))) connected.push('x')
     if (p === 'threads' && (await getThreadsAccount(user.userId))) connected.push('threads')
+    if (p === 'linkedin') {
+      // Only a HEALTHY connection counts — needs_reconnect would fail at publish time.
+      const li = await getLinkedInAccount(user.userId)
+      if (li && li.status === 'connected') connected.push('linkedin')
+    }
   }
   if (connected.length === 0) return 'no_platforms'
 
