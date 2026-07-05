@@ -18,10 +18,11 @@ type VoiceOption = { id: string; name: string; isActive: boolean }
 
 // The platforms a generated post can be published to. The SAME text goes to each
 // selected, connected platform — no per-platform rewrite.
-type Dest = 'x' | 'threads'
+type Dest = 'x' | 'threads' | 'linkedin'
 const DESTINATIONS: { key: Dest; label: string; endpoint: string }[] = [
   { key: 'x', label: 'X', endpoint: '/api/x/publish' },
   { key: 'threads', label: 'Threads', endpoint: '/api/threads/publish' },
+  { key: 'linkedin', label: 'LinkedIn', endpoint: '/api/linkedin/publish' },
 ]
 
 function DraftCard({
@@ -29,6 +30,7 @@ function DraftCard({
   index,
   xConnected,
   threadsConnected,
+  linkedInConnected,
   onInsufficient,
   onImagesChange,
   onTextChange,
@@ -37,6 +39,7 @@ function DraftCard({
   index: number
   xConnected: boolean
   threadsConnected: boolean
+  linkedInConnected: boolean
   onInsufficient: () => void
   onImagesChange?: (imgs: DraftImage[]) => void
   onTextChange?: (text: string) => void
@@ -78,9 +81,13 @@ function DraftCard({
   // Per-platform outcome after a publish attempt (url on success, error on failure).
   const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string; note?: string }>>>({})
 
-  const connected: Record<Dest, boolean> = { x: xConnected, threads: threadsConnected }
+  const connected: Record<Dest, boolean> = { x: xConnected, threads: threadsConnected, linkedin: linkedInConnected }
   // Pre-select every connected platform; the user can toggle any off before publishing.
-  const [selected, setSelected] = useState<Record<Dest, boolean>>({ x: xConnected, threads: threadsConnected })
+  const [selected, setSelected] = useState<Record<Dest, boolean>>({
+    x: xConnected,
+    threads: threadsConnected,
+    linkedin: linkedInConnected,
+  })
 
   async function copy() {
     await navigator.clipboard.writeText(text)
@@ -127,7 +134,7 @@ function DraftCard({
     }
   }
 
-  const noneConnected = !xConnected && !threadsConnected
+  const noneConnected = !xConnected && !threadsConnected && !linkedInConnected
 
   return (
     <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
@@ -190,12 +197,13 @@ function DraftCard({
       </div>
       {noneConnected ? (
         <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
-          Connect X or Threads in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to publish.
+          Connect X, Threads or LinkedIn in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to publish.
         </p>
       ) : (
-        (!xConnected || !threadsConnected) && (
+        (!xConnected || !threadsConnected || !linkedInConnected) && (
           <p className="mt-2 font-code-label text-code-label text-on-surface-variant/60">
-            Connect {!xConnected ? 'X' : 'Threads'} in <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to post there too.
+            Connect {DESTINATIONS.filter((d) => !connected[d.key]).map((d) => d.label).join(' and ')} in{' '}
+            <a href="/app/profile" className="text-electric-indigo hover:underline">Profile</a> to post there too.
           </p>
         )
       )}
@@ -302,6 +310,7 @@ export function ComposeHome({
   initialSession,
   xConnected = false,
   threadsConnected = false,
+  linkedInConnected = false,
 }: {
   name: string
   voices: VoiceOption[]
@@ -309,6 +318,7 @@ export function ComposeHome({
   initialSession?: ComposeSession
   xConnected?: boolean
   threadsConnected?: boolean
+  linkedInConnected?: boolean
 }) {
   const router = useRouter()
   const active = voices.find((v) => v.isActive) ?? voices[0]
@@ -692,7 +702,7 @@ export function ComposeHome({
         {turns.map((t) => {
           if ('draft' in t) {
             const di = draftN++
-            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} onInsufficient={() => setShowUpgrade(true)} onImagesChange={(imgs) => persistDraftImages(di, imgs)} onTextChange={(txt) => persistDraftText(di, txt)} />
+            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} linkedInConnected={linkedInConnected} onInsufficient={() => setShowUpgrade(true)} onImagesChange={(imgs) => persistDraftImages(di, imgs)} onTextChange={(txt) => persistDraftText(di, txt)} />
           }
           if (t.role === 'user') {
             return (
