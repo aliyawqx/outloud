@@ -130,3 +130,22 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, created_at DESC);
+
+-- LinkedIn connection (personal-profile posting, w_member_social, Default Tier).
+-- Access token lives ~60 days; refresh_token is OPTIONAL (Default tier usually
+-- gets none — recovery is re-auth). status: 'connected'|'needs_reconnect'
+-- (set on 401/refresh failure by the publish path; reset on reconnect).
+CREATE TABLE IF NOT EXISTS linkedin_accounts (
+  user_id                  TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  linkedin_member_id       TEXT NOT NULL,            -- userinfo.sub
+  person_urn               TEXT NOT NULL,            -- "urn:li:person:{sub}", cached at connect (spec §3)
+  display_name             TEXT NOT NULL DEFAULT '',
+  access_token_enc         TEXT NOT NULL,
+  refresh_token_enc        TEXT,
+  scope                    TEXT NOT NULL DEFAULT '',
+  status                   TEXT NOT NULL DEFAULT 'connected',
+  expires_at               TIMESTAMPTZ NOT NULL,
+  refresh_token_expires_at TIMESTAMPTZ,
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
