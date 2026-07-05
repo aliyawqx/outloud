@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isCronAuthorized } from '@/lib/cron/auth'
+import { addNotification } from '@/lib/notifications/store'
 import { publishScheduledPost } from '@/lib/schedule/publish'
 import { claimForPublishing, finishPublish, listDuePostIds } from '@/lib/schedule/store'
 
@@ -32,14 +33,25 @@ async function run(req: Request) {
       else if (status === 'scheduled') requeued++
       else failed++
     } catch (err) {
-      // Never leave a claimed row stuck in 'publishing' — requeue it as a retry.
+      // Never leave a claimed row stuck in 'publishing' — requeue it as a retry,
+      // or fail it terminally WITH the user notification (never silently).
       console.error('[cron/publish] unexpected failure:', err)
+      const terminal = post.retryCount >= 2
       await finishPublish(post.id, {
-        status: post.retryCount < 2 ? 'scheduled' : 'failed',
+        status: terminal ? 'failed' : 'scheduled',
         externalPostIds: post.externalPostIds ?? {},
         error: 'internal error',
-        retryCount: post.retryCount + 1,
+        retryCount: terminal ? post.retryCount : post.retryCount + 1,
       }).catch(() => {})
+      if (terminal) {
+        await addNotification({
+          userId: post.userId,
+          kind: 'publish_failed',
+          title: 'a scheduled post failed to publish',
+          body: 'open the calendar to see what happened and try again.',
+          refId: post.id,
+        }).catch(() => {})
+      }
       failed++
     }
   }
