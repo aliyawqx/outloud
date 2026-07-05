@@ -1,0 +1,30 @@
+# External cron triggers for the scheduling feature. Vercel Hobby crons run at
+# most once a day, so the app's two cron routes are triggered from outside.
+# GitHub Actions schedules can lag by several minutes — for tighter publish
+# timing use cron-job.org (docs/cron-setup.md); this workflow is the always-on
+# fallback. Requires repo secrets: APP_URL (e.g. https://<prod-domain>) and
+# CRON_SECRET (same value as the Vercel env var).
+name: cron
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: publish due posts
+        run: |
+          curl -fsS --max-time 90 "$APP_URL/api/cron/publish" \
+            -H "Authorization: Bearer $CRON_SECRET"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      - name: generate autopilot posts
+        run: |
+          curl -fsS --max-time 90 "$APP_URL/api/cron/generate" \
+            -H "Authorization: Bearer $CRON_SECRET"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
