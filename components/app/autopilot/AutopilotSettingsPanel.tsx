@@ -61,9 +61,11 @@ export function AutopilotSettingsPanel({
 
   function toggleDay(i: number, day: number) {
     const t = s.postingTimes[i]
-    const days = t.days ?? []
-    const next = days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort()
-    setTime(i, { days: next.length ? next : undefined })
+    // Absent days = every day; the first toggle materializes the full set so
+    // deselecting one day means "every day except this one".
+    const days = t.days ?? [0, 1, 2, 3, 4, 5, 6]
+    const next = days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort((a, b) => a - b)
+    setTime(i, { days: next.length === 0 || next.length === 7 ? undefined : next })
   }
 
   async function save(overrides: Partial<AutopilotSettings> = {}) {
