@@ -2,7 +2,7 @@ import { ModelBusyError } from '@/lib/anthropic'
 import { isStaff } from '@/lib/appLock'
 import { AUTOPILOT_PROMPT } from '@/lib/autopilotPrompt'
 import { COST_PER_AUTO_POST } from '@/lib/creditsConfig'
-import { deduct, getBalance, refund, resetIfDue } from '@/lib/credits'
+import { deduct, getBalance, InsufficientCreditsError, refund, resetIfDue } from '@/lib/credits'
 import { addNotification } from '@/lib/notifications/store'
 import { slotOccupied } from '@/lib/schedule/conflict'
 import { createScheduledPost } from '@/lib/schedule/store'
@@ -77,10 +77,26 @@ export async function fillSlot(
   //    (same pattern as app/api/voice/chat).
   let chargeLedgerId: string | undefined
   if (!staff) {
-    const charge = await deduct(user.userId, COST_PER_AUTO_POST, 'post', {
-      metadata: { kind: 'autopilot', slot: slot.toISOString() },
-    })
-    chargeLedgerId = charge.ledgerId
+    try {
+      const charge = await deduct(user.userId, COST_PER_AUTO_POST, 'post', {
+        metadata: { kind: 'autopilot', slot: slot.toISOString() },
+      })
+      chargeLedgerId = charge.ledgerId
+    } catch (err) {
+      if (err instanceof InsufficientCreditsError) {
+        // Balance dropped between the pre-check and the atomic charge (concurrent
+        // spend) — same outcome as the credit gate: pause + notify, never crash the run.
+        await pauseAutopilot(user.userId, 'insufficient_credits')
+        await addNotification({
+          userId: user.userId,
+          kind: 'autopilot_paused',
+          title: 'autopilot paused — not enough credits',
+          body: 'top up in billing to get autopilot writing again.',
+        }).catch(() => {})
+        return 'paused_credits'
+      }
+      throw err
+    }
   }
 
   try {
