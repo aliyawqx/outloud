@@ -16,17 +16,25 @@ export function NotificationsBell() {
   const [items, setItems] = useState<Notif[]>([])
   const [unread, setUnread] = useState(0)
 
-  useEffect(() => {
-    fetch('/api/notifications')
-      .then((r) => (r.ok ? r.json() : { notifications: [], unread: 0 }))
-      .then((d) => { setItems(d.notifications ?? []); setUnread(d.unread ?? 0) })
-      .catch(() => {})
-  }, [])
+  async function loadNotifications() {
+    try {
+      const r = await fetch('/api/notifications')
+      if (!r.ok) return
+      const d = await r.json()
+      setItems(d.notifications ?? [])
+      setUnread(d.unread ?? 0)
+    } catch {}
+  }
+
+  useEffect(() => { void loadNotifications() }, [])
 
   async function toggleOpen() {
     const next = !open
     setOpen(next)
-    if (next && unread > 0) {
+    if (next) {
+      // Refetch on open — the sidebar persists across client navigations, so the
+      // mount-time snapshot goes stale as autopilot creates notifications.
+      await loadNotifications()
       setUnread(0)
       fetch('/api/notifications', { method: 'PATCH' }).catch(() => {})
     }
