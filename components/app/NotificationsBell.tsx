@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-type Notif = { id: string; kind: string; title: string; body: string | null; readAt: string | null; createdAt: string }
+type Notif = { id: string; kind: string; title: string; body: string | null; link: string | null; readAt: string | null; createdAt: string }
 
 const KIND_ICON: Record<string, string> = {
   autopilot_queued: 'auto_awesome',
@@ -10,6 +10,7 @@ const KIND_ICON: Record<string, string> = {
   publish_failed: 'error',
   reconnect_needed: 'link_off',
   low_credits: 'account_balance_wallet',
+  post_published: 'open_in_new',
 }
 
 // Lightweight in-app notifications surface (spec §8): a bell + dropdown panel.
@@ -62,20 +63,32 @@ export function NotificationsBell() {
           {items.length === 0 ? (
             <p className="p-3 font-body-sm text-body-sm text-on-surface-variant/60">nothing yet</p>
           ) : (
-            items.map((n) => (
-              <div key={n.id} className="flex items-start gap-2 rounded-xl p-2.5 hover:bg-white/[0.04]">
-                <span aria-hidden="true" className={`material-symbols-outlined mt-0.5 text-[18px] ${n.kind === 'publish_failed' || n.kind === 'reconnect_needed' ? 'text-error' : 'text-electric-indigo'}`}>
-                  {KIND_ICON[n.kind] ?? 'info'}
-                </span>
-                <span className="min-w-0">
-                  <span className="block font-body-sm text-body-sm text-on-surface">{n.title}</span>
-                  {n.body && <span className="block font-code-label text-code-label text-on-surface-variant">{n.body}</span>}
-                  <span className="block font-code-label text-[10px] text-on-surface-variant/50">
-                    {new Date(n.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            items.map((n) => {
+              const inner = (
+                <>
+                  <span aria-hidden="true" className={`material-symbols-outlined mt-0.5 text-[18px] ${n.kind === 'publish_failed' || n.kind === 'reconnect_needed' ? 'text-error' : 'text-electric-indigo'}`}>
+                    {KIND_ICON[n.kind] ?? 'info'}
                   </span>
-                </span>
-              </div>
-            ))
+                  <span className="min-w-0">
+                    <span className={`block font-body-sm text-body-sm text-on-surface ${n.link ? 'group-hover:underline' : ''}`}>{n.title}</span>
+                    {n.body && <span className="block break-words font-code-label text-code-label text-on-surface-variant">{n.body}</span>}
+                    <span className="block font-code-label text-[10px] text-on-surface-variant/50">
+                      {new Date(n.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </span>
+                </>
+              )
+              // A notification with a link (e.g. the live post) is a tap-through anchor.
+              return n.link ? (
+                <a key={n.id} href={n.link} target="_blank" rel="noreferrer" className="group flex items-start gap-2 rounded-xl p-2.5 hover:bg-white/[0.04]">
+                  {inner}
+                </a>
+              ) : (
+                <div key={n.id} className="flex items-start gap-2 rounded-xl p-2.5 hover:bg-white/[0.04]">
+                  {inner}
+                </div>
+              )
+            })
           )}
         </div>
       )}

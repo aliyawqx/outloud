@@ -8,12 +8,15 @@ export type NotificationKind =
   | 'publish_failed'
   | 'reconnect_needed'
   | 'low_credits'
+  | 'post_published'
 
 export type AppNotification = {
   id: string
   kind: NotificationKind
   title: string
   body: string | null
+  /** Optional tap-through URL (e.g. the live post) — the bell renders an anchor. */
+  link: string | null
   refId: string | null
   readAt: string | null
   createdAt: string
@@ -24,6 +27,7 @@ type Row = {
   kind: NotificationKind
   title: string
   body: string | null
+  link: string | null
   ref_id: string | null
   read_at: Date | null
   created_at: Date
@@ -34,6 +38,7 @@ const mapRow = (r: Row): AppNotification => ({
   kind: r.kind,
   title: r.title,
   body: r.body,
+  link: r.link,
   refId: r.ref_id,
   readAt: r.read_at ? r.read_at.toISOString() : null,
   createdAt: r.created_at.toISOString(),
@@ -44,12 +49,13 @@ export async function addNotification(input: {
   kind: NotificationKind
   title: string
   body?: string
+  link?: string
   refId?: string
 }): Promise<void> {
   await ensureSchema()
   await getPool().query(
-    `INSERT INTO notifications (id, user_id, kind, title, body, ref_id) VALUES ($1,$2,$3,$4,$5,$6)`,
-    [randomUUID(), input.userId, input.kind, input.title, input.body ?? null, input.refId ?? null],
+    `INSERT INTO notifications (id, user_id, kind, title, body, link, ref_id) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [randomUUID(), input.userId, input.kind, input.title, input.body ?? null, input.link ?? null, input.refId ?? null],
   )
 }
 

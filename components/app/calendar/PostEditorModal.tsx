@@ -142,12 +142,17 @@ export function PostEditorModal({
             <p className="whitespace-pre-wrap rounded-xl border border-border-muted bg-surface-container-lowest p-4 font-body-md leading-relaxed text-on-surface">{post.content}</p>
             {post.status === 'published' && post.externalPostIds && (
               <div className="mt-3 flex flex-col gap-1">
-                {post.externalPostIds.x && (
-                  <span className="font-code-label text-code-label text-cyber-lime">published to X</span>
-                )}
-                {post.externalPostIds.threads && (
-                  <span className="font-code-label text-code-label text-cyber-lime">published to Threads</span>
-                )}
+                {SCHEDULE_PLATFORMS.filter((p) => post.externalPostIds?.[p]).map((p) => {
+                  const url = post.permalinks?.[p]
+                  // Live link when we captured one (addendum B); plain confirmation otherwise.
+                  return url ? (
+                    <a key={p} href={url} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
+                      view live on {platformLabel(p)} →
+                    </a>
+                  ) : (
+                    <span key={p} className="font-code-label text-code-label text-cyber-lime">published to {platformLabel(p)}</span>
+                  )
+                })}
               </div>
             )}
             {post.status === 'failed' && post.error && (

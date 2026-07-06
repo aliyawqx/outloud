@@ -196,6 +196,19 @@ export async function publishScheduledPost(post: ScheduledPost): Promise<'publis
   }
   const outcome = decideOutcome(post.retryCount, results, prior, post.permalinks ?? {})
   await finishPublish(post.id, outcome)
+  if (outcome.status === 'published') {
+    // Zero-touch users see output through THIS notification (addendum B) — the
+    // live link means they never have to open the platform or log in.
+    const links = Object.values(outcome.permalinks)
+    await addNotification({
+      userId: post.userId,
+      kind: 'post_published',
+      title: 'your post is live',
+      body: links.length ? links.join('\n') : 'view it on your calendar.',
+      link: links[0],
+      refId: post.id,
+    }).catch((e) => console.error('[schedule/publish] notify failed:', e))
+  }
   if (outcome.status === 'failed') {
     await addNotification({
       userId: post.userId,
