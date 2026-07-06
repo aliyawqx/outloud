@@ -55,6 +55,8 @@ export async function createUser(input: {
   email: string
   password: string
   displayName: string
+  /** Launch attribution (e.g. 'ph') read from the signup_ref cookie; null when absent. */
+  signupRef?: string | null
 }): Promise<AuthUser> {
   await ensureSchema()
   const client = await getPool().connect()
@@ -62,7 +64,12 @@ export async function createUser(input: {
     await client.query('BEGIN')
     const id = randomUUID()
     const hash = await hashPassword(input.password)
-    await client.query('INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)', [id, input.email, hash])
+    await client.query('INSERT INTO users (id, email, password_hash, signup_ref) VALUES ($1, $2, $3, $4)', [
+      id,
+      input.email,
+      hash,
+      input.signupRef ?? null,
+    ])
     await provisionTrialProfile(client, id, input.displayName, input.email)
     await client.query('COMMIT')
     return { id, email: input.email }
@@ -79,7 +86,12 @@ export async function createUser(input: {
  *  (a random hash satisfies the NOT NULL column; the user signs in via the provider),
  *  and email_verified=true since the provider already verified ownership — so they skip
  *  the email-code gate. Same card-free trial as email signup. */
-export async function createOAuthUser(input: { email: string; displayName: string }): Promise<AuthUser> {
+export async function createOAuthUser(input: {
+  email: string
+  displayName: string
+  /** Launch attribution (e.g. 'ph') read from the signup_ref cookie; null when absent. */
+  signupRef?: string | null
+}): Promise<AuthUser> {
   await ensureSchema()
   const client = await getPool().connect()
   try {
@@ -88,8 +100,8 @@ export async function createOAuthUser(input: { email: string; displayName: strin
     // Random, unknown-to-anyone hash — there's no password to log in with.
     const hash = await hashPassword(randomBytes(24).toString('hex'))
     await client.query(
-      'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, true)',
-      [id, input.email, hash],
+      'INSERT INTO users (id, email, password_hash, email_verified, signup_ref) VALUES ($1, $2, $3, true, $4)',
+      [id, input.email, hash, input.signupRef ?? null],
     )
     await provisionTrialProfile(client, id, input.displayName, input.email)
     await client.query('COMMIT')

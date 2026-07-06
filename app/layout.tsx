@@ -1,3 +1,4 @@
+import { RefCapture } from '@/components/RefCapture'
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono, Hanken_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="selection:bg-electric-indigo selection:text-white">
+        <RefCapture />
         {children}
         <Analytics />
       </body>

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { createSessionToken, SESSION_COOKIE } from '@/lib/auth/jwt'
 import { SESSION_MAX_AGE_S } from '@/lib/auth/jwt'
 import { AFTER_LOGIN, AFTER_SIGNUP } from '@/lib/auth/redirects'
+import { readSignupRef } from '@/lib/auth/ref'
 import { getUserByEmail, createOAuthUser, EmailTakenError } from '@/lib/auth/users'
 import {
   exchangeGoogleCode,
@@ -52,6 +53,8 @@ export async function GET(req: Request) {
         const created = await createOAuthUser({
           email: profile.email,
           displayName: profile.name || profile.email.split('@')[0],
+          // Launch attribution (?ref=...) captured on first landing; null if absent.
+          signupRef: await readSignupRef(),
         })
         user = { id: created.id, email: created.email, passwordHash: '' }
         isNew = true

@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Launch attribution (e.g. ?ref=ph from Product Hunt): captured client-side into
+-- the signup_ref cookie on first landing, attached to the user at signup. Nullable.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_ref TEXT;
 
 -- 1:1 profile per user.
 CREATE TABLE IF NOT EXISTS profiles (

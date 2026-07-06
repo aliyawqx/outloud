@@ -1,16 +1,18 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-const { createUserMock, setCookieMock, tokenMock, setVerifyCodeMock, sendCodeMock } = vi.hoisted(() => ({
+const { createUserMock, setCookieMock, tokenMock, setVerifyCodeMock, sendCodeMock, readRefMock } = vi.hoisted(() => ({
   createUserMock: vi.fn(),
   setCookieMock: vi.fn(),
   tokenMock: vi.fn(),
   setVerifyCodeMock: vi.fn(),
   sendCodeMock: vi.fn(),
+  readRefMock: vi.fn(),
 }))
 vi.mock('@/lib/auth/users', () => ({
   createUser: createUserMock,
   EmailTakenError: class EmailTakenError extends Error {},
 }))
+vi.mock('@/lib/auth/ref', () => ({ readSignupRef: readRefMock }))
 vi.mock('@/lib/auth/session', () => ({
   createSessionToken: tokenMock,
   setSessionCookie: setCookieMock,
@@ -35,9 +37,11 @@ beforeEach(() => {
   tokenMock.mockReset()
   setVerifyCodeMock.mockReset()
   sendCodeMock.mockReset()
+  readRefMock.mockReset()
   tokenMock.mockResolvedValue('signed.jwt')
   setVerifyCodeMock.mockResolvedValue('123456')
   sendCodeMock.mockResolvedValue(undefined)
+  readRefMock.mockResolvedValue(null)
 })
 
 describe('POST /api/auth/signup', () => {
@@ -48,11 +52,19 @@ describe('POST /api/auth/signup', () => {
     const json = await res.json()
     expect(json).toEqual({ ok: true, redirect: '/app/onboarding' })
 
-    expect(createUserMock).toHaveBeenCalledWith({ email: 'a@b.com', password: 'supersecret', displayName: 'Aya' })
+    expect(createUserMock).toHaveBeenCalledWith({ email: 'a@b.com', password: 'supersecret', displayName: 'Aya', signupRef: null })
     expect(setCookieMock).toHaveBeenCalledWith('signed.jwt')
     // A verification code is issued and emailed on signup.
     expect(setVerifyCodeMock).toHaveBeenCalledWith('u1')
     expect(sendCodeMock).toHaveBeenCalledWith('a@b.com', '123456')
+  })
+
+  it('attaches the stored ref (e.g. ?ref=ph) to the new user record', async () => {
+    createUserMock.mockResolvedValue({ id: 'u1', email: 'a@b.com' })
+    readRefMock.mockResolvedValue('ph')
+    const res = await POST(req({ email: 'a@b.com', password: 'supersecret', displayName: 'Aya' }))
+    expect(res.status).toBe(201)
+    expect(createUserMock).toHaveBeenCalledWith(expect.objectContaining({ signupRef: 'ph' }))
   })
 
   it('still succeeds (201) when sending the verification code fails', async () => {

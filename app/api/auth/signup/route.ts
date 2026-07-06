@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { validateSignup } from '@/lib/auth/validateCredentials'
+import { readSignupRef } from '@/lib/auth/ref'
 import { createUser, EmailTakenError } from '@/lib/auth/users'
 import { createSessionToken, setSessionCookie } from '@/lib/auth/session'
 import { AFTER_SIGNUP } from '@/lib/auth/redirects'
@@ -18,7 +19,9 @@ export async function POST(req: Request) {
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
 
   try {
-    const user = await createUser(result.value)
+    // Attach launch attribution (?ref=...) captured on first landing; null if absent.
+    const signupRef = await readSignupRef()
+    const user = await createUser({ ...result.value, signupRef })
     const token = await createSessionToken({ userId: user.id, email: user.email })
     await setSessionCookie(token)
     // Send the email-verification code. Best-effort: a failure here must NOT block
