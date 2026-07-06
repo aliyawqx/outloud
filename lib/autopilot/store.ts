@@ -54,7 +54,7 @@ function defaults(userId: string): AutopilotSettings {
     postingTimes: [],
     timezone: 'UTC',
     platforms: [],
-    reviewBeforePublish: true,
+    reviewBeforePublish: false, // zero-touch default (addendum): publish without a review gate
     slotsPerDay: 1,
     leadTimeMinutes: 240,
     pausedAt: null,

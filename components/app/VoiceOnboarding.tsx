@@ -250,20 +250,19 @@ export function VoiceOnboarding({
     }
   }
 
-  // Step 4 — autopilot setup (skippable). Defaults: browser timezone, 09:00 daily,
-  // review-before-publish ON (spec §12).
+  // Step 4 — zero-touch autopilot (skippable). The whole ask is a topic and a
+  // time (addendum A.1); publishing runs server-side with no review gate by
+  // default — the review toggle lives in Autopilot settings for those who want it.
   const [apInterests, setApInterests] = useState('')
   const [apTime, setApTime] = useState('09:00')
   const [apTimezone, setApTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
-  const [apEnabled, setApEnabled] = useState(false)
-  const [apReview, setApReview] = useState(true)
 
   async function finishOnboarding(skip: boolean) {
     setError('')
     setBusy(true)
     try {
       const interests = apInterests.split(',').map((s) => s.trim()).filter(Boolean)
-      if (!skip && (interests.length > 0 || apEnabled)) {
+      if (!skip && interests.length > 0) {
         const res = await fetch('/api/autopilot', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -272,8 +271,7 @@ export function VoiceOnboarding({
             postingTimes: [{ time: apTime }],
             timezone: apTimezone,
             platforms: ['x', 'threads', 'linkedin'],
-            reviewBeforePublish: apReview,
-            enabled: apEnabled && interests.length > 0,
+            enabled: true,
           }),
         })
         if (!res.ok) {
@@ -398,13 +396,13 @@ export function VoiceOnboarding({
     return (
       <div className={`${shell} max-w-md`}>
         <Stepper step={4} />
-        <h1 className="mb-2 font-headline-xl text-headline-xl">Put posting on autopilot?</h1>
+        <h1 className="mb-2 font-headline-xl text-headline-xl">Put your posting on autopilot</h1>
         <p className="mb-6 font-body-md text-body-md text-on-surface-variant">
-          Outloud can keep your calendar full — writing posts in your voice about your interests. You stay in control: review anything before it goes out.
+          give it a topic and a time — outloud writes and publishes in your voice on its own. it runs on our servers: no login needed, ever.
         </p>
 
         <label className="mb-1 block font-code-label text-code-label uppercase text-on-surface-variant/70" htmlFor="ap-interests">
-          Interests (comma-separated)
+          Topic(s), comma-separated
         </label>
         <input id="ap-interests" value={apInterests} onChange={(e) => setApInterests(e.target.value)} placeholder="e.g. building in public, ai tools" className={inputCls} />
 
@@ -423,24 +421,15 @@ export function VoiceOnboarding({
           </div>
         </div>
 
-        <label className="mt-5 flex cursor-pointer items-center justify-between gap-4">
-          <span className="font-body-md text-body-md text-on-surface">Turn autopilot on</span>
-          <input type="checkbox" checked={apEnabled} onChange={(e) => setApEnabled(e.target.checked)} className="h-5 w-5 accent-[#b06bff]" />
-        </label>
-        <label className="mt-3 flex cursor-pointer items-center justify-between gap-4">
-          <span className="font-body-md text-body-md text-on-surface">Review posts before they publish</span>
-          <input type="checkbox" checked={apReview} onChange={(e) => setApReview(e.target.checked)} className="h-5 w-5 accent-[#b06bff]" />
-        </label>
-
         {error && <p className="mt-3 font-body-sm text-body-sm text-error">{error}</p>}
 
         <button
           type="button"
           onClick={() => finishOnboarding(false)}
-          disabled={busy}
+          disabled={busy || apInterests.split(',').every((s) => !s.trim())}
           className="mt-6 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-colors hover:bg-primary-container active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? <><Spinner size={18} /> Saving…</> : <>Continue<span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span></>}
+          {busy ? <><Spinner size={18} /> Starting…</> : <>Start autopilot<span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span></>}
         </button>
         <button type="button" onClick={() => finishOnboarding(true)} disabled={busy} className="mt-3 w-full text-center font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface">
           skip for now — you can set this up later in Autopilot
