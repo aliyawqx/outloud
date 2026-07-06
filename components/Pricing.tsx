@@ -144,10 +144,10 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
           0x02 // PRICING
         </div>
         <h2 className="mb-3 font-headline-lg text-headline-lg">
-          {condensed ? 'Simple pricing for builders.' : 'Pick your plan.'}
+          Write it yourself, or let it run.
         </h2>
         <p className="mx-auto mb-8 max-w-xl font-body-md text-body-md text-on-surface-variant">
-          Start in your own voice. Upgrade when you go all-in on growth.
+          Start free for 3 days — with autopilot switched on, so you can watch it work.
         </p>
         <Toggle mode={mode} setMode={setMode} />
       </div>
