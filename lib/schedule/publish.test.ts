@@ -77,3 +77,37 @@ describe('decideOutcome — rate-limit defer (spec §6)', () => {
     expect(o.retryCount).toBe(0)
   })
 })
+
+describe('decideOutcome — permalinks (addendum B)', () => {
+  const okL = (platform: 'x' | 'threads' | 'linkedin', id: string, permalink: string): AttemptResult => ({
+    platform,
+    ok: true,
+    id,
+    permalink,
+  })
+
+  it('records permalinks for fresh successes only', () => {
+    const o = decideOutcome(0, [okL('x', '1', 'https://x.com/u/status/1'), fail('threads', 'down', true)], {})
+    expect(o.permalinks).toEqual({ x: 'https://x.com/u/status/1' })
+  })
+
+  it('preserves prior permalinks across a requeue and merges new ones', () => {
+    const o = decideOutcome(
+      0,
+      [okL('linkedin', 'urn:li:share:9', 'https://www.linkedin.com/feed/update/urn:li:share:9/'), fail('x', '5xx', true)],
+      { threads: 't1' },
+      { threads: 'https://threads.net/p/abc' },
+    )
+    expect(o.status).toBe('scheduled')
+    expect(o.permalinks).toEqual({
+      threads: 'https://threads.net/p/abc',
+      linkedin: 'https://www.linkedin.com/feed/update/urn:li:share:9/',
+    })
+  })
+
+  it('gives failed platforms no permalink', () => {
+    const o = decideOutcome(0, [fail('x', 'not connected', false)], {})
+    expect(o.permalinks).toEqual({})
+    expect(o.status).toBe('failed')
+  })
+})

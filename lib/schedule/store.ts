@@ -21,6 +21,7 @@ type Row = {
   status: ScheduledPostStatus
   source: ScheduledPostSource
   external_post_ids: ExternalPostIds | null
+  permalinks: Partial<Record<SchedulePlatform, string>> | null
   error: string | null
   retry_count: number
   credits_charged: number
@@ -43,6 +44,7 @@ function mapRow(r: Row): ScheduledPost {
     status: r.status,
     source: r.source,
     externalPostIds: r.external_post_ids,
+    permalinks: r.permalinks,
     error: r.error,
     retryCount: r.retry_count,
     creditsCharged: r.credits_charged,
@@ -227,6 +229,8 @@ export async function claimForPublishing(id: string): Promise<ScheduledPost | nu
 export type PublishOutcome = {
   status: 'published' | 'scheduled' | 'failed' // 'scheduled' = requeued for retry
   externalPostIds: ExternalPostIds
+  /** Live links for succeeded platforms (addendum B), merged with prior ones. */
+  permalinks: Partial<Record<SchedulePlatform, string>>
   error: string | null
   retryCount: number
   /** Rate-limit backoff (spec §6): push scheduled_for forward so the requeue
@@ -240,9 +244,10 @@ export async function finishPublish(id: string, outcome: PublishOutcome): Promis
     `UPDATE scheduled_posts SET
        status = $2,
        external_post_ids = $3,
-       error = $4,
-       retry_count = $5,
-       scheduled_for = CASE WHEN $6::int IS NOT NULL THEN now() + make_interval(mins => $6::int) ELSE scheduled_for END,
+       permalinks = $4,
+       error = $5,
+       retry_count = $6,
+       scheduled_for = CASE WHEN $7::int IS NOT NULL THEN now() + make_interval(mins => $7::int) ELSE scheduled_for END,
        published_at = CASE WHEN $2 = 'published' THEN now() ELSE published_at END,
        updated_at = now()
      WHERE id = $1`,
@@ -250,6 +255,7 @@ export async function finishPublish(id: string, outcome: PublishOutcome): Promis
       id,
       outcome.status,
       JSON.stringify(outcome.externalPostIds),
+      JSON.stringify(outcome.permalinks),
       outcome.error,
       outcome.retryCount,
       outcome.deferMinutes ?? null,

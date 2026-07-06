@@ -13,14 +13,14 @@ import {
 } from '@/lib/linkedin/store'
 import { addNotification } from '@/lib/notifications/store'
 import { getAccount as getThreadsAccount, getValidAccessToken as getThreadsToken } from '@/lib/threads/store'
-import { publishThread } from '@/lib/threads/client'
+import { getPermalink, publishThread } from '@/lib/threads/client'
 import {
   ThreadsAuthError,
   ThreadsNotConnectedError,
   ThreadsPostTooLongError,
   ThreadsRateLimitError,
 } from '@/lib/threads/errors'
-import { getValidAccessToken as getXToken } from '@/lib/x/store'
+import { getAccount as getXAccount, getValidAccessToken as getXToken } from '@/lib/x/store'
 import { postTweet, uploadImageFromUrl } from '@/lib/x/client'
 import { X_MEDIA_SCOPE_ENABLED } from '@/lib/x/oauth'
 import { MediaScopeError, PostTooLongError, ReplyNotAllowedError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
@@ -43,17 +43,27 @@ export type AttemptResult = {
   transient?: boolean
   /** 429s get special treatment (spec §6): defer instead of burning a retry. */
   rateLimited?: boolean
+  /** Live link to the created post (addendum B): X/LinkedIn constructed, Threads fetched. */
+  permalink?: string
 }
 
 /** Pure outcome policy (spec §6b.4-5): retry transient failures up to 2 times,
  *  keep per-platform successes, never fail a post that reached ANY platform. */
-export function decideOutcome(retryCount: number, results: AttemptResult[], prior: ExternalPostIds): PublishOutcome {
+export function decideOutcome(
+  retryCount: number,
+  results: AttemptResult[],
+  prior: ExternalPostIds,
+  priorPermalinks: Partial<Record<SchedulePlatform, string>> = {},
+): PublishOutcome {
   const ids: ExternalPostIds = { ...prior }
+  const permalinks: Partial<Record<SchedulePlatform, string>> = { ...priorPermalinks }
   const errors: string[] = []
   let transient = false
   for (const r of results) {
-    if (r.ok && r.id) ids[r.platform] = r.id
-    else if (!r.ok) {
+    if (r.ok && r.id) {
+      ids[r.platform] = r.id
+      if (r.permalink) permalinks[r.platform] = r.permalink
+    } else if (!r.ok) {
       errors.push(`${r.platform}: ${r.error ?? 'failed'}`)
       if (r.transient) transient = true
     }
@@ -63,15 +73,15 @@ export function decideOutcome(retryCount: number, results: AttemptResult[], prio
   const onlyRateLimited = failures.length > 0 && failures.every((r) => r.rateLimited)
   if (onlyRateLimited) {
     // 429s never fail a post and never burn retries — back off one cycle (spec §6).
-    return { status: 'scheduled', externalPostIds: ids, error, retryCount, deferMinutes: 60 }
+    return { status: 'scheduled', externalPostIds: ids, permalinks, error, retryCount, deferMinutes: 60 }
   }
   if (transient && retryCount < 2) {
-    return { status: 'scheduled', externalPostIds: ids, error, retryCount: retryCount + 1 }
+    return { status: 'scheduled', externalPostIds: ids, permalinks, error, retryCount: retryCount + 1 }
   }
   if (Object.keys(ids).length > 0) {
-    return { status: 'published', externalPostIds: ids, error, retryCount }
+    return { status: 'published', externalPostIds: ids, permalinks, error, retryCount }
   }
-  return { status: 'failed', externalPostIds: ids, error: error ?? 'publish failed', retryCount }
+  return { status: 'failed', externalPostIds: ids, permalinks, error: error ?? 'publish failed', retryCount }
 }
 
 async function publishToX(post: ScheduledPost): Promise<AttemptResult> {
@@ -90,7 +100,11 @@ async function publishToX(post: ScheduledPost): Promise<AttemptResult> {
         console.error('[schedule/publish] first reply failed:', e),
       )
     }
-    return { platform: 'x', ok: true, id }
+    const account = await getXAccount(post.userId).catch(() => null)
+    const permalink = account
+      ? `https://x.com/${account.username}/status/${id}`
+      : `https://x.com/i/status/${id}`
+    return { platform: 'x', ok: true, id, permalink }
   } catch (err) {
     if (err instanceof XNotConnectedError) return { platform: 'x', ok: false, error: 'X not connected', transient: false }
     if (err instanceof XAuthError) return { platform: 'x', ok: false, error: 'X connection expired — reconnect in Profile', transient: false }
@@ -109,7 +123,9 @@ async function publishToThreads(post: ScheduledPost): Promise<AttemptResult> {
     if (!account) throw new ThreadsNotConnectedError()
     const imageUrls = (post.media ?? []).map((m) => m.url)
     const { id } = await publishThread(token, account.threadsUserId, post.content, { imageUrls })
-    return { platform: 'threads', ok: true, id }
+    // Threads permalink is FETCHED off the media object, never constructed (addendum B).
+    const permalink = await getPermalink(token, id).catch(() => null)
+    return { platform: 'threads', ok: true, id, ...(permalink ? { permalink } : {}) }
   } catch (err) {
     if (err instanceof ThreadsNotConnectedError) return { platform: 'threads', ok: false, error: 'Threads not connected', transient: false }
     if (err instanceof ThreadsAuthError) return { platform: 'threads', ok: false, error: 'Threads connection expired — reconnect in Profile', transient: false }
@@ -133,7 +149,8 @@ async function publishToLinkedIn(post: ScheduledPost): Promise<AttemptResult> {
       imageUrls: urls,
       imageAlts: alts,
     })
-    return { platform: 'linkedin', ok: true, id }
+    // id IS the urn from the x-restli-id header → the public update URL.
+    return { platform: 'linkedin', ok: true, id, permalink: `https://www.linkedin.com/feed/update/${id}/` }
   } catch (err) {
     if (err instanceof LinkedInNotConnectedError) {
       return { platform: 'linkedin', ok: false, error: 'LinkedIn not connected', transient: false }
@@ -177,7 +194,7 @@ export async function publishScheduledPost(post: ScheduledPost): Promise<'publis
     else if (platform === 'threads') results.push(await publishToThreads(post))
     else results.push(await publishToLinkedIn(post))
   }
-  const outcome = decideOutcome(post.retryCount, results, prior)
+  const outcome = decideOutcome(post.retryCount, results, prior, post.permalinks ?? {})
   await finishPublish(post.id, outcome)
   if (outcome.status === 'failed') {
     await addNotification({

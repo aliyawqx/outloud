@@ -45,8 +45,8 @@ export async function POST(req: Request) {
     const account = await getAccount(session.userId)
     if (!account) throw new LinkedInNotConnectedError()
     const { id, imageSkipped } = await publishLinkedInPost(token, account.personUrn, text, { imageUrls, imageAlts })
-    // No stable public permalink from the API on this tier — link to the feed.
-    return NextResponse.json({ id, url: 'https://www.linkedin.com/feed/', imageSkipped })
+    // The urn from the x-restli-id header IS the public update URL (addendum B).
+    return NextResponse.json({ id, url: `https://www.linkedin.com/feed/update/${id}/`, imageSkipped })
   } catch (err) {
     if (err instanceof LinkedInNotConnectedError) return NextResponse.json({ error: err.message }, { status: 409 })
     if (err instanceof LinkedInAuthError) {

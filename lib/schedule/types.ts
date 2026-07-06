@@ -19,6 +19,9 @@ export type ScheduledPost = {
   status: ScheduledPostStatus
   source: ScheduledPostSource
   externalPostIds: ExternalPostIds | null
+  /** Live links to the published post, keyed by platform (addendum B). Only
+   *  'published' posts carry these; failed platforms get an error, not a link. */
+  permalinks: Partial<Record<SchedulePlatform, string>> | null
   error: string | null
   retryCount: number
   creditsCharged: number
