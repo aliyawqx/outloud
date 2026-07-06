@@ -5,6 +5,7 @@ import { COST_PER_AUTO_POST } from '@/lib/creditsConfig'
 import { deduct, getBalance, InsufficientCreditsError, refund, resetIfDue } from '@/lib/credits'
 import { addNotification } from '@/lib/notifications/store'
 import { slotOccupied } from '@/lib/schedule/conflict'
+import { slotRankInDay } from '@/lib/schedule/slots'
 import { createScheduledPost } from '@/lib/schedule/store'
 import type { SchedulePlatform } from '@/lib/schedule/types'
 import { getAccount as getLinkedInAccount } from '@/lib/linkedin/store'
@@ -21,10 +22,13 @@ import { validateAutopilotPost } from './validate'
 // (generatePost) with the autopilot FORMAT prompt (voice spec) — no second
 // voice system. Credits go through the existing deduct/refund helpers.
 
-/** Deterministic daily rotation through the user's interests. */
-export function pickInterest(interests: string[], slot: Date): string {
-  const day = Math.floor(slot.getTime() / 86_400_000)
-  return interests[day % interests.length]
+/** Deterministic round-robin through the user's topics. With a slot ordinal
+ *  (day * slotsPerDay + rank-in-day) rotation advances every SLOT, so two slots
+ *  on the same day never repeat a theme (zero-touch addendum A.3). Without an
+ *  ordinal it falls back to the original per-day rotation. */
+export function pickInterest(interests: string[], slot: Date, slotOrdinal?: number): string {
+  const n = slotOrdinal ?? Math.floor(slot.getTime() / 86_400_000)
+  return interests[n % interests.length]
 }
 
 export type SlotFillResult =
@@ -106,7 +110,10 @@ export async function fillSlot(
   }
 
   try {
-    const interest = pickInterest(settings.interests, slot)
+    // Slot ordinal = day * slotsPerDay + rank-in-day → per-slot topic rotation.
+    const slotCfg = { postingTimes: settings.postingTimes, timezone: settings.timezone, slotsPerDay: settings.slotsPerDay }
+    const slotOrdinal = Math.floor(slot.getTime() / 86_400_000) * settings.slotsPerDay + slotRankInDay(slotCfg, slot)
+    const interest = pickInterest(settings.interests, slot, slotOrdinal)
     const { drafts } = await generatePost({
       idea: `share one specific thought, lesson, or observation from your work related to: ${interest}`,
       voiceProfile: profile,

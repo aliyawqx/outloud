@@ -62,6 +62,23 @@ export function isValidTimeZone(tz: string): boolean {
 
 const TIME_RE = /^(\d{2}):(\d{2})$/
 
+/** The day's quota slots (sorted, capped) for the calendar date y-m-d in cfg's zone. */
+function quotaSlotsForDay(cfg: SlotConfig, y: number, m: number, d: number, weekday: number): Date[] {
+  const daySlots: Date[] = []
+  for (const pt of cfg.postingTimes) {
+    const match = TIME_RE.exec(pt.time ?? '')
+    if (!match) continue
+    const hh = +match[1]
+    const mm = +match[2]
+    if (hh > 23 || mm > 59) continue
+    if (pt.days && pt.days.length > 0 && !pt.days.includes(weekday)) continue
+    daySlots.push(zonedTimeToUtc(y, m, d, hh, mm, cfg.timezone))
+  }
+  daySlots.sort((a, b) => a.getTime() - b.getTime())
+  const quota = Number.isFinite(cfg.slotsPerDay) ? Math.max(1, cfg.slotsPerDay) : 1
+  return daySlots.slice(0, quota)
+}
+
 /**
  * All slot instants in (now, now + horizonMinutes], honoring the per-day quota.
  * The quota is applied to the day's FULL slot list before dropping past times,
@@ -79,21 +96,21 @@ export function upcomingSlots(cfg: SlotConfig, now: Date, horizonMinutes: number
     const m = anchor.getUTCMonth() + 1
     const d = anchor.getUTCDate()
     const weekday = anchor.getUTCDay() // weekday of a calendar date is tz-independent
-    const daySlots: Date[] = []
-    for (const pt of cfg.postingTimes) {
-      const match = TIME_RE.exec(pt.time ?? '')
-      if (!match) continue
-      const hh = +match[1]
-      const mm = +match[2]
-      if (hh > 23 || mm > 59) continue
-      if (pt.days && pt.days.length > 0 && !pt.days.includes(weekday)) continue
-      daySlots.push(zonedTimeToUtc(y, m, d, hh, mm, cfg.timezone))
-    }
-    daySlots.sort((a, b) => a.getTime() - b.getTime())
-    const quota = Number.isFinite(cfg.slotsPerDay) ? Math.max(1, cfg.slotsPerDay) : 1
-    for (const t of daySlots.slice(0, quota)) {
+    for (const t of quotaSlotsForDay(cfg, y, m, d, weekday)) {
       if (t.getTime() > now.getTime() && t.getTime() <= end) out.push(t)
     }
   }
   return out.sort((a, b) => a.getTime() - b.getTime())
+}
+
+/**
+ * 0-based rank of `slot` among its local day's quota slots — stable regardless
+ * of when generation runs, so topic rotation across slots stays deterministic
+ * (zero-touch addendum A.3). Unmatched instants rank 0.
+ */
+export function slotRankInDay(cfg: SlotConfig, slot: Date): number {
+  const { y, m, d } = dateInTz(slot, cfg.timezone)
+  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+  const idx = quotaSlotsForDay(cfg, y, m, d, weekday).findIndex((t) => t.getTime() === slot.getTime())
+  return Math.max(0, idx)
 }

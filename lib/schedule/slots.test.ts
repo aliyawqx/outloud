@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateInTz, isValidTimeZone, upcomingSlots, zonedTimeToUtc } from './slots'
+import { dateInTz, isValidTimeZone, slotRankInDay, upcomingSlots, zonedTimeToUtc } from './slots'
 
 describe('zonedTimeToUtc', () => {
   it('converts fixed-offset zones (Asia/Almaty, UTC+5)', () => {
@@ -77,5 +77,24 @@ describe('upcomingSlots', () => {
     const cfg = { postingTimes: [{ time: '09:00' }], timezone: 'Asia/Almaty', slotsPerDay: Number.NaN }
     const slots = upcomingSlots(cfg, new Date('2026-01-15T02:00:00Z'), 240)
     expect(slots.map((s) => s.toISOString())).toEqual(['2026-01-15T04:00:00.000Z'])
+  })
+})
+
+describe('slotRankInDay', () => {
+  const cfg2 = { postingTimes: [{ time: '09:00' }, { time: '18:00' }], timezone: 'Asia/Almaty', slotsPerDay: 2 }
+
+  it('ranks a slot among its day quota slots', () => {
+    // 2026-01-15 Asia/Almaty: 09:00 = 04:00Z (rank 0), 18:00 = 13:00Z (rank 1)
+    expect(slotRankInDay(cfg2, new Date('2026-01-15T04:00:00Z'))).toBe(0)
+    expect(slotRankInDay(cfg2, new Date('2026-01-15T13:00:00Z'))).toBe(1)
+  })
+
+  it('returns 0 for an unmatched instant', () => {
+    expect(slotRankInDay(cfg2, new Date('2026-01-15T05:30:00Z'))).toBe(0)
+  })
+
+  it('caps by the day quota — an over-quota time never appears', () => {
+    const cfg1 = { ...cfg2, slotsPerDay: 1 }
+    expect(slotRankInDay(cfg1, new Date('2026-01-15T13:00:00Z'))).toBe(0) // 18:00 is outside quota 1
   })
 })
