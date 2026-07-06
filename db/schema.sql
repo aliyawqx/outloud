@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS autopilot_settings (
   posting_times         JSONB NOT NULL DEFAULT '[]'::jsonb,
   timezone              TEXT NOT NULL DEFAULT 'UTC',
   platforms             JSONB NOT NULL DEFAULT '[]'::jsonb,
-  review_before_publish BOOLEAN NOT NULL DEFAULT true,
+  review_before_publish BOOLEAN NOT NULL DEFAULT false,
   slots_per_day         INTEGER NOT NULL DEFAULT 1,
   lead_time_minutes     INTEGER NOT NULL DEFAULT 240,
   paused_at             TIMESTAMPTZ,
@@ -117,6 +117,13 @@ CREATE TABLE IF NOT EXISTS autopilot_settings (
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Zero-touch addendum: review-before-publish is now opt-in (default off).
+ALTER TABLE autopilot_settings ALTER COLUMN review_before_publish SET DEFAULT false;
+
+-- Live links to published posts, keyed by platform (zero-touch addendum).
+-- Only 'published' posts carry these; populated by the publish cron.
+ALTER TABLE scheduled_posts ADD COLUMN IF NOT EXISTS permalinks JSONB;
 
 -- Lightweight in-app notifications. kind: 'autopilot_queued'|'autopilot_paused'|'publish_failed'.
 CREATE TABLE IF NOT EXISTS notifications (
@@ -130,6 +137,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, created_at DESC);
+-- Optional tap-through URL (e.g. the live post) rendered as a link in the bell.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT;
 
 -- LinkedIn connection (personal-profile posting, w_member_social, Default Tier).
 -- Access token lives ~60 days; refresh_token is OPTIONAL (Default tier usually
