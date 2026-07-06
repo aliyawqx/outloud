@@ -10,6 +10,8 @@ export type AutopilotSettings = {
   timezone: string
   platforms: SchedulePlatform[]
   reviewBeforePublish: boolean
+  /** Attach an AI-generated image to each auto post (extra COST_PER_AI_PHOTO). */
+  aiImages: boolean
   slotsPerDay: number
   leadTimeMinutes: number
   pausedAt: string | null
@@ -24,6 +26,7 @@ type Row = {
   timezone: string
   platforms: SchedulePlatform[]
   review_before_publish: boolean
+  ai_images: boolean
   slots_per_day: number
   lead_time_minutes: number
   paused_at: Date | null
@@ -39,6 +42,7 @@ function mapRow(r: Row): AutopilotSettings {
     timezone: r.timezone,
     platforms: r.platforms ?? [],
     reviewBeforePublish: r.review_before_publish,
+    aiImages: r.ai_images,
     slotsPerDay: r.slots_per_day,
     leadTimeMinutes: r.lead_time_minutes,
     pausedAt: r.paused_at ? r.paused_at.toISOString() : null,
@@ -55,6 +59,7 @@ function defaults(userId: string): AutopilotSettings {
     timezone: 'UTC',
     platforms: [],
     reviewBeforePublish: false, // zero-touch default (addendum): publish without a review gate
+    aiImages: false,
     slotsPerDay: 1,
     leadTimeMinutes: 240,
     pausedAt: null,
@@ -69,7 +74,7 @@ export async function getAutopilotSettings(userId: string): Promise<AutopilotSet
 }
 
 export type AutopilotSettingsPatch = Partial<
-  Pick<AutopilotSettings, 'enabled' | 'interests' | 'postingTimes' | 'timezone' | 'platforms' | 'reviewBeforePublish' | 'slotsPerDay' | 'leadTimeMinutes'>
+  Pick<AutopilotSettings, 'enabled' | 'interests' | 'postingTimes' | 'timezone' | 'platforms' | 'reviewBeforePublish' | 'aiImages' | 'slotsPerDay' | 'leadTimeMinutes'>
 >
 
 export async function upsertAutopilotSettings(userId: string, patch: AutopilotSettingsPatch): Promise<AutopilotSettings> {
@@ -84,8 +89,9 @@ export async function upsertAutopilotSettings(userId: string, patch: AutopilotSe
        timezone              = COALESCE($5::text, timezone),
        platforms             = COALESCE($6::jsonb, platforms),
        review_before_publish = COALESCE($7::boolean, review_before_publish),
-       slots_per_day         = COALESCE($8::int, slots_per_day),
-       lead_time_minutes     = COALESCE($9::int, lead_time_minutes),
+       ai_images             = COALESCE($8::boolean, ai_images),
+       slots_per_day         = COALESCE($9::int, slots_per_day),
+       lead_time_minutes     = COALESCE($10::int, lead_time_minutes),
        updated_at            = now()
      WHERE user_id = $1
      RETURNING *`,
@@ -97,6 +103,7 @@ export async function upsertAutopilotSettings(userId: string, patch: AutopilotSe
       patch.timezone ?? null,
       patch.platforms !== undefined ? JSON.stringify(patch.platforms) : null,
       patch.reviewBeforePublish ?? null,
+      patch.aiImages ?? null,
       patch.slotsPerDay ?? null,
       patch.leadTimeMinutes ?? null,
     ],

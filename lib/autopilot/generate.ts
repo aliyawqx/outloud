@@ -1,12 +1,15 @@
 import { ModelBusyError } from '@/lib/anthropic'
 import { isStaff } from '@/lib/appLock'
 import { AUTOPILOT_PROMPT } from '@/lib/autopilotPrompt'
-import { COST_PER_AUTO_POST, LOW_CREDIT_POSTS_LEFT } from '@/lib/creditsConfig'
+import { COST_PER_AI_PHOTO, COST_PER_AUTO_POST, LOW_CREDIT_POSTS_LEFT } from '@/lib/creditsConfig'
 import { deduct, getBalance, InsufficientCreditsError, refund, resetIfDue } from '@/lib/credits'
 import { addNotification, hasRecentNotification } from '@/lib/notifications/store'
 import { slotOccupied } from '@/lib/schedule/conflict'
 import { slotRankInDay } from '@/lib/schedule/slots'
+import { generateImage } from '@/lib/images/kie'
+import { storeImageFromUrl } from '@/lib/images/blob'
 import { createScheduledPost } from '@/lib/schedule/store'
+import type { ScheduledMedia } from '@/lib/schedule/types'
 import type { SchedulePlatform } from '@/lib/schedule/types'
 import { getAccount as getLinkedInAccount } from '@/lib/linkedin/store'
 import { getAccount as getThreadsAccount } from '@/lib/threads/store'
@@ -148,10 +151,34 @@ export async function fillSlot(
       return 'invalid_output'
     }
 
+    // Optional AI image (settings.aiImages): generate → copy to our Blob →
+    // charge only after success (same policy as /api/images/generate). An image
+    // failure NEVER blocks the post — autopilot must not lose the slot over art.
+    let media: ScheduledMedia[] | null = null
+    if (settings.aiImages) {
+      try {
+        if (staff || (await getBalance(user.userId)) >= COST_PER_AI_PHOTO) {
+          const tmpUrl = await generateImage(
+            `a clean, minimal, abstract editorial illustration (no text, no words) for a social post about: ${interest}`,
+          )
+          const stored = await storeImageFromUrl(tmpUrl, 'autopilot-images')
+          if (!staff) {
+            await deduct(user.userId, COST_PER_AI_PHOTO, 'ai_image', {
+              metadata: { kind: 'autopilot_image', slot: slot.toISOString() },
+            }).catch((e) => console.error('[autopilot] image charge failed:', e))
+          }
+          media = [{ url: stored.url, alt: `illustration: ${interest}` }]
+        }
+      } catch (e) {
+        console.error('[autopilot] ai image failed (post continues text-only):', e)
+      }
+    }
+
     const post = await createScheduledPost({
       userId: user.userId,
       content: text,
       firstReply: null, // autopilot never carries a link (voice spec)
+      media,
       platforms: connected,
       scheduledFor: slot,
       timezone: settings.timezone,

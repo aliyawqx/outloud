@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
+import { matchTopics } from '@/lib/autopilot/topics'
+import { timezoneOptions } from '@/lib/timezones'
 import { addSample, createOwnVoice, deleteSample, generateStyleGuide } from '@/lib/voice/client'
 import type { SampleSource } from '@/lib/voice/types'
 
@@ -405,6 +407,25 @@ export function VoiceOnboarding({
           Topic(s), comma-separated
         </label>
         <input id="ap-interests" value={apInterests} onChange={(e) => setApInterests(e.target.value)} placeholder="e.g. building in public, ai tools" className={inputCls} />
+        {(() => {
+          const parts = apInterests.split(',')
+          const done = parts.slice(0, -1).map((x) => x.trim()).filter(Boolean)
+          const hits = matchTopics(parts[parts.length - 1] ?? '', done)
+          return hits.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {hits.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setApInterests([...done, t].join(', '))}
+                  className="rounded-full border border-cyber-lime/40 bg-cyber-lime/5 px-3 py-1 font-code-label text-code-label text-cyber-lime transition-colors hover:bg-cyber-lime/15"
+                >
+                  + {t}
+                </button>
+              ))}
+            </div>
+          ) : null
+        })()}
 
         <div className="mt-4 flex gap-3">
           <div className="flex-1">
@@ -414,8 +435,8 @@ export function VoiceOnboarding({
           <div className="flex-1">
             <label className="mb-1 block font-code-label text-code-label uppercase text-on-surface-variant/70" htmlFor="ap-tz">Timezone</label>
             <select id="ap-tz" value={apTimezone} onChange={(e) => setApTimezone(e.target.value)} className={inputCls}>
-              {Intl.supportedValuesOf('timeZone').map((tz) => (
-                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+              {timezoneOptions().map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>

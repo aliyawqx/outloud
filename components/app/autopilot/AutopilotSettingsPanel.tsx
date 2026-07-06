@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import type { AutopilotSettings } from '@/lib/autopilot/store'
+import { matchTopics } from '@/lib/autopilot/topics'
+import { timezoneOptions } from '@/lib/timezones'
 import type { PostingTime } from '@/lib/schedule/slots'
 import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
 
@@ -41,6 +43,7 @@ export function AutopilotSettingsPanel({
   const [busy, setBusy] = useState<'save' | 'pause' | 'resume' | null>(null)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  const tzOptions = useMemo(() => timezoneOptions(), [])
 
   const connected: Record<SchedulePlatform, boolean> = {
     x: xConnected,
@@ -89,6 +92,7 @@ export function AutopilotSettingsPanel({
           timezone: next.timezone,
           platforms: next.platforms,
           reviewBeforePublish: next.reviewBeforePublish,
+          aiImages: next.aiImages,
           // slotsPerDay is DERIVED server-side from the number of posting times —
           // each time slot IS one post per day.
         }),
@@ -178,6 +182,21 @@ export function AutopilotSettingsPanel({
             Add
           </button>
         </div>
+        {/* Tap-to-add suggestions while typing (e.g. "build" → "building in public"). */}
+        {matchTopics(interestDraft, s.interests).length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {matchTopics(interestDraft, s.interests).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => { patch({ interests: [...s.interests, t] }); setInterestDraft('') }}
+                className="rounded-full border border-cyber-lime/40 bg-cyber-lime/5 px-3 py-1 font-code-label text-code-label text-cyber-lime transition-colors hover:bg-cyber-lime/15"
+              >
+                + {t}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Posting times */}
@@ -194,8 +213,8 @@ export function AutopilotSettingsPanel({
             onChange={(e) => patch({ timezone: e.target.value })}
             className="rounded-xl border border-border-muted bg-surface-container-lowest p-2 font-code-label text-code-label text-on-surface focus:border-electric-indigo focus:outline-none"
           >
-            {Intl.supportedValuesOf('timeZone').map((tz) => (
-              <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+            {tzOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </div>
@@ -268,6 +287,13 @@ export function AutopilotSettingsPanel({
               </button>
             )
           })}
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-body-md text-body-md text-on-surface">AI image on each post</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Generate a matching image for every auto post (2k credits per image; goes to Threads and LinkedIn).</p>
+          </div>
+          <Toggle on={s.aiImages} onChange={(v) => patch({ aiImages: v })} label="AI image on each post" />
         </div>
         <div className="mt-4 flex items-center justify-between gap-4">
           <div>

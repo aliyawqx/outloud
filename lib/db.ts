@@ -207,6 +207,9 @@ CREATE TABLE IF NOT EXISTS autopilot_settings (
 
 -- Zero-touch addendum: review-before-publish is now opt-in (default off).
 ALTER TABLE autopilot_settings ALTER COLUMN review_before_publish SET DEFAULT false;
+-- Attach an AI-generated image to each autopilot post (costs COST_PER_AI_PHOTO
+-- per post on top of the draft; image failures never block the post).
+ALTER TABLE autopilot_settings ADD COLUMN IF NOT EXISTS ai_images BOOLEAN NOT NULL DEFAULT false;
 
 -- Live links to published posts, keyed by platform (zero-touch addendum).
 -- Only 'published' posts carry these; populated by the publish cron.

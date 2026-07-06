@@ -68,6 +68,10 @@ export async function PUT(req: Request) {
     if (typeof b.reviewBeforePublish !== 'boolean') return NextResponse.json({ error: 'Invalid review flag.' }, { status: 400 })
     patch.reviewBeforePublish = b.reviewBeforePublish
   }
+  if (b.aiImages !== undefined) {
+    if (typeof b.aiImages !== 'boolean') return NextResponse.json({ error: 'Invalid image flag.' }, { status: 400 })
+    patch.aiImages = b.aiImages
+  }
   if (b.interests !== undefined) {
     const interests = parseInterests(b.interests)
     if (!interests) return NextResponse.json({ error: 'Invalid interests.' }, { status: 400 })
