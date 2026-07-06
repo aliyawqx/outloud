@@ -4,7 +4,9 @@ import { getProfile, listProfiles } from '@/lib/voice/store'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { getComposeEntry, saveComposeSession, updateComposeChat } from '@/lib/voice/history'
 import { isStaff } from '@/lib/appLock'
+import { getUserTier } from '@/lib/billing/tier'
 import { deduct, refund, getBalance, resetIfDue, countDraftsMade, grantFreeDraft, InsufficientCreditsError, COST_PER_POST, FREE_DRAFT_FLOOR } from '@/lib/credits'
+import { MANUAL_POSTS_UNLIMITED } from '@/lib/creditsConfig'
 import { isVoiceReady } from '@/lib/voice/ready'
 import { getPromptText } from '@/lib/prompts/store'
 import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
@@ -108,14 +110,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Create a voice first.', needsVoice: true }, { status: 409 })
   }
 
-  // Metered by credits (staff are unlimited). Cheap pre-check so we don't run any
-  // LLM work for a user who can't afford a post; the real charge is atomic below.
+  // Staff are unlimited. Cheap pre-check so we don't run any LLM work for a
+  // user who can't post; when metered, the real charge is atomic below.
   const staff = isStaff(session.email)
   if (!staff) {
     await resetIfDue(session.userId) // refill the free allowance if its cycle elapsed
-    const balance = await getBalance(session.userId)
-    if (balance < COST_PER_POST) {
-      return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: COST_PER_POST, balance }, { status: 402 })
+    if (MANUAL_POSTS_UNLIMITED) {
+      // Manual posts are plan-gated, not credit-metered (plan-gating spec §1):
+      // any active plan or a live trial writes freely; an expired trial must
+      // pick a plan. Reuses insufficientCredits so the existing UpgradeModal
+      // client paths open the plans without any client change.
+      const tier = await getUserTier(session.userId, session.email)
+      if (!tier.hasActivePlan) {
+        return NextResponse.json(
+          { error: 'Your free trial has ended. Pick a plan to keep posting.', insufficientCredits: true, cost: 0, balance: 0 },
+          { status: 402 },
+        )
+      }
+    } else {
+      const balance = await getBalance(session.userId)
+      if (balance < COST_PER_POST) {
+        return NextResponse.json({ error: 'Not enough credits.', insufficientCredits: true, cost: COST_PER_POST, balance }, { status: 402 })
+      }
     }
   }
 
@@ -172,8 +188,9 @@ export async function POST(req: Request) {
         const samples = await listEnabledTexts(session.userId, profile.id, 5)
 
         // Charge atomically right before generating; keep the ledger id to refund
-        // a failed/empty generation below.
-        if (!staff) {
+        // a failed/empty generation below. Skipped entirely when manual posts
+        // are plan-gated (MANUAL_POSTS_UNLIMITED) — no deduction, no refund.
+        if (!staff && !MANUAL_POSTS_UNLIMITED) {
           try {
             const charge = await deduct(session.userId, COST_PER_POST, 'post', { metadata: { kind: 'post', command } })
             chargeLedgerId = charge.ledgerId

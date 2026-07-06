@@ -6,6 +6,11 @@
 // monetization spec (§1). Searches are ALL-IN: the bundled draft is not charged
 // again on top of the search.
 export const COST_PER_POST = 1_000
+// Decision lever (plan-gating spec §1): manual post generation is UNLIMITED on
+// active plans/trial — a human writes only so many. Credits keep metering
+// images, stock photos, replies, topic search, and autopilot. Flip to false to
+// return manual posts to the credit meter.
+export const MANUAL_POSTS_UNLIMITED = true
 // An autopilot-generated post costs the same as a manually generated one. ONE
 // config constant so pricing changes in a single place (monetization spec §12).
 export const COST_PER_AUTO_POST = COST_PER_POST
