@@ -291,7 +291,7 @@ export function AutopilotSettingsPanel({
         <div className="mt-4 flex items-center justify-between gap-4">
           <div>
             <p className="font-body-md text-body-md text-on-surface">AI image on each post</p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">Generate a matching image for every auto post (2k credits per image; goes to Threads and LinkedIn).</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Generate a matching image for every auto post (2k credits per image).</p>
           </div>
           <Toggle on={s.aiImages} onChange={(v) => patch({ aiImages: v })} label="AI image on each post" />
         </div>
