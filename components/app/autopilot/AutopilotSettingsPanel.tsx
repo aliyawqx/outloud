@@ -183,8 +183,21 @@ export function AutopilotSettingsPanel({
       <div className={card}>
         <p className="mb-1 font-body-md text-body-md font-bold text-on-surface">Posting times</p>
         <p className="mb-3 font-body-sm text-body-sm text-on-surface-variant">
-          Slots autopilot can fill, in your timezone ({s.timezone.replace(/_/g, ' ')}). Leave days unselected to post every day.
+          Slots autopilot can fill, in your timezone. Leave days unselected to post every day.
         </p>
+        <div className="mb-3 flex items-center gap-3">
+          <label htmlFor="ap-timezone" className="font-body-sm text-body-sm text-on-surface-variant">Timezone</label>
+          <select
+            id="ap-timezone"
+            value={s.timezone}
+            onChange={(e) => patch({ timezone: e.target.value })}
+            className="rounded-xl border border-border-muted bg-surface-container-lowest p-2 font-code-label text-code-label text-on-surface focus:border-electric-indigo focus:outline-none"
+          >
+            {Intl.supportedValuesOf('timeZone').map((tz) => (
+              <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+            ))}
+          </select>
+        </div>
         <div className="flex flex-col gap-3">
           {s.postingTimes.map((t, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2">
