@@ -92,8 +92,11 @@ export async function fillSlot(
     }
   }
 
-  // 4. The voice: the user's first ready profile (same resolution as the composer).
-  const profile = (await listProfiles(user.userId)).find(isVoiceReady) ?? null
+  // 4. The voice: the user's ACTIVE ready profile — autopilot must write in the
+  //    voice the user actually selected (its captured style guide + samples drive
+  //    generation). Falls back to the first ready one if none is marked active.
+  const profiles = await listProfiles(user.userId)
+  const profile = profiles.find((p) => p.isActive && isVoiceReady(p)) ?? profiles.find(isVoiceReady) ?? null
   if (!profile) return 'no_voice'
   const samples = await listEnabledTexts(user.userId, profile.id, 5)
 

@@ -89,7 +89,8 @@ export function AutopilotSettingsPanel({
           timezone: next.timezone,
           platforms: next.platforms,
           reviewBeforePublish: next.reviewBeforePublish,
-          slotsPerDay: next.slotsPerDay,
+          // slotsPerDay is DERIVED server-side from the number of posting times —
+          // each time slot IS one post per day.
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -239,17 +240,6 @@ export function AutopilotSettingsPanel({
           >
             + Add time
           </button>
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <label htmlFor="slots-per-day" className="font-body-sm text-body-sm text-on-surface-variant">Posts per day</label>
-          <select
-            id="slots-per-day"
-            value={s.slotsPerDay}
-            onChange={(e) => patch({ slotsPerDay: Number(e.target.value) })}
-            className="rounded-xl border border-border-muted bg-surface-container-lowest p-2 font-code-label text-code-label text-on-surface focus:border-electric-indigo focus:outline-none"
-          >
-            {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
         </div>
       </div>
 

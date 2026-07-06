@@ -77,6 +77,8 @@ export async function PUT(req: Request) {
     const postingTimes = parsePostingTimes(b.postingTimes)
     if (!postingTimes) return NextResponse.json({ error: 'Invalid posting times.' }, { status: 400 })
     patch.postingTimes = postingTimes
+    // Each posting time IS one post per day — the quota is derived, not chosen.
+    patch.slotsPerDay = Math.min(8, Math.max(1, postingTimes.length))
   }
   if (b.timezone !== undefined) {
     if (typeof b.timezone !== 'string' || !isValidTimeZone(b.timezone)) {
@@ -89,12 +91,7 @@ export async function PUT(req: Request) {
     if (!platforms) return NextResponse.json({ error: 'Pick at least one platform.' }, { status: 400 })
     patch.platforms = platforms
   }
-  if (b.slotsPerDay !== undefined) {
-    if (!Number.isInteger(b.slotsPerDay) || (b.slotsPerDay as number) < 1 || (b.slotsPerDay as number) > 4) {
-      return NextResponse.json({ error: 'Slots per day must be 1-4.' }, { status: 400 })
-    }
-    patch.slotsPerDay = b.slotsPerDay as number
-  }
+  // slotsPerDay is no longer client-settable — it is derived from postingTimes above.
   if (b.leadTimeMinutes !== undefined) {
     if (!Number.isInteger(b.leadTimeMinutes) || (b.leadTimeMinutes as number) < 30 || (b.leadTimeMinutes as number) > 1440) {
       return NextResponse.json({ error: 'Lead time must be 30-1440 minutes.' }, { status: 400 })
