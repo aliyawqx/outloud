@@ -1,3 +1,4 @@
+import { isTrialActive } from '@/lib/billing/tier'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { getSession } from '@/lib/auth/session'
@@ -54,13 +55,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // credits, and within its 3-day window. These users draft freely and skip the gate.
   // The trial ends on whichever comes first — credits hit 0, or the window elapses — and
   // either condition flips this false, so the "keep going" gate below appears.
-  const inCardFreeWindow = Boolean(
-    profile?.trialing &&
-      !profile?.polarSubscriptionId &&
-      (profile?.creditBalance ?? 0) > 0 &&
-      profile?.creditsResetAt &&
-      new Date(profile.creditsResetAt).getTime() > Date.now(),
-  )
+  // Shared with getUserTier (lib/billing/tier.ts) — the ONE trial-window rule.
+  const inCardFreeWindow = isTrialActive(profile)
 
   // Gate only once the free trial is truly done: a free-plan user with no active trial
   // (window ended or 10k spent) and no subscription → pick a plan to keep going (billed
