@@ -4,6 +4,8 @@ import { getAccount as getLinkedInAccount } from '@/lib/linkedin/store'
 import { listUpcomingAutopilot } from '@/lib/schedule/store'
 import { getAccount as getXAccount } from '@/lib/x/store'
 import { getAccount as getThreadsAccount } from '@/lib/threads/store'
+import { getUserTier } from '@/lib/billing/tier'
+import { AutopilotProLock } from '@/components/app/autopilot/AutopilotProLock'
 import { AutopilotSettingsPanel } from '@/components/app/autopilot/AutopilotSettingsPanel'
 import { LinkedInReconnectBanner } from '@/components/app/LinkedInReconnectBanner'
 
@@ -14,12 +16,13 @@ const EXPIRY_NUDGE_MS = 7 * 86_400_000
 export default async function AutopilotPage() {
   const session = await getSession()
   if (!session) return null // layout already redirects unauthenticated users
-  const [settings, upcoming, x, threads, li] = await Promise.all([
+  const [settings, upcoming, x, threads, li, tier] = await Promise.all([
     getAutopilotSettings(session.userId),
     listUpcomingAutopilot(session.userId, 5),
     getXAccount(session.userId),
     getThreadsAccount(session.userId),
     getLinkedInAccount(session.userId),
+    getUserTier(session.userId, session.email),
   ])
   const needsReconnect = li?.status === 'needs_reconnect'
   const expiring = Boolean(
@@ -33,14 +36,20 @@ export default async function AutopilotPage() {
           Keeps your calendar full — writes posts in your voice about your interests and fills the empty slots. Your own scheduled posts always win.
         </p>
       </div>
-      {(needsReconnect || expiring) && <LinkedInReconnectBanner expiring={!needsReconnect && expiring} />}
-      <AutopilotSettingsPanel
-        initial={settings}
-        upcoming={upcoming}
-        xConnected={Boolean(x)}
-        threadsConnected={Boolean(threads)}
-        linkedInConnected={Boolean(li && li.status === 'connected')}
-      />
+      {!tier.isPro ? (
+        <AutopilotProLock />
+      ) : (
+        <>
+          {(needsReconnect || expiring) && <LinkedInReconnectBanner expiring={!needsReconnect && expiring} />}
+          <AutopilotSettingsPanel
+            initial={settings}
+            upcoming={upcoming}
+            xConnected={Boolean(x)}
+            threadsConnected={Boolean(threads)}
+            linkedInConnected={Boolean(li && li.status === 'connected')}
+          />
+        </>
+      )}
     </div>
   )
 }
