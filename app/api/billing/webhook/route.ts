@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { planForProductId } from '@/lib/billing/plans'
 import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
+import { dropAutopilotForNonPro } from '@/lib/autopilot/gating'
 import { addCredits, grantPlan, zeroPlanCredits, packByProductId } from '@/lib/credits'
 
 // POST /api/billing/webhook — Polar's durable activation path (Standard Webhooks).
@@ -110,6 +111,8 @@ export async function POST(req: Request) {
         await setPlan(userId, 'free')
         await setTrialing(userId, false)
         await zeroPlanCredits(userId)
+        // Pro ended → autopilot off + pending auto posts cancelled (plan-gating spec §6).
+        await dropAutopilotForNonPro(userId).catch((e) => console.error('[billing/webhook] autopilot drop failed:', e))
         await setPolarRefs(userId, { subscriptionId: null }) // keep customer id for the portal
       }
     }

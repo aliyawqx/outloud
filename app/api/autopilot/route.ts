@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
+import { getUserTier } from '@/lib/billing/tier'
 import { getAutopilotSettings, upsertAutopilotSettings, type AutopilotSettingsPatch } from '@/lib/autopilot/store'
 import { parsePlatforms } from '@/lib/schedule/parse'
 import { isValidTimeZone, type PostingTime } from '@/lib/schedule/slots'
@@ -104,6 +105,15 @@ export async function PUT(req: Request) {
   }
   // Turning autopilot ON requires the essentials to be in place.
   if (patch.enabled) {
+    // Autopilot is a Pro feature (trial counts as Pro — plan-gating spec §5).
+    // The UI lock is UX; THIS is the enforcement.
+    const tier = await getUserTier(session.userId, session.email)
+    if (!tier.isPro) {
+      return NextResponse.json(
+        { error: 'Autopilot is a Pro feature. Upgrade to turn it on.', needsPro: true },
+        { status: 403 },
+      )
+    }
     const merged = { ...(await getAutopilotSettings(session.userId)), ...patch }
     if (!merged.interests.length) return NextResponse.json({ error: 'Add at least one interest first.' }, { status: 400 })
     if (!merged.postingTimes.length) return NextResponse.json({ error: 'Add at least one posting time first.' }, { status: 400 })

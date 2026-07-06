@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { fillSlot } from '@/lib/autopilot/generate'
+import { dropAutopilotForNonPro } from '@/lib/autopilot/gating'
+import { getUserTier } from '@/lib/billing/tier'
 import { listAutopilotCandidates } from '@/lib/autopilot/store'
 import { ModelBusyError } from '@/lib/anthropic'
 import { isCronAuthorized } from '@/lib/cron/auth'
@@ -27,6 +29,16 @@ async function run(req: Request) {
 
   outer: for (const { settings, email } of candidates) {
     if (generated >= MAX_GENERATIONS_PER_RUN || Date.now() - started > TIME_BUDGET_MS) break
+    // Defensive tier re-check (plan-gating spec §3.2): a downgraded user may
+    // still carry a stale enabled=true row — never auto-post for them; clean up.
+    const tier = await getUserTier(settings.userId, email)
+    if (!tier.isPro) {
+      await dropAutopilotForNonPro(settings.userId).catch((e) =>
+        console.error('[cron/generate] downgrade cleanup failed:', e),
+      )
+      skipped++
+      continue
+    }
     if (!settings.interests.length || !settings.postingTimes.length || !settings.platforms.length) {
       skipped++
       continue
