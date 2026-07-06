@@ -9,6 +9,7 @@ const KIND_ICON: Record<string, string> = {
   autopilot_paused: 'pause_circle',
   publish_failed: 'error',
   reconnect_needed: 'link_off',
+  low_credits: 'account_balance_wallet',
 }
 
 // Lightweight in-app notifications surface (spec §8): a bell + dropdown panel.

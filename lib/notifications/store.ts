@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { ensureSchema, getPool } from '@/lib/db'
 
 // Lightweight in-app notifications (spec §8) — a table + a bell, no heavy system.
-export type NotificationKind = 'autopilot_queued' | 'autopilot_paused' | 'publish_failed' | 'reconnect_needed'
+export type NotificationKind =
+  | 'autopilot_queued'
+  | 'autopilot_paused'
+  | 'publish_failed'
+  | 'reconnect_needed'
+  | 'low_credits'
 
 export type AppNotification = {
   id: string
@@ -55,6 +60,17 @@ export async function listNotifications(userId: string, limit = 20): Promise<App
     [userId, limit],
   )
   return r.rows.map(mapRow)
+}
+
+/** Dedupe helper: was a notification of this kind created recently? */
+export async function hasRecentNotification(userId: string, kind: NotificationKind, withinMs: number): Promise<boolean> {
+  await ensureSchema()
+  const r = await getPool().query<{ n: string }>(
+    `SELECT count(*)::text AS n FROM notifications
+     WHERE user_id = $1 AND kind = $2 AND created_at > now() - make_interval(secs => $3)`,
+    [userId, kind, Math.floor(withinMs / 1000)],
+  )
+  return Number(r.rows[0]?.n ?? '0') > 0
 }
 
 export async function unreadCount(userId: string): Promise<number> {

@@ -9,6 +9,9 @@ export const COST_PER_POST = 1_000
 // An autopilot-generated post costs the same as a manually generated one. ONE
 // config constant so pricing changes in a single place (monetization spec §12).
 export const COST_PER_AUTO_POST = COST_PER_POST
+// Warn before autopilot runs dry (zero-touch addendum A.4): fire a low-credit
+// notification when fewer than this many auto posts remain affordable.
+export const LOW_CREDIT_POSTS_LEFT = 5
 export const COST_PER_REPLY = 5_000
 export const COST_PER_TOPIC_SEARCH = 10_000 // scan a topic → draft (all-in)
 // Image actions (config only for now; wiring lands with outloud-image-actions-spec).

@@ -1,9 +1,9 @@
 import { ModelBusyError } from '@/lib/anthropic'
 import { isStaff } from '@/lib/appLock'
 import { AUTOPILOT_PROMPT } from '@/lib/autopilotPrompt'
-import { COST_PER_AUTO_POST } from '@/lib/creditsConfig'
+import { COST_PER_AUTO_POST, LOW_CREDIT_POSTS_LEFT } from '@/lib/creditsConfig'
 import { deduct, getBalance, InsufficientCreditsError, refund, resetIfDue } from '@/lib/credits'
-import { addNotification } from '@/lib/notifications/store'
+import { addNotification, hasRecentNotification } from '@/lib/notifications/store'
 import { slotOccupied } from '@/lib/schedule/conflict'
 import { slotRankInDay } from '@/lib/schedule/slots'
 import { createScheduledPost } from '@/lib/schedule/store'
@@ -16,6 +16,7 @@ import { listEnabledTexts } from '@/lib/voice/samples'
 import { listProfiles } from '@/lib/voice/store'
 import { getAccount as getXAccount } from '@/lib/x/store'
 import { pauseAutopilot, type AutopilotSettings } from './store'
+import { maybeAutoTopup } from './autoTopup'
 import { validateAutopilotPost } from './validate'
 
 // One autopilot generation = one slot fill. Reuses the EXISTING voice pipeline
@@ -75,6 +76,19 @@ export async function fillSlot(
         body: 'top up in billing to get autopilot writing again.',
       }).catch(() => {})
       return 'paused_credits'
+    }
+    // Never stall silently (addendum A.4): warn while autopilot can still post,
+    // so the hard pause at zero rarely happens. Auto-topup hook first.
+    if (balance < COST_PER_AUTO_POST * LOW_CREDIT_POSTS_LEFT) {
+      const topped = await maybeAutoTopup(user.userId)
+      if (!topped && !(await hasRecentNotification(user.userId, 'low_credits', 72 * 3_600_000))) {
+        await addNotification({
+          userId: user.userId,
+          kind: 'low_credits',
+          title: 'autopilot is running low on credits',
+          body: `about ${Math.floor(balance / COST_PER_AUTO_POST)} auto posts left — top up in billing to keep it running.`,
+        }).catch(() => {})
+      }
     }
   }
 
