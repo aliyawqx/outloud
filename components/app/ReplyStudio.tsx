@@ -172,10 +172,12 @@ function ReplyChat({
   target,
   voiceId,
   onNeedVoice,
+  onInsufficient,
 }: {
   target: Target
   voiceId: string
   onNeedVoice: () => void
+  onInsufficient: () => void
 }) {
   const { setBalance } = useCredits() // live header balance, reconciled from each response
   const [turns, setTurns] = useState<RTurn[]>([])
@@ -203,7 +205,7 @@ function ReplyChat({
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 409 && data.needsVoice) { onNeedVoice(); return }
-      if (res.status === 402 && data.insufficientCredits) { setError(data.error ?? "You're out of credits. Upgrade your plan to keep replying."); return }
+      if (res.status === 402 && data.insufficientCredits) { onInsufficient(); setError(data.error ?? "You're out of credits. Upgrade your plan to keep replying."); return }
       if (!res.ok) { setError(data.error ?? "Couldn't write a reply."); return }
       if (typeof data.creditsLeft === 'number') setBalance(data.creditsLeft)
       if (data.historyId) setHistoryId(data.historyId)
@@ -486,6 +488,7 @@ export function ReplyStudio({
       target={target}
       voiceId={voiceId}
       onNeedVoice={() => router.push('/app/onboarding')}
+      onInsufficient={() => setShowUpgrade(true)}
     />
   )
 
