@@ -21,6 +21,9 @@ vi.mock('@/lib/profile/store', () => ({
   setTrialing: setTrialingMock,
   markTrialStarted: markTrialStartedMock,
   setPolarRefs: setPolarRefsMock,
+  setPlanStatus: vi.fn(),
+  setBillingPeriod: vi.fn(),
+  getProfile: vi.fn(async () => null),
 }))
 vi.mock('@/lib/credits', () => ({
   addCredits: addCreditsMock,
@@ -28,8 +31,11 @@ vi.mock('@/lib/credits', () => ({
   grantTrialPool: grantTrialPoolMock,
   zeroPlanCredits: zeroPlanCreditsMock,
   packByProductId: packByProductIdMock,
+  grantUpgradeDelta: vi.fn(),
+  PLAN_ALLOWANCE: { free: 10_000, starter: 200_000, pro: 600_000, founder: 1_000_000_000 },
 }))
-vi.mock('@/lib/billing/plans', () => ({ planForProductId: planForProductIdMock }))
+vi.mock('@/lib/billing/plans', () => ({ planForProductId: planForProductIdMock, intervalForProductId: vi.fn(() => 'monthly') }))
+vi.mock('@/lib/autopilot/gating', () => ({ dropAutopilotForNonPro: vi.fn(async () => false) }))
 vi.mock('@/lib/auth/users', () => ({ getUserByEmail: vi.fn() }))
 
 import { POST } from '@/app/api/billing/webhook/route'
