@@ -21,10 +21,11 @@ export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-  // Topic search is a paid-plan feature (billing spec §3: Trial —, Starter ✓).
-  {
-    const tier = await getUserTier(session.userId, session.email)
-    if (tier.plan === 'free' && !tier.isPro) {
+  // Topic search is a paid-plan feature (billing spec §3: Trial —, Starter ✓) —
+  // the card-free trial does NOT include it, so gate on the plan itself.
+  if (!isStaff(session.email)) {
+    const tier = await getUserTier(session.userId)
+    if (tier.plan === 'free') {
       return NextResponse.json(
         { error: 'Topic search is available on paid plans. Upgrade to use it.', needsUpgrade: true },
         { status: 403 },
