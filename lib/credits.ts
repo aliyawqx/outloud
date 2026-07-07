@@ -246,6 +246,35 @@ export async function refund(userId: string, ledgerId: string): Promise<number |
 
 /** Reset the balance to the plan's allowance (does NOT stack). Called on subscribe
  *  + each paid renewal. No-op for unknown plans. */
+/** M4 (billing spec): a mid-cycle upgrade ADDS the allotment delta to the
+ *  current balance (Pro headroom right away) instead of resetting — the next
+ *  M7 refill lands on the new allotment. */
+export async function grantUpgradeDelta(userId: string, delta: number): Promise<void> {
+  if (delta <= 0) return
+  await ensureSchema()
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const r = await client.query<{ credit_balance: number; topup_balance: number }>(
+      `UPDATE profiles SET credit_balance = credit_balance + $2, updated_at = now()
+       WHERE user_id = $1 RETURNING credit_balance, topup_balance`,
+      [userId, delta],
+    )
+    const after = r.rows[0]
+    await client.query(
+      `INSERT INTO credit_ledger (id, user_id, amount, reason, metadata, balance_after)
+       VALUES ($1,$2,$3,'grant',$4,$5)`,
+      [randomUUID(), userId, delta, JSON.stringify({ kind: 'upgrade_delta' }), (after?.credit_balance ?? 0) + (after?.topup_balance ?? 0)],
+    )
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
 export async function grantPlan(userId: string, plan: string): Promise<void> {
   const amount = PLAN_ALLOWANCE[plan]
   if (amount == null) return

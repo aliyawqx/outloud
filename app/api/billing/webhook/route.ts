@@ -1,10 +1,10 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
-import { planForProductId } from '@/lib/billing/plans'
-import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
+import { intervalForProductId, planForProductId } from '@/lib/billing/plans'
+import { getProfile, setBillingPeriod, setPlan, setPlanStatus, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
 import { getUserByEmail } from '@/lib/auth/users'
 import { dropAutopilotForNonPro } from '@/lib/autopilot/gating'
-import { addCredits, grantPlan, zeroPlanCredits, packByProductId } from '@/lib/credits'
+import { addCredits, grantPlan, grantUpgradeDelta, zeroPlanCredits, packByProductId, PLAN_ALLOWANCE } from '@/lib/credits'
 
 // POST /api/billing/webhook — Polar's durable activation path (Standard Webhooks).
 // Verifies the signature, then flips the user's plan on subscribe / cancel. Set
@@ -62,6 +62,7 @@ export async function POST(req: Request) {
     const customerId =
       (typeof data.customer_id === 'string' ? data.customer_id : (data.customer as { id?: string } | undefined)?.id) ?? undefined
     const periodEnd = typeof data.current_period_end === 'string' ? new Date(data.current_period_end) : undefined
+    const periodStart = typeof data.current_period_start === 'string' ? new Date(data.current_period_start) : undefined
 
     if (type === 'order.paid' && pack) {
       // One-time credit-pack purchase → add to the persistent top-up bucket. Keyed by
@@ -79,6 +80,8 @@ export async function POST(req: Request) {
         await setPlan(userId, plan)
         await setTrialing(userId, false) // a real charge means the trial converted
         await grantPlan(userId, plan) // reset (not stack) to the plan's allowance
+        await setPlanStatus(userId, 'active') // M8: renewal/conversion confirms active
+        await setBillingPeriod(userId, { interval: intervalForProductId(productId), end: periodEnd ?? null, allotment: PLAN_ALLOWANCE[plan] })
         await setPolarRefs(userId, { customerId, subscriptionId: (data.subscription_id as string) ?? undefined })
       }
     } else if (type === 'subscription.created' && status === 'trialing') {
@@ -91,6 +94,8 @@ export async function POST(req: Request) {
         await setPlan(userId, plan)
         await markTrialStarted(userId) // trialing now + trial_used forever
         await grantPlan(userId, plan) // full plan allowance from day one
+        await setPlanStatus(userId, 'trialing')
+        await setBillingPeriod(userId, { interval: intervalForProductId(productId), start: periodStart ?? null, end: periodEnd ?? null, allotment: PLAN_ALLOWANCE[plan] })
         await setPolarRefs(userId, { customerId, subscriptionId: (data.id as string) ?? undefined, periodEnd })
       }
     } else if (type === 'subscription.active' || type === 'subscription.created' || type === 'subscription.uncanceled' || type === 'subscription.updated') {
@@ -100,9 +105,29 @@ export async function POST(req: Request) {
       const userId = await resolveUserId(data)
       const plan = planForProductId(productId)
       if (userId && plan) {
+        const prior = await getProfile(userId)
+        if (prior?.plan === 'starter' && plan === 'pro') {
+          // M4 — mid-cycle upgrade is IMMEDIATE: add the allotment delta to the
+          // current balance (no reset; credits_reset_at untouched).
+          await grantUpgradeDelta(userId, PLAN_ALLOWANCE.pro - PLAN_ALLOWANCE.starter)
+        } else if (prior?.plan === 'pro' && plan === 'starter') {
+          // M5 — downgrade lands at period end (Polar fires this when it applies):
+          // clamp plan credits to the Starter allotment and force-disable autopilot.
+          await grantPlan(userId, 'starter')
+          const { dropAutopilotForNonPro: drop } = await import('@/lib/autopilot/gating')
+          await drop(userId).catch((e) => console.error('[billing/webhook] downgrade autopilot drop failed:', e))
+        }
         await setPlan(userId, plan)
+        await setPlanStatus(userId, 'active')
+        await setBillingPeriod(userId, { interval: intervalForProductId(productId), start: periodStart ?? null, end: periodEnd ?? null, allotment: PLAN_ALLOWANCE[plan] })
         await setPolarRefs(userId, { customerId, subscriptionId: (data.id as string) ?? undefined, periodEnd })
       }
+    } else if (type === 'subscription.canceled') {
+      // M6 — cancel-at-period-end: access continues until current_period_end;
+      // the lazy expiry in resetIfDue (or the later revoked event) flips it to
+      // expired. Do NOT drop autopilot yet.
+      const userId = await resolveUserId(data)
+      if (userId) await setPlanStatus(userId, 'canceled')
     } else if (type === 'subscription.revoked') {
       // Trial ended without converting, or a cancelled plan's access ended → drop to
       // the free plan with ZERO credits (purchased top-ups are kept).
@@ -110,6 +135,7 @@ export async function POST(req: Request) {
       if (userId) {
         await setPlan(userId, 'free')
         await setTrialing(userId, false)
+        await setPlanStatus(userId, 'expired') // M2/M6 terminal state
         await zeroPlanCredits(userId)
         // Pro ended → autopilot off + pending auto posts cancelled (plan-gating spec §6).
         await dropAutopilotForNonPro(userId).catch((e) => console.error('[billing/webhook] autopilot drop failed:', e))

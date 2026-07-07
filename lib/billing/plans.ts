@@ -37,3 +37,14 @@ export function planForProductId(productId: string | undefined | null): PaidPlan
 export function isPaidPlan(plan: string | null | undefined): boolean {
   return plan === 'pro' || plan === 'starter'
 }
+
+/** Billing interval for a Polar product id (billing spec §7 M11). Annual product
+ *  ids win; anything else configured is monthly; unknown → null. */
+export function intervalForProductId(productId: string | undefined | null): 'monthly' | 'annual' | null {
+  if (!productId) return null
+  if (productId === process.env.POLAR_PRO_ANNUAL_PRODUCT_ID || productId === process.env.POLAR_STARTER_ANNUAL_PRODUCT_ID)
+    return 'annual'
+  if (productId === process.env.POLAR_PRO_PRODUCT_ID || productId === process.env.POLAR_STARTER_PRODUCT_ID)
+    return 'monthly'
+  return null
+}
