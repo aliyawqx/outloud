@@ -127,6 +127,18 @@ export async function resumeAutopilot(userId: string): Promise<void> {
   )
 }
 
+/** Users paused for credits (M9) — the cron's auto-resume sweep input. */
+export async function listCreditPausedUserIds(limit = 20): Promise<string[]> {
+  await ensureSchema()
+  const r = await getPool().query<{ user_id: string }>(
+    `SELECT user_id FROM autopilot_settings
+     WHERE enabled AND paused_at IS NOT NULL AND pause_reason = 'insufficient_credits'
+     ORDER BY paused_at LIMIT $1`,
+    [limit],
+  )
+  return r.rows.map((x) => x.user_id)
+}
+
 export type AutopilotCandidate = { settings: AutopilotSettings; email: string }
 
 /** Users the generation cron should serve: enabled and not paused. Email is

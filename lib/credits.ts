@@ -495,6 +495,14 @@ export async function addCredits(
     const balanceAfter = rows[0].credit_balance + rows[0].topup_balance
     await ledger(client, userId, credits, 'purchase', balanceAfter, opts.idempotencyKey ?? null, opts.metadata ?? {})
     await client.query('COMMIT')
+    // M10: a top-up auto-resumes an autopilot that was paused for credits.
+    // Lazy import avoids a module cycle (pause → store → … → credits).
+    try {
+      const { resumeIfCreditPaused } = await import('@/lib/autopilot/pause')
+      await resumeIfCreditPaused(userId)
+    } catch (e) {
+      console.error('[credits] top-up auto-resume failed:', e)
+    }
     return balanceAfter
   } catch (err) {
     try { await client.query('ROLLBACK') } catch {}

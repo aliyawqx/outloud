@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { fillSlot } from '@/lib/autopilot/generate'
 import { dropAutopilotForNonPro } from '@/lib/autopilot/gating'
+import { resumeIfCreditPaused } from '@/lib/autopilot/pause'
+import { listCreditPausedUserIds } from '@/lib/autopilot/store'
+import { getBalance, resetIfDue } from '@/lib/credits'
+import { COST_PER_AUTO_POST } from '@/lib/creditsConfig'
 import { getUserTier } from '@/lib/billing/tier'
 import { listAutopilotCandidates } from '@/lib/autopilot/store'
 import { ModelBusyError } from '@/lib/anthropic'
@@ -21,6 +25,18 @@ async function run(req: Request) {
 
   const started = Date.now()
   const now = new Date()
+  // M7/M9 auto-resume sweep: a monthly refill (or top-up) un-pauses autopilot
+  // without the user touching anything. Resumed users are picked up next run
+  // (candidates exclude currently-paused rows).
+  for (const pausedId of await listCreditPausedUserIds(20)) {
+    try {
+      await resetIfDue(pausedId) // may perform the M7 refill right now
+      if ((await getBalance(pausedId)) >= COST_PER_AUTO_POST) await resumeIfCreditPaused(pausedId)
+    } catch (e) {
+      console.error('[cron/generate] resume sweep failed for %s:', pausedId, e)
+    }
+  }
+
   const candidates = await listAutopilotCandidates()
   let generated = 0
   let occupied = 0

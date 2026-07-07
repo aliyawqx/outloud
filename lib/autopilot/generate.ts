@@ -18,7 +18,8 @@ import { isVoiceReady } from '@/lib/voice/ready'
 import { listEnabledTexts } from '@/lib/voice/samples'
 import { listProfiles } from '@/lib/voice/store'
 import { getAccount as getXAccount } from '@/lib/x/store'
-import { pauseAutopilot, type AutopilotSettings } from './store'
+import { pauseForCredits } from './pause'
+import { type AutopilotSettings } from './store'
 import { maybeAutoTopup } from './autoTopup'
 import { validateAutopilotPost } from './validate'
 
@@ -71,13 +72,7 @@ export async function fillSlot(
     await resetIfDue(user.userId)
     const balance = await getBalance(user.userId)
     if (balance < COST_PER_AUTO_POST) {
-      await pauseAutopilot(user.userId, 'insufficient_credits')
-      await addNotification({
-        userId: user.userId,
-        kind: 'autopilot_paused',
-        title: 'autopilot paused — not enough credits',
-        body: 'top up in billing to get autopilot writing again.',
-      }).catch(() => {})
+      await pauseForCredits(user.userId, user.email) // M9: in-app + email, never silent
       return 'paused_credits'
     }
     // Never stall silently (addendum A.4): warn while autopilot can still post,
@@ -116,13 +111,7 @@ export async function fillSlot(
       if (err instanceof InsufficientCreditsError) {
         // Balance dropped between the pre-check and the atomic charge (concurrent
         // spend) — same outcome as the credit gate: pause + notify, never crash the run.
-        await pauseAutopilot(user.userId, 'insufficient_credits')
-        await addNotification({
-          userId: user.userId,
-          kind: 'autopilot_paused',
-          title: 'autopilot paused — not enough credits',
-          body: 'top up in billing to get autopilot writing again.',
-        }).catch(() => {})
+        await pauseForCredits(user.userId, user.email)
         return 'paused_credits'
       }
       throw err

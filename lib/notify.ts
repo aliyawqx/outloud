@@ -49,3 +49,27 @@ export async function sendSignupNotification(input: {
     console.error('[notify] failed to send signup email:', err)
   }
 }
+
+/** M9 (billing spec): autopilot paused for credits — tell the user by email so
+ *  zero-touch never fails silently. Best-effort: never throws. */
+export async function sendAutopilotPausedEmail(to: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return
+  try {
+    const resend = new Resend(apiKey)
+    await resend.emails.send({
+      from: 'Outloud <onboarding@resend.dev>',
+      to,
+      subject: 'autopilot paused — out of credits',
+      text: [
+        'your outloud autopilot is paused because you ran out of credits.',
+        '',
+        'top up in billing or wait for your monthly refill — it resumes on its own either way.',
+        '',
+        'https://tryoutloud.app/app/settings/billing',
+      ].join('\n'),
+    })
+  } catch (err) {
+    console.error('[notify] autopilot-paused email failed:', err)
+  }
+}
