@@ -24,7 +24,7 @@ export const PRICING_NOTE = 'Pricing is for launch and may change.'
 
 // Prices shown in the UI. Checkout itself goes through Polar via
 // /api/billing/checkout (see lib/billing). Pro is the default upsell.
-export const PRO_PRICE = 30
+export const PRO_PRICE = 39
 export const STARTER_PRICE = 15
 
 export const PLANS: Plan[] = [
@@ -68,8 +68,8 @@ export const PLANS: Plan[] = [
     tagline: 'Set it and it runs.',
     highlight: true,
     badge: 'Most popular',
-    monthly: { perMo: 30, sub: 'Billed monthly' },
-    annual: { perMo: 20, sub: 'Billed annually · $240/year', save: 'Save 33%' },
+    monthly: { perMo: 39, sub: 'Billed monthly' },
+    annual: { perMo: 26, sub: 'Billed annually · $312/year', save: 'Save 33%' },
     features: [
       'Autopilot — zero-touch scheduling + auto-publish on your calendar',
       'Everything in Starter',
