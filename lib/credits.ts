@@ -363,12 +363,16 @@ export async function grantTrialPool(userId: string): Promise<void> {
 }
 
 /**
- * Never grants credits — it only EXPIRES:
- *  1. A card-free trial (trialing, no Polar subscription): kept while within the 3-day
- *     window, then ended → free plan with 0 credits. (Real Polar trials have a
- *     subscription id and are ended by webhooks, never here.)
- *  2. A non-trial free account holding stale plan credits → zero them (no auto-refill).
- * Returns 0 if it expired a balance, else null. Serialized with a row lock.
+ * The lazy billing clock (billing spec M2/M6/M7). On any metered touchpoint:
+ *  1. Card-free trial past its 3-day window → expired: free plan, 0 credits (M2).
+ *  2. Canceled subscription past current_period_end → expired (M6's lazy twin —
+ *     a missed revoked-webhook never leaves a canceled sub active).
+ *  3. PAID plans (starter/pro/founder) past credits_reset_at → M7 monthly refill:
+ *     plan credits reset to the allotment (no rollover; top-ups untouched) and the
+ *     clock advances +1 month. Runs monthly for ANNUAL subscribers too — refills
+ *     are deliberately independent of renewal webhooks (M8).
+ *  4. A non-trial free account holding stale plan credits → zero them.
+ * Returns the new plan-credit balance when it changed, else null. Row-locked.
  */
 export async function resetIfDue(userId: string): Promise<number | null> {
   await ensureSchema()
@@ -376,9 +380,9 @@ export async function resetIfDue(userId: string): Promise<number | null> {
   try {
     await client.query('BEGIN')
     const { rows } = await client.query<{
-      plan: string; credit_balance: number; topup_balance: number; credits_reset_at: Date | null; trialing: boolean; polar_subscription_id: string | null
+      plan: string; credit_balance: number; topup_balance: number; credits_reset_at: Date | null; trialing: boolean; polar_subscription_id: string | null; plan_status: string; current_period_end: Date | null; credits_allotment: number | null
     }>(
-      'SELECT plan, credit_balance, topup_balance, credits_reset_at, trialing, polar_subscription_id FROM profiles WHERE user_id = $1 FOR UPDATE',
+      'SELECT plan, credit_balance, topup_balance, credits_reset_at, trialing, polar_subscription_id, plan_status, current_period_end, credits_allotment FROM profiles WHERE user_id = $1 FOR UPDATE',
       [userId],
     )
     const r = rows[0]
@@ -399,12 +403,44 @@ export async function resetIfDue(userId: string): Promise<number | null> {
       }
       // Window elapsed → end the trial: free plan, 0 credits (must pick a paid plan).
       await client.query(
-        "UPDATE profiles SET plan = 'free', trialing = false, credit_balance = 0, credits_reset_at = NULL, updated_at = now() WHERE user_id = $1",
+        "UPDATE profiles SET plan = 'free', trialing = false, credit_balance = 0, credits_reset_at = NULL, plan_status = 'expired', updated_at = now() WHERE user_id = $1",
         [userId],
       )
       await ledger(client, userId, -r.credit_balance, 'reset', r.topup_balance, null, { trialExpired: true, previous: r.credit_balance })
       await client.query('COMMIT')
       return 0
+    }
+
+    const PAID = r.plan === 'starter' || r.plan === 'pro' || r.plan === 'founder'
+
+    // M6 (lazy): a canceled subscription whose paid period has run out → expired.
+    if (PAID && r.plan_status === 'canceled' && r.current_period_end && r.current_period_end <= now) {
+      await client.query(
+        "UPDATE profiles SET plan = 'free', trialing = false, credit_balance = 0, credits_reset_at = NULL, plan_status = 'expired', updated_at = now() WHERE user_id = $1",
+        [userId],
+      )
+      await ledger(client, userId, -r.credit_balance, 'reset', r.topup_balance, null, { canceledExpired: true, previous: r.credit_balance })
+      await client.query('COMMIT')
+      // After commit (avoids lock/cycle): autopilot off + pending auto posts cancelled.
+      const { dropAutopilotForNonPro } = await import('@/lib/autopilot/gating')
+      await dropAutopilotForNonPro(userId).catch((e) => console.error('[credits] expiry autopilot drop failed:', e))
+      return 0
+    }
+
+    // M7: monthly plan-credit refill for paid plans — annual subs refill monthly too.
+    if (PAID && r.plan_status !== 'expired' && r.credits_reset_at && r.credits_reset_at <= now) {
+      const allotment = r.credits_allotment ?? PLAN_ALLOWANCE[r.plan] ?? 0
+      const next = new Date(r.credits_reset_at)
+      while (next <= now) next.setMonth(next.getMonth() + 1) // catch up if >1 cycle behind
+      await client.query(
+        'UPDATE profiles SET credit_balance = $2, credits_reset_at = $3, updated_at = now() WHERE user_id = $1',
+        [userId, allotment, next],
+      )
+      await ledger(client, userId, allotment - r.credit_balance, 'reset', allotment + r.topup_balance, null, {
+        refill: true, plan: r.plan, previous: r.credit_balance,
+      })
+      await client.query('COMMIT')
+      return allotment
     }
 
     // Not a trial: a free account never auto-refills. Zero any stale plan credits.
