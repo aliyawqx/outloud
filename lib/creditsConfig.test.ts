@@ -17,7 +17,7 @@ import {
 describe('credit config', () => {
   it('uses the locked action costs', () => {
     expect(COST_PER_POST).toBe(1_000)
-    expect(COST_PER_REPLY).toBe(5_000)
+    expect(COST_PER_REPLY).toBe(3_000) // canonical billing spec §2
     expect(COST_PER_LINK_SEARCH).toBe(5_000)
     expect(COST_PER_TOPIC_SEARCH).toBe(10_000)
     expect(COST_PER_AI_PHOTO).toBe(2_000)
