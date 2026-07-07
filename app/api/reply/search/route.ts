@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
+import { getUserTier } from '@/lib/billing/tier'
 import { getValidAccessToken } from '@/lib/x/store'
 import { searchPosts } from '@/lib/x/search'
 import { listProfiles } from '@/lib/voice/store'
@@ -19,6 +20,17 @@ const VERDICT_RANK = { reply: 0, maybe: 1, skip: 2 } as const
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
+
+  // Topic search is a paid-plan feature (billing spec §3: Trial —, Starter ✓).
+  {
+    const tier = await getUserTier(session.userId, session.email)
+    if (tier.plan === 'free' && !tier.isPro) {
+      return NextResponse.json(
+        { error: 'Topic search is available on paid plans. Upgrade to use it.', needsUpgrade: true },
+        { status: 403 },
+      )
+    }
+  }
 
   let body: unknown
   try {

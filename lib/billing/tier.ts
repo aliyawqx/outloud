@@ -30,22 +30,36 @@ export function isTrialActive(
 
 export type TierInfo = {
   plan: string
+  /** Billing lifecycle: 'trialing'|'active'|'past_due'|'canceled'|'expired'. */
+  planStatus: string
   trialActive: boolean
-  /** Autopilot access: Pro/founder plan, staff, or an active trial (spec §5). */
+  /** Legacy pro-ish check (plan or trial). Prefer canUseAutopilot for gating. */
   isPro: boolean
   /** Manual generation access: any paid plan, staff, or an active trial. */
   hasActivePlan: boolean
+  /** THE autopilot gate (billing spec §6): Pro/founder plan whose status is
+   *  usable. 'canceled' still counts — access runs until period end (M6);
+   *  the lazy expiry flips it to 'expired'. Trial does NOT get autopilot (§3). */
+  canUseAutopilot: boolean
 }
+
+const USABLE_STATUSES = new Set(['active', 'canceled', 'trialing'])
 
 export async function getUserTier(userId: string, email?: string): Promise<TierInfo> {
   const profile = await getProfile(userId)
   const plan = profile?.plan ?? 'free'
+  const planStatus = profile?.planStatus ?? 'trialing'
   const trialActive = isTrialActive(profile)
   const staff = email ? isStaff(email) : false
   return {
     plan,
+    planStatus,
     trialActive,
     isPro: staff || PRO_PLANS.has(plan) || trialActive,
     hasActivePlan: staff || PAID_PLANS.has(plan) || trialActive,
+    // 'trialing' in USABLE covers a PAID Polar trial on the Pro product (has a
+    // subscription); the card-free signup trial has plan='free' and never passes
+    // the PRO_PLANS check, so §3's "trial has no autopilot" holds.
+    canUseAutopilot: staff || (PRO_PLANS.has(plan) && USABLE_STATUSES.has(planStatus)),
   }
 }

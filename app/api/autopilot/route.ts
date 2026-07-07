@@ -108,7 +108,7 @@ export async function PUT(req: Request) {
     // Autopilot is a Pro feature (trial counts as Pro — plan-gating spec §5).
     // The UI lock is UX; THIS is the enforcement.
     const tier = await getUserTier(session.userId, session.email)
-    if (!tier.isPro) {
+    if (!tier.canUseAutopilot) {
       return NextResponse.json(
         { error: 'Autopilot is a Pro feature. Upgrade to turn it on.', needsPro: true },
         { status: 403 },

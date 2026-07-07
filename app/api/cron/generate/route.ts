@@ -48,7 +48,7 @@ async function run(req: Request) {
     // Defensive tier re-check (plan-gating spec §3.2): a downgraded user may
     // still carry a stale enabled=true row — never auto-post for them; clean up.
     const tier = await getUserTier(settings.userId, email)
-    if (!tier.isPro) {
+    if (!tier.canUseAutopilot) {
       await dropAutopilotForNonPro(settings.userId).catch((e) =>
         console.error('[cron/generate] downgrade cleanup failed:', e),
       )

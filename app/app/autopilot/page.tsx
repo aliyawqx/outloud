@@ -36,7 +36,7 @@ export default async function AutopilotPage() {
           Keeps your calendar full — writes posts in your voice about your interests and fills the empty slots. Your own scheduled posts always win.
         </p>
       </div>
-      {!tier.isPro ? (
+      {!tier.canUseAutopilot ? (
         <AutopilotProLock />
       ) : (
         <>

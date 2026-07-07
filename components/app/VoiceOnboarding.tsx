@@ -265,6 +265,8 @@ export function VoiceOnboarding({
     try {
       const interests = apInterests.split(',').map((s) => s.trim()).filter(Boolean)
       if (!skip && interests.length > 0) {
+        // Autopilot itself is Pro-only (billing spec §3): save the setup now,
+        // it switches on when the user upgrades (or is already Pro).
         const res = await fetch('/api/autopilot', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -273,7 +275,6 @@ export function VoiceOnboarding({
             postingTimes: [{ time: apTime }],
             timezone: apTimezone,
             platforms: ['x', 'threads', 'linkedin'],
-            enabled: true,
           }),
         })
         if (!res.ok) {
@@ -400,7 +401,7 @@ export function VoiceOnboarding({
         <Stepper step={4} />
         <h1 className="mb-2 font-headline-xl text-headline-xl">Put your posting on autopilot</h1>
         <p className="mb-6 font-body-md text-body-md text-on-surface-variant">
-          give it a topic and a time — outloud writes and publishes in your voice on its own. it runs on our servers: no login needed, ever.
+          give it a topic and a time — outloud writes and publishes in your voice on its own. it runs on our servers: no login needed, ever. autopilot is a pro feature — your setup is saved and it switches on when you upgrade.
         </p>
 
         <label className="mb-1 block font-code-label text-code-label uppercase text-on-surface-variant/70" htmlFor="ap-interests">
@@ -450,7 +451,7 @@ export function VoiceOnboarding({
           disabled={busy || apInterests.split(',').every((s) => !s.trim())}
           className="mt-6 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-3 font-bold text-white transition-colors hover:bg-primary-container active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? <><Spinner size={18} /> Starting…</> : <>Start autopilot<span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span></>}
+          {busy ? <><Spinner size={18} /> Saving…</> : <>Save my autopilot setup<span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span></>}
         </button>
         <button type="button" onClick={() => finishOnboarding(true)} disabled={busy} className="mt-3 w-full text-center font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface">
           skip for now — you can set this up later in Autopilot
