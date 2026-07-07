@@ -161,14 +161,18 @@ export async function deduct(
     await client.query('BEGIN')
     // Spend the plan allowance first, then top-up credits. Both SET expressions read
     // the OLD credit_balance, so the split is computed atomically; the WHERE on the
-    // combined total keeps either bucket from going negative.
-    const { rows } = await client.query<{ credit_balance: number; topup_balance: number }>(
-      `UPDATE profiles
-          SET credit_balance = GREATEST(0, credit_balance - $2),
-              topup_balance = topup_balance - GREATEST(0, $2 - credit_balance),
+    // combined total keeps either bucket from going negative. The `prev` CTE keeps
+    // the pre-charge plan balance so the ledger can record the bucket split
+    // (billing spec §7 auditability).
+    const { rows } = await client.query<{ credit_balance: number; topup_balance: number; prev_plan: number }>(
+      `WITH prev AS (SELECT credit_balance FROM profiles WHERE user_id = $1 FOR UPDATE)
+       UPDATE profiles
+          SET credit_balance = GREATEST(0, profiles.credit_balance - $2),
+              topup_balance = profiles.topup_balance - GREATEST(0, $2 - profiles.credit_balance),
               updated_at = now()
-        WHERE user_id = $1 AND (credit_balance + topup_balance) >= $2
-        RETURNING credit_balance, topup_balance`,
+         FROM prev
+        WHERE profiles.user_id = $1 AND (profiles.credit_balance + profiles.topup_balance) >= $2
+        RETURNING profiles.credit_balance, profiles.topup_balance, prev.credit_balance AS prev_plan`,
       [userId, cost],
     )
     if (rows.length === 0) {
@@ -177,7 +181,11 @@ export async function deduct(
       throw new InsufficientCreditsError(cost, b[0]?.total ?? 0)
     }
     const balanceAfter = rows[0].credit_balance + rows[0].topup_balance
-    const ledgerId = await ledger(client, userId, -cost, reason, balanceAfter, opts.refId ?? null, opts.metadata ?? {})
+    const planSpent = Math.min(cost, rows[0].prev_plan)
+    const ledgerId = await ledger(client, userId, -cost, reason, balanceAfter, opts.refId ?? null, {
+      ...(opts.metadata ?? {}),
+      bucket: { plan: planSpent, topup: cost - planSpent },
+    })
     await client.query('COMMIT')
     return { balance: balanceAfter, ledgerId }
   } catch (err) {
