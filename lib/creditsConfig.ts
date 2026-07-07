@@ -6,18 +6,21 @@
 // monetization spec (§1). Searches are ALL-IN: the bundled draft is not charged
 // again on top of the search.
 export const COST_PER_POST = 1_000
-// Decision lever (plan-gating spec §1): manual post generation is UNLIMITED on
-// active plans/trial — a human writes only so many. Credits keep metering
-// images, stock photos, replies, topic search, and autopilot. Flip to false to
-// return manual posts to the credit meter.
-export const MANUAL_POSTS_UNLIMITED = true
+// Canonical billing spec §4: the balance check runs before EVERY generate —
+// manual posts are back on the credit meter (the previous unlimited lever is
+// revoked). Flip to true to decouple manual posts from credits again.
+export const MANUAL_POSTS_UNLIMITED = false
+
 // An autopilot-generated post costs the same as a manually generated one. ONE
 // config constant so pricing changes in a single place (monetization spec §12).
 export const COST_PER_AUTO_POST = COST_PER_POST
 // Warn before autopilot runs dry (zero-touch addendum A.4): fire a low-credit
 // notification when fewer than this many auto posts remain affordable.
 export const LOW_CREDIT_POSTS_LEFT = 5
-export const COST_PER_REPLY = 5_000
+export const COST_PER_REPLY = 3_000 // canonical billing spec §2 (was 5k)
+/** Canonical cost table (billing spec §2). The individual constants remain the
+ *  implementation; this object is the spec-facing name. */
+export const CREDIT_COSTS = { post: COST_PER_POST, reply: COST_PER_REPLY } as const
 export const COST_PER_TOPIC_SEARCH = 10_000 // scan a topic → draft (all-in)
 // Image actions (config only for now; wiring lands with outloud-image-actions-spec).
 export const COST_PER_AI_PHOTO = 2_000 // AI-generated image, stacks on a draft
@@ -44,10 +47,9 @@ export const PLAN_ALLOWANCE: Record<string, number> = {
  *  do NOT auto-reset credits; paid plans reset on their Polar billing renewal. */
 export const FREE_RESET_DAYS = 3
 
-/** Guaranteed first experience: every user can draft at least this many posts before any
- *  paywall can appear — even at 0 credits / expired window. A hard safety net so no one
- *  hits the card prompt before trying the core feature, regardless of credit accounting. */
-export const FREE_DRAFT_FLOOR = 3
+/** Billing spec M2: expiry locks ALL generation — the 10k trial is the
+ *  guaranteed first experience, so the old 3-draft floor is disabled. */
+export const FREE_DRAFT_FLOOR = 0
 
 /** Deprecated/unused: the starting balance is set directly in createUser as the
  *  card-free trial pool (PLAN_ALLOWANCE.free). Kept at 0 for back-compat. */
