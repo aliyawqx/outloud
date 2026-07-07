@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Canonical billing fields (billing spec §7). plan_status:
+-- 'trialing'|'active'|'past_due'|'canceled'|'expired'. billing_interval:
+-- 'monthly'|'annual'|NULL. credits_allotment = the plan's monthly grant.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan_status TEXT NOT NULL DEFAULT 'trialing';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS billing_interval TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS current_period_start TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS credits_allotment INTEGER;
+
 -- Saved voice profiles (Voice Inspiration system).
 -- owner_key holds the authenticated user id.
 CREATE TABLE IF NOT EXISTS voice_profiles (

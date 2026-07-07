@@ -20,6 +20,16 @@ export type Profile = {
   polarSubscriptionId: string | null
   /** When the current credits cycle/trial window ends (ISO). Null when not applicable. */
   creditsResetAt: string | null
+  /** Canonical billing lifecycle (billing spec §7): 'trialing'|'active'|'past_due'|'canceled'|'expired'. */
+  planStatus: string
+  /** 'monthly' | 'annual' | null (set from the Polar product at checkout/renewal). */
+  billingInterval: string | null
+  currentPeriodStart: string | null
+  currentPeriodEnd: string | null
+  /** Trial window end for card-free trials (mirrors credits_reset_at at signup). */
+  trialEndsAt: string | null
+  /** The plan's monthly credit grant (M7 refill target). Null → derive from PLAN_ALLOWANCE. */
+  creditsAllotment: number | null
   /** Per-tour onboarding completion, e.g. {welcome:true,new_post:true}. */
   onboardingState: Record<string, boolean>
   createdAt: string
@@ -40,6 +50,12 @@ type Row = {
   polar_customer_id: string | null
   polar_subscription_id: string | null
   credits_reset_at: Date | null
+  plan_status: string
+  billing_interval: string | null
+  current_period_start: Date | null
+  current_period_end: Date | null
+  trial_ends_at: Date | null
+  credits_allotment: number | null
   onboarding_state: Record<string, boolean> | null
   created_at: Date
   updated_at: Date
@@ -60,6 +76,12 @@ function mapRow(r: Row): Profile {
     polarCustomerId: r.polar_customer_id ?? null,
     polarSubscriptionId: r.polar_subscription_id ?? null,
     creditsResetAt: r.credits_reset_at ? r.credits_reset_at.toISOString() : null,
+    planStatus: r.plan_status ?? 'trialing',
+    billingInterval: r.billing_interval ?? null,
+    currentPeriodStart: r.current_period_start ? r.current_period_start.toISOString() : null,
+    currentPeriodEnd: r.current_period_end ? r.current_period_end.toISOString() : null,
+    trialEndsAt: r.trial_ends_at ? r.trial_ends_at.toISOString() : null,
+    creditsAllotment: r.credits_allotment ?? null,
     onboardingState: r.onboarding_state ?? {},
     createdAt: r.created_at.toISOString(),
     updatedAt: r.updated_at.toISOString(),
@@ -96,6 +118,33 @@ export async function setPlan(userId: string, plan: string): Promise<void> {
 }
 
 /** Flag whether the subscription is currently in its trial (blocks top-ups). */
+/** Billing spec §7 lifecycle writer (webhook + lazy expiry are the callers). */
+export async function setPlanStatus(userId: string, status: string): Promise<void> {
+  await ensureSchema()
+  await getPool().query(`UPDATE profiles SET plan_status = $2, updated_at = now() WHERE user_id = $1`, [
+    userId,
+    status,
+  ])
+}
+
+/** Billing period bounds + interval from the Polar payload (nulls leave fields untouched). */
+export async function setBillingPeriod(
+  userId: string,
+  p: { interval?: string | null; start?: Date | null; end?: Date | null; allotment?: number | null },
+): Promise<void> {
+  await ensureSchema()
+  await getPool().query(
+    `UPDATE profiles SET
+       billing_interval     = COALESCE($2, billing_interval),
+       current_period_start = COALESCE($3, current_period_start),
+       current_period_end   = COALESCE($4, current_period_end),
+       credits_allotment    = COALESCE($5, credits_allotment),
+       updated_at = now()
+     WHERE user_id = $1`,
+    [userId, p.interval ?? null, p.start ?? null, p.end ?? null, p.allotment ?? null],
+  )
+}
+
 export async function setTrialing(userId: string, value: boolean): Promise<void> {
   await ensureSchema()
   await getPool().query('UPDATE profiles SET trialing = $1, updated_at = now() WHERE user_id = $2', [value, userId])
