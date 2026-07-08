@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
 import { NotificationsBell } from '@/components/app/NotificationsBell'
@@ -18,14 +18,19 @@ export type SidebarProfile = {
 
 type NavItem = { href: string; label: string; icon: string; badge?: number }
 
+const SIDEBAR_W_KEY = 'outloud_sidebar_w'
+const SIDEBAR_HIDDEN_KEY = 'outloud_sidebar_hidden'
+const SIDEBAR_DEFAULT_W = 256
+const SIDEBAR_MIN_W = 208
+const SIDEBAR_MAX_W = 400
+
 // Secondary navigation. The two creation actions (New post / New reply) are
 // promoted out of this list into prominent buttons at the top of the sidebar.
 function navItems(voiceCount: number): NavItem[] {
   return [
-    { href: '/app/calendar', label: 'Calendar', icon: 'calendar_month' },
     { href: '/app/autopilot', label: 'Autopilot', icon: 'auto_awesome' },
+    { href: '/app/calendar', label: 'Calendar', icon: 'calendar_month' },
     { href: '/app/voices', label: 'Voices', icon: 'graphic_eq', badge: voiceCount },
-    { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks' },
   ]
 }
 
@@ -46,6 +51,37 @@ export function AppSidebar({
   const [open, setOpen] = useState(false)
   const items = navItems(voiceCount)
   const { balance, unlimited } = useCredits()
+
+  // Desktop sidebar chrome: hideable + drag-resizable, both remembered locally.
+  // Read after mount (not in the initializer) so SSR and first client render match.
+  const [width, setWidth] = useState(SIDEBAR_DEFAULT_W)
+  const [hidden, setHidden] = useState(false)
+  useEffect(() => {
+    const w = Number(localStorage.getItem(SIDEBAR_W_KEY))
+    if (w >= SIDEBAR_MIN_W && w <= SIDEBAR_MAX_W) setWidth(w)
+    setHidden(localStorage.getItem(SIDEBAR_HIDDEN_KEY) === '1')
+  }, [])
+
+  const toggleHidden = () =>
+    setHidden((h) => {
+      localStorage.setItem(SIDEBAR_HIDDEN_KEY, h ? '0' : '1')
+      return !h
+    })
+
+  // The sidebar sits at the left viewport edge, so the pointer's clientX IS the
+  // desired width — no rect math needed.
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault()
+    const clamp = (x: number) => Math.min(SIDEBAR_MAX_W, Math.max(SIDEBAR_MIN_W, x))
+    const onMove = (ev: PointerEvent) => setWidth(clamp(ev.clientX))
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      localStorage.setItem(SIDEBAR_W_KEY, String(clamp(ev.clientX)))
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
 
   const isActive = (href: string) =>
     href === '/app' ? pathname === '/app' && !viewingChat : pathname.startsWith(href)
@@ -212,18 +248,49 @@ export function AppSidebar({
         </div>
       )}
 
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border-muted bg-surface py-5 lg:flex">
-        <div className="shrink-0 px-5 pb-5">
-          <Link href="/app">
-            <Logo />
-          </Link>
-        </div>
-        {create}
-        {nav}
-        <SidebarHistory initial={history} />
-        {footer}
-      </aside>
+      {/* Desktop sidebar — hideable and drag-resizable (right edge). */}
+      {hidden ? (
+        <button
+          type="button"
+          aria-label="Show sidebar"
+          title="Show sidebar"
+          onClick={toggleHidden}
+          className="fixed left-3 top-3 z-40 hidden h-10 w-10 items-center justify-center rounded-xl border border-border-muted bg-surface-container text-on-surface-variant shadow-lg transition-colors hover:text-on-surface lg:flex"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">left_panel_open</span>
+        </button>
+      ) : (
+        <aside
+          style={{ width }}
+          className="sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border-muted bg-surface py-5 lg:flex"
+        >
+          <div className="flex shrink-0 items-center justify-between px-5 pb-5">
+            <Link href="/app">
+              <Logo />
+            </Link>
+            <button
+              type="button"
+              aria-label="Hide sidebar"
+              title="Hide sidebar"
+              onClick={toggleHidden}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-white/[0.06] hover:text-on-surface"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">left_panel_close</span>
+            </button>
+          </div>
+          {create}
+          {nav}
+          <SidebarHistory initial={history} />
+          {footer}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar"
+            onPointerDown={startResize}
+            className="absolute inset-y-0 right-0 w-1.5 cursor-col-resize transition-colors hover:bg-electric-indigo/40"
+          />
+        </aside>
+      )}
     </>
   )
 }

@@ -99,7 +99,12 @@ export function VoiceStudio({ onboarding = false }: { onboarding?: boolean }) {
   // slow multi-statement transaction over the network, so blocking the UI on it
   // (await call → await refetch) read as "nothing happened / it's broken".
   const onSetActive = (id: string) => {
-    setProfiles((ps) => ps.map((p) => ({ ...p, isActive: p.id === id })))
+    // Mirror the server's ordering (active first) so the card jumps to the top
+    // immediately, not on the next full reload.
+    setProfiles((ps) => {
+      const next = ps.map((p) => ({ ...p, isActive: p.id === id }))
+      return [...next.filter((p) => p.isActive), ...next.filter((p) => !p.isActive)]
+    })
     patchProfile(id, { isActive: true }).catch(refresh)
   }
   const onRename = (id: string, newName: string) => {

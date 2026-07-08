@@ -1,6 +1,10 @@
 import { ModelBusyError } from '@/lib/anthropic'
 import { isStaff } from '@/lib/appLock'
-import { AUTOPILOT_PROMPT } from '@/lib/autopilotPrompt'
+import { DEFAULT_COMMAND, seedText } from '@/lib/prompts/seeds'
+import { getPromptText } from '@/lib/prompts/store'
+import { LINKEDIN_TEXT_LIMIT } from '@/lib/linkedin/client'
+import { THREADS_TEXT_LIMIT } from '@/lib/threads/client'
+import { X_FREE_POST_LIMIT } from '@/lib/x/client'
 import { COST_PER_AI_PHOTO, COST_PER_AUTO_POST, LOW_CREDIT_POSTS_LEFT } from '@/lib/creditsConfig'
 import { deduct, getBalance, InsufficientCreditsError, refund, resetIfDue } from '@/lib/credits'
 import { addNotification, hasRecentNotification } from '@/lib/notifications/store'
@@ -118,6 +122,19 @@ export async function fillSlot(
     }
   }
 
+  // Autopilot writes with the SAME format as the composer's "New post" — the
+  // user's own 'post' prompt (editable in /app/prompts), not a separate autopilot
+  // voice. The one thing autopilot adds is the hard character cap of the
+  // narrowest connected platform: an over-limit post is an API rejection there,
+  // not a style choice.
+  const maxLen = connected.includes('x')
+    ? X_FREE_POST_LIMIT
+    : connected.includes('threads')
+      ? THREADS_TEXT_LIMIT
+      : LINKEDIN_TEXT_LIMIT
+  const postFormat = (await getPromptText(user.userId, DEFAULT_COMMAND)) ?? seedText(DEFAULT_COMMAND) ?? ''
+  const formatText = `${postFormat}\n\nHARD LIMIT: this goes out unattended via API — ONE single post, under ${maxLen} characters, no link and no URL in the body.`
+
   try {
     // Slot ordinal = day * slotsPerDay + rank-in-day → per-slot topic rotation.
     const slotCfg = { postingTimes: settings.postingTimes, timezone: settings.timezone, slotsPerDay: settings.slotsPerDay }
@@ -128,11 +145,11 @@ export async function fillSlot(
       voiceProfile: profile,
       samples,
       count: 1,
-      formatText: AUTOPILOT_PROMPT,
+      formatText,
     })
 
     const text = drafts[0]?.fullText ?? ''
-    const check = validateAutopilotPost(text)
+    const check = validateAutopilotPost(text, maxLen)
     if (!check.ok) {
       // Empty/garbage output is refunded and skipped — NEVER scheduled (spec §6a.4).
       if (chargeLedgerId) await refund(user.userId, chargeLedgerId).catch((e) => console.error('[autopilot] refund failed:', e))

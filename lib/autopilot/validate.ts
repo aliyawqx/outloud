@@ -1,7 +1,9 @@
-// Mechanical safety net over the autopilot FORMAT prompt (voice spec): an
-// autopilot post that violates these is refunded and skipped, NEVER scheduled.
-// Style rules the model must judge (rule-of-three, aphorisms) live in the
-// prompt; only mechanically checkable rules are enforced here.
+// Mechanical safety net for unattended generation: an autopilot post that
+// violates these is refunded and skipped, NEVER scheduled. Autopilot writes with
+// the same 'post' format as the composer — these are NOT style rules, only hard
+// facts of the channel: the platform's character cap (an over-limit post is an
+// API rejection), no URLs (autopilot never carries a link), and the base-rules
+// em-dash slop ban.
 
 const URL_RE = /https?:\/\/|www\./i
 
