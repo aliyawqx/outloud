@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import type { AutopilotSettings } from '@/lib/autopilot/store'
 import { matchTopics } from '@/lib/autopilot/topics'
-import { timezoneOptions } from '@/lib/timezones'
+import { deviceTimezone, timezoneOptions } from '@/lib/timezones'
 import type { PostingTime } from '@/lib/schedule/slots'
 import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
 import { PlatformGlyph } from '@/components/app/PlatformGlyph'
@@ -54,6 +54,7 @@ export function AutopilotSettingsPanel({
   const [toggling, setToggling] = useState(false)
   const [enableHint, setEnableHint] = useState('')
   const tzOptions = useMemo(() => timezoneOptions(), [])
+  const deviceTz = useMemo(() => deviceTimezone(), [])
   const expanded = s.enabled || pendingOn
 
   const connected: Record<SchedulePlatform, boolean> = {
@@ -292,18 +293,29 @@ export function AutopilotSettingsPanel({
         <p className="mb-3 font-body-sm text-body-sm text-on-surface-variant">
           Slots autopilot can fill, in your timezone. Leave days unselected to post every day.
         </p>
-        <div className="mb-3 flex items-center gap-3">
-          <label htmlFor="ap-timezone" className="font-body-sm text-body-sm text-on-surface-variant">Timezone</label>
-          <select
-            id="ap-timezone"
-            value={s.timezone}
-            onChange={(e) => patch({ timezone: e.target.value })}
-            className="rounded-xl border border-border-muted bg-surface-container-lowest p-2 font-code-label text-code-label text-on-surface focus:border-electric-indigo focus:outline-none"
-          >
-            {tzOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+        <div className="mb-4 flex flex-col gap-1.5">
+          <label htmlFor="ap-timezone" className="font-code-label text-code-label uppercase text-on-surface-variant">Timezone</label>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              id="ap-timezone"
+              value={s.timezone}
+              onChange={(e) => patch({ timezone: e.target.value })}
+              className="min-w-0 max-w-full flex-1 rounded-xl border border-border-muted bg-surface-container-lowest px-3.5 py-2.5 font-body-sm text-body-sm text-on-surface focus:border-electric-indigo focus:outline-none sm:max-w-xs"
+            >
+              {tzOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            {deviceTz && deviceTz !== s.timezone && (
+              <button
+                type="button"
+                onClick={() => patch({ timezone: deviceTz })}
+                className="rounded-full border border-electric-indigo/50 px-3.5 py-2 font-code-label text-code-label text-electric-indigo transition-colors hover:bg-electric-indigo/10"
+              >
+                Use my timezone
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-3">
           {s.postingTimes.map((t, i) => (
