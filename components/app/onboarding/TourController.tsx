@@ -8,7 +8,7 @@ import { TOURS, tourForRoute, type TourKey } from './tours'
 
 // Fires onboarding tours: the global welcome once on first /app, then the new-post
 // tour chains immediately after it (no refresh). Each page's mini-tour fires the first
-// time that route is visited. Tours never switch pages on their own — a step instead
+// time that route is visited. Tours never switch pages on their own - a step instead
 // points at the button to click, and when the user navigates the current tour tears
 // down and the destination's tour starts. Completion (incl. skip) persists per tour.
 export function TourController({ initialState }: { initialState: Record<string, boolean> }) {
@@ -16,7 +16,7 @@ export function TourController({ initialState }: { initialState: Record<string, 
   const doneRef = useRef<Record<string, boolean>>({ ...initialState })
   const runningRef = useRef(false)
   const activeRef = useRef<ReturnType<typeof driver> | null>(null)
-  // Set when we tear a tour down because the user navigated — suppresses the
+  // Set when we tear a tour down because the user navigated - suppresses the
   // same-page follow-up chain so the destination route's own tour can run instead.
   const suppressChainRef = useRef(false)
   // Reassigned each render but always the same logic; the effect reads it at fire time,

@@ -107,7 +107,7 @@ export function ReplyComposer() {
         <div className="flex flex-col gap-6">
           {isYou && (
             <div className="glass-panel flex flex-col gap-3 rounded-xl p-6">
-              <h3 className="font-code-label text-code-label uppercase text-on-surface-variant">Your voice — paste 5+ posts (blank line between, optional)</h3>
+              <h3 className="font-code-label text-code-label uppercase text-on-surface-variant">Your voice - paste 5+ posts (blank line between, optional)</h3>
               <textarea value={voiceRaw} onChange={(e) => setVoiceRaw(e.target.value)} className={`${field} h-32 resize-none`} placeholder={'lost a customer to a 2am bug. lesson: stop shipping at 2am'} />
             </div>
           )}
@@ -132,7 +132,7 @@ export function ReplyComposer() {
             </div>
             <label className="flex cursor-pointer items-center gap-3 font-body-sm text-body-sm text-on-surface">
               <input type="checkbox" checked={subtleHumor} onChange={(e) => setSubtleHumor(e.target.checked)} />
-              тонкий юмор — double meaning
+              тонкий юмор - double meaning
             </label>
 
             {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}

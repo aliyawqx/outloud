@@ -121,14 +121,14 @@ async function publishToX(post: ScheduledPost): Promise<AttemptResult> {
           userId: post.userId,
           kind: 'reconnect_needed',
           title: 'reconnect x',
-          body: 'your x connection expired — reconnect in profile to keep posting there.',
+          body: 'your x connection expired - reconnect in profile to keep posting there.',
           link: '/app/profile',
           refId: post.id,
         }).catch((e) => console.error('[schedule/publish] notify failed:', e))
       }
-      return { platform: 'x', ok: false, error: 'X connection expired — reconnect in Profile', transient: false }
+      return { platform: 'x', ok: false, error: 'X connection expired - reconnect in Profile', transient: false }
     }
-    if (err instanceof MediaScopeError) return { platform: 'x', ok: false, error: 'X media permission missing — reconnect in Profile', transient: false }
+    if (err instanceof MediaScopeError) return { platform: 'x', ok: false, error: 'X media permission missing - reconnect in Profile', transient: false }
     if (err instanceof PostTooLongError) return { platform: 'x', ok: false, error: `too long for X (limit ${err.limit})`, transient: false }
     if (err instanceof ReplyNotAllowedError) return { platform: 'x', ok: false, error: err.message, transient: false }
     console.error('[schedule/publish] X failed:', err)
@@ -148,7 +148,7 @@ async function publishToThreads(post: ScheduledPost): Promise<AttemptResult> {
     return { platform: 'threads', ok: true, id, ...(permalink ? { permalink } : {}) }
   } catch (err) {
     if (err instanceof ThreadsNotConnectedError) return { platform: 'threads', ok: false, error: 'Threads not connected', transient: false }
-    if (err instanceof ThreadsAuthError) return { platform: 'threads', ok: false, error: 'Threads connection expired — reconnect in Profile', transient: false }
+    if (err instanceof ThreadsAuthError) return { platform: 'threads', ok: false, error: 'Threads connection expired - reconnect in Profile', transient: false }
     if (err instanceof ThreadsPostTooLongError) return { platform: 'threads', ok: false, error: `too long for Threads (limit ${err.limit})`, transient: false }
     if (err instanceof ThreadsRateLimitError) return { platform: 'threads', ok: false, error: 'Threads rate limit', transient: true }
     console.error('[schedule/publish] Threads failed:', err)
@@ -182,7 +182,7 @@ async function publishToLinkedIn(post: ScheduledPost): Promise<AttemptResult> {
         userId: post.userId,
         kind: 'reconnect_needed',
         title: 'reconnect linkedin',
-        body: 'your linkedin connection expired — reconnect in profile to keep posting.',
+        body: 'your linkedin connection expired - reconnect in profile to keep posting.',
         link: '/app/profile',
         refId: post.id,
       }).catch((e) => console.error('[schedule/publish] notify failed:', e))
@@ -195,7 +195,7 @@ async function publishToLinkedIn(post: ScheduledPost): Promise<AttemptResult> {
       return { platform: 'linkedin', ok: false, error: 'LinkedIn rate limit', transient: true, rateLimited: true }
     }
     if (err instanceof LinkedInVersionError) {
-      console.error('[schedule/publish] LinkedIn version rejected — bump LINKEDIN_API_VERSION')
+      console.error('[schedule/publish] LinkedIn version rejected - bump LINKEDIN_API_VERSION')
       return { platform: 'linkedin', ok: false, error: 'linkedin api version outdated', transient: false }
     }
     console.error('[schedule/publish] LinkedIn failed:', err)
@@ -226,7 +226,7 @@ export async function publishScheduledPost(post: ScheduledPost): Promise<'publis
       userId: post.userId,
       kind: 'post_published',
       title: 'your post is live',
-      body: on.length ? `live on ${on.map(platformLabel).join(', ')} — tap to open it.` : 'view it on your calendar.',
+      body: on.length ? `live on ${on.map(platformLabel).join(', ')} - tap to open it.` : 'view it on your calendar.',
       link: `/app/posts/${post.id}`,
       refId: post.id,
     }).catch((e) => console.error('[schedule/publish] notify failed:', e))

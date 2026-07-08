@@ -9,7 +9,7 @@ import { startPackCheckout } from '@/lib/billing/client'
 const DEFAULT_PACK = CREDIT_PACKS.find((p) => p.bestValue) ?? CREDIT_PACKS[0]
 
 // Full-screen top-up card, shown when a user on an active PAID plan runs out of credits.
-// (Trial users see UpgradeModal instead — they need a plan, not a top-up.) Pack switcher
+// (Trial users see UpgradeModal instead - they need a plan, not a top-up.) Pack switcher
 // defaults to the $50 main pack. Stresses: plan credits reset at renewal, and top-up
 // credits never expire.
 export function TopUpModal({ onClose }: { onClose: () => void }) {
@@ -50,11 +50,11 @@ export function TopUpModal({ onClose }: { onClose: () => void }) {
         </span>
         <h2 className="font-headline-xl text-headline-xl">Top up to keep going</h2>
         <p className="max-w-md font-body-md text-body-md text-on-surface-variant">
-          Your plan credits reset when your billing month renews — you can wait for that, or top up
+          Your plan credits reset when your billing month renews - you can wait for that, or top up
           now. <span className="text-on-surface">Top-up credits never expire.</span>
         </p>
 
-        {/* pack switcher — defaults to the $50 main pack */}
+        {/* pack switcher - defaults to the $50 main pack */}
         <div className="inline-flex flex-wrap items-center justify-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
           {CREDIT_PACKS.map((p) => (
             <button key={p.id} type="button" className={pill(p.id === packId)} onClick={() => setPackId(p.id)}>
@@ -82,7 +82,7 @@ export function TopUpModal({ onClose }: { onClose: () => void }) {
             </li>
             <li className="flex items-start gap-2.5 font-body-sm text-body-sm text-on-surface">
               <span className="material-symbols-outlined mt-0.5 text-[18px] text-cyber-lime">check_circle</span>
-              Never expires — stacks on top of your plan
+              Never expires - stacks on top of your plan
             </li>
           </ul>
           <button

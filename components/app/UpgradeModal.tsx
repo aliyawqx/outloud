@@ -55,7 +55,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
           Keep writing posts in your own voice. Pick a plan and pick up right where you left off.
         </p>
 
-        {/* plan switcher — Pro is the default, switch down to Starter */}
+        {/* plan switcher - Pro is the default, switch down to Starter */}
         <div className="inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
           <button type="button" className={pill(isPro)} onClick={() => setPlan('pro')}>
             Pro · ${PRO_PRICE}/mo
@@ -71,7 +71,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
             <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo</span>
           </div>
           <p className="mb-5 font-code-label text-code-label text-on-surface-variant">
-            {isPro ? 'Pro — everything, unlimited' : 'Starter — for solo builders'}
+            {isPro ? 'Pro - everything, unlimited' : 'Starter - for solo builders'}
           </p>
           <ul className="mb-6 space-y-2.5">
             {features.map((f) => (

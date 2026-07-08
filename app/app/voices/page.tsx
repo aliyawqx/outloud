@@ -19,7 +19,7 @@ export default async function VoicesPage() {
         <h1 className="mb-3 font-headline-xl text-headline-xl">Build your voice.</h1>
         <p className="max-w-2xl font-body-md text-body-md text-on-surface-variant">
           Pick the creators whose style you admire and we blend them into one hybrid voice that’s yours. Inspiration
-          only — your posts stay about your ideas, in your blended style.
+          only - your posts stay about your ideas, in your blended style.
         </p>
       </div>
       <VoiceStudio onboarding={onboarding} />

@@ -26,7 +26,7 @@ export async function dropAutopilotForNonPro(userId: string): Promise<boolean> {
   await addNotification({
     userId,
     kind: 'autopilot_paused',
-    title: 'autopilot is off — pro access ended',
+    title: 'autopilot is off - pro access ended',
     body: 'your pro plan or trial ended, so autopilot stopped and queued auto posts were cancelled (unused credits refunded). your manual posts and calendar are untouched. upgrade to turn it back on.',
     link: '/pricing',
   }).catch(() => {})

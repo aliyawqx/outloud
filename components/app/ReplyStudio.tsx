@@ -19,14 +19,14 @@ type Candidate = {
 type Verdict = 'reply' | 'maybe' | 'skip'
 type JudgedResult = { post: Candidate; verdict: Verdict; reason: string; suggestedAngle: string; angleType: string; confidence: number }
 // The platform a reply publishes to. A reply ALWAYS goes to the same platform as
-// its target post — never a destination toggle — so it's inferred, not chosen.
+// its target post - never a destination toggle - so it's inferred, not chosen.
 type ReplyPlatform = 'x' | 'threads'
 // The post we're generating a reply for, plus any angle the judge suggested.
 type Target = { id: string; text: string; authorHandle: string; url?: string; angle?: string; angleType?: string; platform?: ReplyPlatform }
 
 const TOPICS_KEY = 'outloud.reply.topics'
 // Mode B (discover by topic) is temporarily closed for users. The full discovery
-// UI + logic below is kept intact — flip this to true to re-enable.
+// UI + logic below is kept intact - flip this to true to re-enable.
 const DISCOVER_ENABLED = false
 const field =
   'w-full rounded-xl border border-border-muted bg-surface-container-lowest px-4 py-3 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none'
@@ -44,7 +44,7 @@ const verdictBadge: Record<Verdict, string> = {
 }
 
 // One generated reply variant. Editable in place (some people like the idea but
-// want to reword) — the same edit pattern as the New Post drafts. The tweetId is
+// want to reword) - the same edit pattern as the New Post drafts. The tweetId is
 // fixed, so editing the text never changes WHICH post the reply goes to.
 function VariantCard({ tweetId, initialText, platform }: { tweetId: string; initialText: string; platform: ReplyPlatform }) {
   const [text, setText] = useState(initialText)
@@ -366,7 +366,7 @@ export function ReplyStudio({
   async function onFetch() {
     const u = url.trim()
     if (!u || fetching) return
-    // Don't fetch a post the user can't afford to reply to — show the right wall instead.
+    // Don't fetch a post the user can't afford to reply to - show the right wall instead.
     if (!gateForReply()) return
     setFetchError('')
     setFetched(null)
@@ -433,7 +433,7 @@ export function ReplyStudio({
     }
   }
 
-  // Threads topic search — mirrors onSearch but hits the keyword_search route and
+  // Threads topic search - mirrors onSearch but hits the keyword_search route and
   // surfaces results without the reach judge (no metrics available).
   async function onSearchThreads() {
     const t = topic.trim()
@@ -566,7 +566,7 @@ export function ReplyStudio({
         </div>
       )}
 
-      {/* ── Mode B: discover by topic — temporarily closed (DISCOVER_ENABLED) ── */}
+      {/* ── Mode B: discover by topic - temporarily closed (DISCOVER_ENABLED) ── */}
       {mode === 'discover' && !DISCOVER_ENABLED && (
         <div className="relative overflow-hidden rounded-2xl border border-border-muted">
           {/* blurred faux preview behind the lock */}
@@ -583,7 +583,7 @@ export function ReplyStudio({
             <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-electric-indigo/15 text-electric-indigo">
               <span className="material-symbols-outlined text-[32px]">lock</span>
             </span>
-            <h3 className="font-headline-sm text-headline-sm">Discover by topic — coming soon</h3>
+            <h3 className="font-headline-sm text-headline-sm">Discover by topic - coming soon</h3>
             <p className="max-w-sm font-body-sm text-body-sm text-on-surface-variant">
               We’re polishing topic discovery. For now, paste a post link and reply in your voice.
             </p>
@@ -601,7 +601,7 @@ export function ReplyStudio({
       {/* ── Mode B: discover by topic (full UI/logic kept; shown when enabled) ── */}
       {mode === 'discover' && DISCOVER_ENABLED && (
         <div className="flex flex-col gap-4">
-          {/* Topic-search platform — X (existing) or Threads. This mode only. */}
+          {/* Topic-search platform - X (existing) or Threads. This mode only. */}
           <div className="inline-flex items-center gap-1 self-start rounded-full border border-border-muted bg-surface-container-low p-1">
             <button type="button" className={searchTab('x')} onClick={() => switchSearchPlatform('x')}>X</button>
             <button type="button" className={searchTab('threads')} onClick={() => switchSearchPlatform('threads')}>Threads</button>
@@ -651,8 +651,8 @@ export function ReplyStudio({
           </label>
           <p className="font-code-label text-code-label text-on-surface-variant/60">
             {searchPlatform === 'x'
-              ? 'Big posts from the last 24h — high engagement and large accounts in your topic.'
-              : 'Top Threads posts for your topic — reply in your voice, same as on X.'}
+              ? 'Big posts from the last 24h - high engagement and large accounts in your topic.'
+              : 'Top Threads posts for your topic - reply in your voice, same as on X.'}
           </p>
           {searchError && <p className="font-body-sm text-body-sm text-error">{searchError}</p>}
 

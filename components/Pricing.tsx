@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { PLANS, ANNUAL_BADGE, PRICING_NOTE, type BillingMode, type Plan } from '@/lib/pricing'
 import { startCheckout } from '@/lib/billing/client'
 import { Spinner } from '@/components/Spinner'
-// Single source of truth — keep marketing copy in sync with real costs/allowances.
+// Single source of truth - keep marketing copy in sync with real costs/allowances.
 import { COST_PER_POST, COST_PER_REPLY, PLAN_ALLOWANCE, fmtCredits } from '@/lib/creditsConfig'
 
 // Per-plan monthly credit allowance shown on the cards (paid plans only here).
@@ -147,7 +147,7 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
           Write it yourself, or let it run.
         </h2>
         <p className="mx-auto mb-8 max-w-xl font-body-md text-body-md text-on-surface-variant">
-          Start free for 3 days — with autopilot switched on, so you can watch it work.
+          Start free for 3 days - with autopilot switched on, so you can watch it work.
         </p>
         <Toggle mode={mode} setMode={setMode} />
       </div>

@@ -11,14 +11,14 @@ const field =
 // button and for the fade-out gradient so clamped text dissolves into the card.
 const CARD_BG = '#1a1c20'
 
-/** A built-in "Outloud" prompt — read-only. */
+/** A built-in "Outloud" prompt - read-only. */
 function DefaultCard({ prompt }: { prompt: DefaultPrompt }) {
   const textRef = useRef<HTMLParagraphElement>(null)
   const [expanded, setExpanded] = useState(false)
   const [overflowing, setOverflowing] = useState(false)
 
   // Detect whether the (clamped) text actually overflows 3 lines. Only meaningful
-  // while collapsed — when expanded the clamp is removed so scrollHeight === clientHeight.
+  // while collapsed - when expanded the clamp is removed so scrollHeight === clientHeight.
   useEffect(() => {
     const el = textRef.current
     if (!el || expanded) return
@@ -66,7 +66,7 @@ function DefaultCard({ prompt }: { prompt: DefaultPrompt }) {
   )
 }
 
-/** A user's own prompt — editable + deletable. */
+/** A user's own prompt - editable + deletable. */
 function CustomCard({ prompt, onChange, onRemove }: { prompt: Prompt; onChange: (p: Prompt) => void; onRemove: () => void }) {
   const [command, setCommand] = useState(prompt.command)
   const [title, setTitle] = useState(prompt.title)

@@ -35,7 +35,7 @@ export function NotificationsBell() {
     const next = !open
     setOpen(next)
     if (next) {
-      // Refetch on open — the sidebar persists across client navigations, so the
+      // Refetch on open - the sidebar persists across client navigations, so the
       // mount-time snapshot goes stale as autopilot creates notifications.
       await loadNotifications()
       setUnread(0)
@@ -45,10 +45,10 @@ export function NotificationsBell() {
 
   return (
     // No `relative` here on purpose: the panel anchors to the nearest positioned
-    // ancestor — the sidebar footer row — so it aligns with the sidebar edge
+    // ancestor - the sidebar footer row - so it aligns with the sidebar edge
     // instead of overflowing off-screen from the icon's corner.
     <div>
-      {/* Compact icon-only trigger — it sits inline next to the profile row. */}
+      {/* Compact icon-only trigger - it sits inline next to the profile row. */}
       <button
         type="button"
         aria-label={unread ? `Notifications (${unread} unread)` : 'Notifications'}

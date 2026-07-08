@@ -13,7 +13,7 @@ type ViewMode = 'month' | 'week'
 const DAY_MS = 86_400_000
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-/** Local-midnight Date for "today". All grid math is in the BROWSER's zone —
+/** Local-midnight Date for "today". All grid math is in the BROWSER's zone -
  *  the calendar shows times as the user's device sees them. */
 function startOfDay(d: Date): Date {
   const x = new Date(d)

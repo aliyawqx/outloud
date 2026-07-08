@@ -75,7 +75,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     <div className="flex flex-col gap-4">
       {oauthError && <p className="font-body-sm text-body-sm text-error">{oauthError}</p>}
 
-      {/* Continue with Google — full-page redirect into the OAuth flow. */}
+      {/* Continue with Google - full-page redirect into the OAuth flow. */}
       <a
         href={googleHref}
         className="flex items-center justify-center gap-2.5 rounded-full bg-white py-3 font-bold text-[#1f1f1f] transition-all hover:bg-white/90 active:scale-95"

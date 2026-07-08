@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 // shadcn Button, with variants remapped to Outloud's own design tokens (the
-// codebase isn't a shadcn theme — our `secondary` is green, etc.) and pill shape.
+// codebase isn't a shadcn theme - our `secondary` is green, etc.) and pill shape.
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-full font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-indigo disabled:pointer-events-none disabled:opacity-50 active:scale-95',
   {

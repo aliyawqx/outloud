@@ -71,7 +71,7 @@ export default function TermsPage() {
 
         <H2>Disclaimers & liability</H2>
         <P>
-          The service is provided “as is” without warranties. Generated content may contain errors — review it before
+          The service is provided “as is” without warranties. Generated content may contain errors - review it before
           publishing. To the extent permitted by law, we are not liable for indirect or consequential damages.
         </P>
 

@@ -35,7 +35,7 @@ export class LinkedInRateLimitError extends Error {
 
 /** The pinned LinkedIn-Version month was rejected — bump LINKEDIN_API_VERSION. */
 export class LinkedInVersionError extends Error {
-  constructor(message = 'LinkedIn API version rejected — bump LINKEDIN_API_VERSION (lib/linkedin/config.ts).') {
+  constructor(message = 'LinkedIn API version rejected - bump LINKEDIN_API_VERSION (lib/linkedin/config.ts).') {
     super(message)
     this.name = 'LinkedInVersionError'
   }

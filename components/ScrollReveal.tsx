@@ -9,7 +9,7 @@ import { useEffect } from 'react'
  * optional inline `transitionDelay` for stagger) to anything you want animated.
  *
  * It also watches for `.reveal` elements that mount LATER (e.g. when a tab or
- * route swaps content) — without this they'd stay invisible until a reload,
+ * route swaps content) - without this they'd stay invisible until a reload,
  * because they weren't present when the observer first ran.
  */
 export function ScrollReveal() {

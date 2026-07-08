@@ -14,7 +14,7 @@ export function Highlights() {
 
       <HighlightsCarousel />
 
-      {/* accent banner — width matched to the carousel so it doesn't dwarf it */}
+      {/* accent banner - width matched to the carousel so it doesn't dwarf it */}
       <div className="reveal relative mx-auto mt-10 flex max-w-4xl flex-col items-start justify-between gap-4 overflow-hidden rounded-3xl bg-electric-indigo p-6 sm:flex-row sm:items-center md:px-8">
         <Sparkle className="absolute right-24 top-3 text-white/40" size={16} />
         <div className="relative z-10">

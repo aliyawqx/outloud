@@ -8,7 +8,7 @@ import { deleteHistory, renameHistory } from '@/lib/voice/client'
 export type SidebarHistoryItem = { id: string; title: string }
 
 /**
- * Inline chat history in the sidebar. Reuses the compose_history data source — this
+ * Inline chat history in the sidebar. Reuses the compose_history data source - this
  * is display + rename/delete only; clicking an item reopens that chat in the composer.
  */
 export function SidebarHistory({ initial, onNavigate }: { initial: SidebarHistoryItem[]; onNavigate?: () => void }) {

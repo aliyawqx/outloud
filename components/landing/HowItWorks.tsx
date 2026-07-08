@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Underline } from './Doodles'
 
-// "How it works" — the three-step explanation (capture → profile → post). Replaces the
+// "How it works" - the three-step explanation (capture → profile → post). Replaces the
 // old "What You Get" block. Static (no client hooks). Carries id="how" so the hero's
 // "See how it works" link lands here. Colors/type use the shared design tokens.
 
@@ -99,7 +99,7 @@ export function HowItWorks() {
       </div>
 
       <div className="grid gap-[18px] [grid-template-columns:repeat(auto-fit,minmax(270px,1fr))]">
-        {/* 01 — capture */}
+        {/* 01 - capture */}
         <StepCard
           num="01"
           delay={0}
@@ -128,7 +128,7 @@ export function HowItWorks() {
           </div>
         </StepCard>
 
-        {/* 02 — profile (the differentiator) */}
+        {/* 02 - profile (the differentiator) */}
         <StepCard
           num="02"
           delay={110}
@@ -147,7 +147,7 @@ export function HowItWorks() {
           </div>
         </StepCard>
 
-        {/* 03 — post on tap + multi-platform */}
+        {/* 03 - post on tap + multi-platform */}
         <StepCard
           num="03"
           delay={220}

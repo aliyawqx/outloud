@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   // Gating runs in this SERVER layout, so it must REDIRECT rather than render a takeover
   // in place of {children}: a shared layout is NOT re-rendered on client navigation, so
-  // returning <Onboarding/> instead of {children} strands the user there — a <Link> (e.g.
+  // returning <Onboarding/> instead of {children} strands the user there - a <Link> (e.g.
   // "Browse the voice library") changes the URL but has nowhere to render the new page.
   // The onboarding screen therefore lives at its own route, /app/onboarding.
   const pathname = (await headers()).get('x-pathname') ?? ''
@@ -46,16 +46,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   // Onboarding is a full-screen takeover: render its page WITHOUT the app shell, so there's
   // no sidebar and no way into features until the voice + Style Guide actually exist. Sits
-  // before the payment gate — onboarding always comes first.
+  // before the payment gate - onboarding always comes first.
   if (onOnboarding) return <>{children}</>
 
   const unlimited = isStaff(session.email)
 
   // Active card-free trial = the signup grant: trialing, NO Polar subscription, still has
   // credits, and within its 3-day window. These users draft freely and skip the gate.
-  // The trial ends on whichever comes first — credits hit 0, or the window elapses — and
+  // The trial ends on whichever comes first - credits hit 0, or the window elapses - and
   // either condition flips this false, so the "keep going" gate below appears.
-  // Shared with getUserTier (lib/billing/tier.ts) — the ONE trial-window rule.
+  // Shared with getUserTier (lib/billing/tier.ts) - the ONE trial-window rule.
   const inCardFreeWindow = isTrialActive(profile)
 
   // Gate only once the free trial is truly done: a free-plan user with no active trial
@@ -63,7 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // immediately, since they've already used their card-free trial). Paid plans never hit
   // this; an in-trial user with credits never hits this.
   //
-  // Hard floor (P2): never wall a user who hasn't yet made their guaranteed first drafts —
+  // Hard floor (P2): never wall a user who hasn't yet made their guaranteed first drafts -
   // they must be able to reach the composer and experience drafting before any paywall,
   // regardless of balance. countDraftsMade is only queried when a gate is otherwise due.
   //

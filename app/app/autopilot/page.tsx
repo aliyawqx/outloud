@@ -9,7 +9,7 @@ import { AutopilotProLock } from '@/components/app/autopilot/AutopilotProLock'
 import { AutopilotSettingsPanel } from '@/components/app/autopilot/AutopilotSettingsPanel'
 import { LinkedInReconnectBanner } from '@/components/app/LinkedInReconnectBanner'
 
-export const metadata = { title: 'Autopilot — Outloud' }
+export const metadata = { title: 'Autopilot - Outloud' }
 
 const EXPIRY_NUDGE_MS = 7 * 86_400_000
 
@@ -33,7 +33,7 @@ export default async function AutopilotPage() {
       <div className="mb-6">
         <h1 className="font-headline-lg text-headline-lg">Autopilot</h1>
         <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-          Keeps your calendar full — writes posts in your voice about your interests and fills the empty slots. Your own scheduled posts always win.
+          Keeps your calendar full - writes posts in your voice about your interests and fills the empty slots. Your own scheduled posts always win.
         </p>
       </div>
       {!tier.canUseAutopilot ? (

@@ -146,7 +146,7 @@ export function BlendPreview({
           {/* guardrail */}
           <p className="font-code-label text-[11px] leading-relaxed text-on-surface-variant/70">
             Style inspiration only. Outloud writes <span className="text-on-surface-variant">your</span> posts about{' '}
-            <span className="text-on-surface-variant">your</span> ideas in this blended style — it never posts as these
+            <span className="text-on-surface-variant">your</span> ideas in this blended style - it never posts as these
             creators or invents quotes from them.
           </p>
         </>

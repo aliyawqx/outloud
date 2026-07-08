@@ -8,7 +8,7 @@ const FEATURES = [
     ring: 'border-electric-indigo/40 bg-electric-indigo/10',
     title: 'Posts in your captured voice',
     accent: 'voice',
-    desc: 'Turn what you ship into posts that sound like you wrote them — your cadence, your edge, never a generic AI tone.',
+    desc: 'Turn what you ship into posts that sound like you wrote them - your cadence, your edge, never a generic AI tone.',
   },
   {
     icon: 'travel_explore',
@@ -65,7 +65,7 @@ export function FeaturesDark() {
         <div className="reveal mb-14 rounded-3xl border border-border-muted bg-white/[0.02] py-6">
           <FeatureBeams />
           <p className="mx-auto mt-2 max-w-md text-center font-body-sm text-body-sm text-on-surface-variant">
-            One captured voice powers both loops — everything you ship flows in, on-voice posts and replies flow out.
+            One captured voice powers both loops - everything you ship flows in, on-voice posts and replies flow out.
           </p>
         </div>
 

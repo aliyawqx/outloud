@@ -9,7 +9,7 @@ export function EmptyState({ onBrowse }: { onBrowse: () => void }) {
       <div>
         <h3 className="font-headline-lg text-headline-lg">Don’t have a voice yet?</h3>
         <p className="mx-auto mt-2 max-w-md font-body-md text-body-md text-on-surface-variant">
-          Pick a few creators you admire and we’ll blend them into a single style that’s yours — no blank page, no
+          Pick a few creators you admire and we’ll blend them into a single style that’s yours - no blank page, no
           generic AI slop.
         </p>
       </div>

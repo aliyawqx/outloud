@@ -161,7 +161,7 @@ export function StylePage({ profile, initialSamples, onboarding = false }: { pro
 
   return (
     <div className="mx-auto max-w-4xl">
-      {/* breadcrumb + title — during onboarding the root returns to setup, not the library */}
+      {/* breadcrumb + title - during onboarding the root returns to setup, not the library */}
       <div className="mb-1 flex items-center gap-2 font-code-label text-code-label text-on-surface-variant">
         {onboarding ? (
           <Link href="/app/onboarding" className="inline-flex items-center gap-1 hover:text-on-surface">
@@ -265,7 +265,7 @@ export function StylePage({ profile, initialSamples, onboarding = false }: { pro
       </h2>
       {samples.length === 0 ? (
         <div className="mb-8 rounded-2xl border border-dashed border-border-muted py-12 text-center font-body-sm text-body-sm text-on-surface-variant/60">
-          This voice needs samples. Import from X, paste text, upload a file, or add a URL — then
+          This voice needs samples. Import from X, paste text, upload a file, or add a URL - then
           generate the Style Guide to start writing in this voice.
         </div>
       ) : (
@@ -299,7 +299,7 @@ export function StylePage({ profile, initialSamples, onboarding = false }: { pro
 
         {stale && guide && (
           <p className="mb-3 rounded-lg border border-cyber-lime/30 bg-cyber-lime/5 px-3 py-2 font-code-label text-code-label text-cyber-lime">
-            Samples changed — the guide may be stale. Regenerate to refresh it.
+            Samples changed - the guide may be stale. Regenerate to refresh it.
           </p>
         )}
 
@@ -318,7 +318,7 @@ export function StylePage({ profile, initialSamples, onboarding = false }: { pro
                 type="button"
                 onClick={onGenerate}
                 disabled={genBusy || enabledCount === 0 || !stale}
-                title={!stale ? 'Add or change a writing sample first — nothing new to learn from yet' : undefined}
+                title={!stale ? 'Add or change a writing sample first - nothing new to learn from yet' : undefined}
                 className="inline-flex items-center gap-1.5 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {genBusy ? <><Spinner size={16} /> Analyzing…</> : 'Regenerate'}
@@ -329,7 +329,7 @@ export function StylePage({ profile, initialSamples, onboarding = false }: { pro
           <div className="flex flex-col items-start gap-3">
             <p className="font-body-sm text-body-sm text-on-surface-variant">
               Generate a Style Guide from your enabled samples ({enabledCount}). It captures your sentence rhythm,
-              punctuation, vocabulary, and tone — and drives every post we write for you.
+              punctuation, vocabulary, and tone - and drives every post we write for you.
             </p>
             <button
               type="button"

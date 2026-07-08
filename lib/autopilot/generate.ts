@@ -95,7 +95,7 @@ export async function fillSlot(
           userId: user.userId,
           kind: 'low_credits',
           title: 'autopilot is running low on credits',
-          body: `about ${Math.floor(balance / COST_PER_AUTO_POST)} auto posts left — top up in billing to keep it running.`,
+          body: `about ${Math.floor(balance / COST_PER_AUTO_POST)} auto posts left - top up in billing to keep it running.`,
         }).catch(() => {})
       }
     }
@@ -140,7 +140,7 @@ export async function fillSlot(
     connected.includes('linkedin') ? LINKEDIN_TEXT_LIMIT : Infinity,
   )
   const postFormat = (await getPromptText(user.userId, DEFAULT_COMMAND)) ?? seedText(DEFAULT_COMMAND) ?? ''
-  const formatText = `${postFormat}\n\nHARD LIMIT: this goes out unattended via API — ONE single post, under ${maxLen} characters, no link and no URL in the body.`
+  const formatText = `${postFormat}\n\nHARD LIMIT: this goes out unattended via API - ONE single post, under ${maxLen} characters, no link and no URL in the body.`
 
   try {
     // Slot ordinal = day * slotsPerDay + rank-in-day → per-slot topic rotation.
@@ -209,7 +209,7 @@ export async function fillSlot(
         userId: user.userId,
         kind: 'autopilot_queued',
         title: 'autopilot queued a post',
-        body: `going out ${when} — review or edit it on the calendar first.`,
+        body: `going out ${when} - review or edit it on the calendar first.`,
         refId: post.id,
       }).catch(() => {})
     }

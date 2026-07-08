@@ -44,7 +44,7 @@ export function AppSidebar({
   history: SidebarHistoryItem[]
 }) {
   const pathname = usePathname()
-  // A history chat is open when /app carries a ?session — in that case the compose
+  // A history chat is open when /app carries a ?session - in that case the compose
   // chat (highlighted gray in the History list) is the active item, NOT "New post".
   const viewingChat = Boolean(useSearchParams().get('session'))
   const [open, setOpen] = useState(false)
@@ -68,7 +68,7 @@ export function AppSidebar({
     })
 
   // The sidebar sits at the left viewport edge, so the pointer's clientX IS the
-  // desired width — no rect math needed.
+  // desired width - no rect math needed.
   const startResize = (e: React.PointerEvent) => {
     e.preventDefault()
     const clamp = (x: number) => Math.min(SIDEBAR_MAX_W, Math.max(SIDEBAR_MIN_W, x))
@@ -187,7 +187,7 @@ export function AppSidebar({
   return (
     <>
       {/* Mobile top bar: menu on the LEFT (matches the left-opening drawer), mascot
-          centered. Only the mascot here — the wordmark lives inside the open drawer. */}
+          centered. Only the mascot here - the wordmark lives inside the open drawer. */}
       <header className="sticky top-0 z-40 flex h-14 items-center border-b border-border-muted bg-surface-glass px-margin-mobile backdrop-blur-md lg:hidden">
         <button
           type="button"
@@ -220,7 +220,7 @@ export function AppSidebar({
         </div>
       )}
 
-      {/* Desktop sidebar — hideable and drag-resizable (right edge). */}
+      {/* Desktop sidebar - hideable and drag-resizable (right edge). */}
       {hidden ? (
         <button
           type="button"

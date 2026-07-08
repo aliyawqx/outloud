@@ -3,7 +3,7 @@
 import type { StatusStep } from '@/lib/compose/stream'
 
 // One line in the live "under the hood" feed. Driven entirely by real backend
-// status events (see lib/compose/stream.ts) — ComposeHome paces them so each stays
+// status events (see lib/compose/stream.ts) - ComposeHome paces them so each stays
 // visible ≥250ms, then renders them here.
 export type FeedStep = {
   id: string

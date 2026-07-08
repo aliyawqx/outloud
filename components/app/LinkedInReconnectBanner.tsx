@@ -7,8 +7,8 @@ export function LinkedInReconnectBanner({ expiring = false }: { expiring?: boole
     <div className="mb-4 flex flex-col gap-2 rounded-2xl border border-error/40 bg-error/5 p-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="font-body-sm text-body-sm text-on-surface">
         {expiring
-          ? 'your linkedin connection expires soon — reconnect to avoid a posting gap.'
-          : 'your linkedin connection expired — scheduled linkedin posts will fail until you reconnect.'}
+          ? 'your linkedin connection expires soon - reconnect to avoid a posting gap.'
+          : 'your linkedin connection expired - scheduled linkedin posts will fail until you reconnect.'}
       </p>
       <Link
         href="/app/profile"

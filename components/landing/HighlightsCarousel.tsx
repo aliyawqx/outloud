@@ -46,7 +46,7 @@ export function HighlightsCarousel() {
 
   return (
     <div className="reveal relative">
-      {/* stage — top-aligned cards so the card chrome is always visible */}
+      {/* stage - top-aligned cards so the card chrome is always visible */}
       <div className="relative mx-auto h-[480px] max-w-4xl overflow-hidden sm:h-[540px]">
         {/* soft glow lifting the active card off the dark page so its text reads clearly */}
         <div className="pointer-events-none absolute left-1/2 top-1/2 -z-0 h-[65%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-electric-indigo/15 blur-[90px]" />
@@ -62,7 +62,7 @@ export function HighlightsCarousel() {
               className="absolute left-1/2 top-0 w-[86%] sm:w-[70%]"
               style={{
                 // Side slides are pushed back (smaller, blurred, faded) rather than
-                // darkened — keeps them as quiet context without making the area murky.
+                // darkened - keeps them as quiet context without making the area murky.
                 transform: `translateX(calc(-50% + ${pos * 86}%)) scale(${active ? 1 : 0.88})`,
                 transformOrigin: 'top center',
                 opacity: active ? 1 : 0.35,

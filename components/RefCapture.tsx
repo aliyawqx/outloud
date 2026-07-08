@@ -5,7 +5,7 @@ import { REF_COOKIE_MAX_AGE_S, SIGNUP_REF_COOKIE, sanitizeRef } from '@/lib/auth
 
 // Launch attribution (?ref=ph): on first landing, persist the ref into a 30-day
 // cookie so signup can attach it to the user record. First-touch: an existing
-// cookie is never overwritten. Unknown/junk values are ignored for rendering —
+// cookie is never overwritten. Unknown/junk values are ignored for rendering -
 // no redirect, no rewrite, no 404. Reads window.location in an effect (NOT
 // useSearchParams) so the root layout stays fully static.
 export function RefCapture() {

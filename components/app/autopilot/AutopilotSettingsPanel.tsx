@@ -7,9 +7,7 @@ import { matchTopics } from '@/lib/autopilot/topics'
 import { timezoneOptions } from '@/lib/timezones'
 import type { PostingTime } from '@/lib/schedule/slots'
 import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
-import { LINKEDIN_TEXT_LIMIT } from '@/lib/linkedin/client'
-import { THREADS_TEXT_LIMIT } from '@/lib/threads/client'
-import { X_FREE_POST_LIMIT, X_PREMIUM_POST_LIMIT } from '@/lib/x/client'
+import { X_FREE_POST_LIMIT } from '@/lib/x/client'
 
 const DAY_LABELS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
@@ -50,7 +48,7 @@ export function AutopilotSettingsPanel({
   const [saved, setSaved] = useState(false)
   // The master tumbler persists ITSELF (no Save needed). When the user flips it
   // on before adding a topic/time, we expand the details and hold the intent in
-  // pendingOn — the next Save turns autopilot on together with the essentials.
+  // pendingOn - the next Save turns autopilot on together with the essentials.
   const [pendingOn, setPendingOn] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [enableHint, setEnableHint] = useState('')
@@ -62,14 +60,6 @@ export function AutopilotSettingsPanel({
     threads: threadsConnected,
     linkedin: linkedInConnected,
   }
-  // Mirrors the generation-side cap (lib/autopilot/generate.ts): auto posts are
-  // trimmed to the tightest platform selected, so say so — otherwise short posts
-  // read as "autopilot writes badly" instead of "X caps free accounts at 280".
-  const charCap = Math.min(
-    s.platforms.includes('x') ? (xPremium ? X_PREMIUM_POST_LIMIT : X_FREE_POST_LIMIT) : Infinity,
-    s.platforms.includes('threads') ? THREADS_TEXT_LIMIT : Infinity,
-    s.platforms.includes('linkedin') ? LINKEDIN_TEXT_LIMIT : Infinity,
-  )
   const pausedForCredits = s.pausedAt && s.pauseReason === 'insufficient_credits'
 
   function patch(p: Partial<AutopilotSettings>) {
@@ -101,7 +91,7 @@ export function AutopilotSettingsPanel({
     setError('')
     setEnableHint('')
     if (!v) {
-      // OFF is always allowed: nothing to validate. Optimistic — flip the UI
+      // OFF is always allowed: nothing to validate. Optimistic - flip the UI
       // now, persist in the background, roll back if the server disagrees.
       setPendingOn(false)
       if (!s.enabled) return
@@ -131,7 +121,7 @@ export function AutopilotSettingsPanel({
     // ON: instant when the essentials exist; otherwise expand + hold the intent.
     if (!s.interests.length || !s.postingTimes.length || !s.platforms.length) {
       setPendingOn(true)
-      setEnableHint('add a topic and a posting time below, then hit Save — autopilot starts right away.')
+      setEnableHint('add a topic and a posting time below, then hit Save - autopilot starts right away.')
       return
     }
     const before = s
@@ -176,7 +166,7 @@ export function AutopilotSettingsPanel({
           platforms: next.platforms,
           reviewBeforePublish: next.reviewBeforePublish,
           aiImages: next.aiImages,
-          // slotsPerDay is DERIVED server-side from the number of posting times —
+          // slotsPerDay is DERIVED server-side from the number of posting times -
           // each time slot IS one post per day.
         }),
       })
@@ -221,7 +211,7 @@ export function AutopilotSettingsPanel({
       {pausedForCredits && (
         <div className="flex flex-col gap-2 rounded-2xl border border-error/40 bg-error/5 p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-body-sm text-body-sm text-on-surface">
-            autopilot is paused — you&apos;re out of credits. top up to get it writing again.
+            autopilot is paused - you&apos;re out of credits. top up to get it writing again.
           </p>
           <a href="/app/settings/billing" className="shrink-0 rounded-full bg-electric-indigo px-4 py-2 text-center font-code-label text-code-label font-bold text-white transition-colors hover:bg-primary-container">
             Top up credits
@@ -229,12 +219,12 @@ export function AutopilotSettingsPanel({
         </div>
       )}
 
-      {/* Master toggle — persists itself; the details below only show when on. */}
+      {/* Master toggle - persists itself; the details below only show when on. */}
       <div className={`${card} flex items-center justify-between gap-4 ${toggling ? 'opacity-70' : ''}`}>
         <div>
           <p className="font-body-md text-body-md font-bold text-on-surface">Autopilot</p>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            {s.enabled ? (s.pausedAt ? 'on, but paused' : 'on — filling empty slots ahead of time') : pendingOn ? 'almost on — finish the setup below' : 'off'}
+            {s.enabled ? (s.pausedAt ? 'on, but paused' : 'on - filling empty slots ahead of time') : pendingOn ? 'almost on - finish the setup below' : 'off'}
           </p>
           {enableHint && <p className="mt-1 font-body-sm text-body-sm text-cyber-lime">{enableHint}</p>}
         </div>
@@ -376,12 +366,9 @@ export function AutopilotSettingsPanel({
             )
           })}
         </div>
-        {s.platforms.length > 0 && Number.isFinite(charCap) && (
+        {s.platforms.includes('x') && !xPremium && (
           <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">
-            Auto posts are kept under {charCap.toLocaleString()} characters — the limit of the tightest platform selected.
-            {s.platforms.includes('x') && !xPremium && (
-              <> X without Premium caps posts at {X_FREE_POST_LIMIT}; if you have X Premium, reconnect X in Profile and the cap lifts to long-form.</>
-            )}
+            X is selected and your X isn&apos;t Premium, so auto posts stay under {X_FREE_POST_LIMIT} characters (X&apos;s rule).
           </p>
         )}
         <div className="mt-4 flex items-center justify-between gap-4">
@@ -431,7 +418,7 @@ export function AutopilotSettingsPanel({
         <p className="mb-3 font-body-md text-body-md font-bold text-on-surface">Queued by autopilot</p>
         {upcoming.length === 0 ? (
           <p className="font-body-sm text-body-sm text-on-surface-variant/60">
-            nothing queued yet — posts appear here up to {Math.round(s.leadTimeMinutes / 60)}h before their slot.
+            nothing queued yet - posts appear here up to {Math.round(s.leadTimeMinutes / 60)}h before their slot.
           </p>
         ) : (
           <div className="flex flex-col gap-2">

@@ -99,7 +99,7 @@ function UsageTab({ trialing, plan, unlimited }: { trialing: boolean; plan: stri
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Balance header — lead with what's LEFT to spend, not what's used */}
+      {/* Balance header - lead with what's LEFT to spend, not what's used */}
       <div data-tour="credit-balance" className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <div className="font-headline-sm text-headline-sm text-on-surface">
           {unlimited ? 'Unlimited' : `${fmtCredits(usage.balance)} credits left`}
@@ -155,7 +155,7 @@ function UsageTab({ trialing, plan, unlimited }: { trialing: boolean; plan: stri
       </div>
 
       {/* Per-entry ledger: exactly where credits went, newest first. Onboarding / voice
-          capture is intentionally absent — it doesn't consume credits. */}
+          capture is intentionally absent - it doesn't consume credits. */}
       <div data-tour="usage-history" className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <h2 className="mb-1 font-code-label text-code-label uppercase text-on-surface-variant">activity</h2>
         <p className="mb-3 font-code-label text-code-label text-on-surface-variant/60">
@@ -180,7 +180,7 @@ function UsageTab({ trialing, plan, unlimited }: { trialing: boolean; plan: stri
         )}
       </div>
 
-      {/* Buy more credits — only on an active paid plan (not free, not in trial) */}
+      {/* Buy more credits - only on an active paid plan (not free, not in trial) */}
       <div data-tour="plans-topups">
         <AddCredits
           eligible={isPaidPlan(plan) && !trialing}
@@ -231,12 +231,12 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Start a subscription now — skip the rest of a card-free trial window. */}
+      {/* Start a subscription now - skip the rest of a card-free trial window. */}
       {canStartNow && (
         <div className="rounded-2xl border border-cyber-lime/30 bg-cyber-lime/5 p-5">
           <span className="font-code-label text-code-label uppercase text-cyber-lime">Free trial active</span>
           <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
-            Don’t want to wait? Start a subscription now to skip the rest of your free trial — you’ll be billed
+            Don’t want to wait? Start a subscription now to skip the rest of your free trial - you’ll be billed
             today and your full plan credits unlock right away.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -266,7 +266,7 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
             {meta.price > 0 ? `$${meta.price}/mo` : 'no card'} · {fmtCredits(meta.allowance)} credits/mo
           </span>
         </div>
-        {/* Hide the plain upgrade buttons while the "start now" box is shown — they'd be
+        {/* Hide the plain upgrade buttons while the "start now" box is shown - they'd be
             the same two plans, just without the skip-trial framing. */}
         {upgrades.length > 0 && !canStartNow && (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -287,7 +287,7 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
         {error && !canStartNow && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
 
-      {/* Payment method, invoices, change/cancel — all via the Polar customer portal. */}
+      {/* Payment method, invoices, change/cancel - all via the Polar customer portal. */}
       <div className="rounded-2xl border border-border-muted bg-surface-container-low p-5">
         <span className="font-code-label text-code-label uppercase text-on-surface-variant">Payment & invoices</span>
         <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">

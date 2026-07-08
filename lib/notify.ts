@@ -14,14 +14,14 @@ export async function sendSignupNotification(input: {
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    console.warn('[notify] RESEND_API_KEY not set — skipping email notification')
+    console.warn('[notify] RESEND_API_KEY not set - skipping email notification')
     return
   }
 
   const to = process.env.NOTIFY_EMAIL || DEFAULT_TO
   const resend = new Resend(apiKey)
 
-  const status = input.alreadyOnList ? '(returning — updated)' : '(new)'
+  const status = input.alreadyOnList ? '(returning - updated)' : '(new)'
   const subject = `New Outloud early-access: @${input.handle} ${status}`
   const lines = [
     `X handle: @${input.handle}`,
@@ -60,11 +60,11 @@ export async function sendAutopilotPausedEmail(to: string): Promise<void> {
     await resend.emails.send({
       from: 'Outloud <onboarding@resend.dev>',
       to,
-      subject: 'autopilot paused — out of credits',
+      subject: 'autopilot paused - out of credits',
       text: [
         'your outloud autopilot is paused because you ran out of credits.',
         '',
-        'top up in billing or wait for your monthly refill — it resumes on its own either way.',
+        'top up in billing or wait for your monthly refill - it resumes on its own either way.',
         '',
         'https://tryoutloud.app/app/settings/billing',
       ].join('\n'),

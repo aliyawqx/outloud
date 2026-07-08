@@ -3,7 +3,7 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 
 // Aceternity "lamp" effect, recolored to Outloud's brand (electric-indigo light on
-// charcoal). Static (no entrance animation) — it just sits there as a light source.
+// charcoal). Static (no entrance animation) - it just sits there as a light source.
 function Beams() {
   return (
     <div className="relative isolate z-0 flex h-full w-full scale-y-125 items-center justify-center">
@@ -31,12 +31,12 @@ function Beams() {
   )
 }
 
-/** The lamp light as a positioned backdrop — lay hero content over it (z above).
+/** The lamp light as a positioned backdrop - lay hero content over it (z above).
  *  Position/height via className (e.g. `top-[8rem] h-[30rem]`). */
 export function LampGlow({ className }: { className?: string }) {
   return (
     <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-0 h-[30rem] overflow-hidden', className)}>
-      {/* Shrink the lamp on mobile so it doesn't span edge-to-edge — leaves black on
+      {/* Shrink the lamp on mobile so it doesn't span edge-to-edge - leaves black on
           the left/right. Full size from the `sm` breakpoint up. */}
       <div className="h-full w-full origin-top scale-[0.55] sm:scale-100">
         <Beams />

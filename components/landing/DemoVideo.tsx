@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 
 // Demo slot for the voice-capture clip. The media is a placeholder swapped in later, so
-// we probe for it first (HEAD) and only render the player when it actually exists —
+// we probe for it first (HEAD) and only render the player when it actually exists -
 // otherwise we render nothing and the section's 3-step text stands as the fallback. No
 // broken <video> element is ever shown.
 export function DemoVideo({
   src = '/demo/voice-capture.mp4',
   poster = '/demo/voice-capture-poster.jpg',
-  caption = '~30s — capturing a voice from a few existing posts.',
+  caption = '~30s - capturing a voice from a few existing posts.',
 }: {
   src?: string
   poster?: string
@@ -29,7 +29,7 @@ export function DemoVideo({
     }
   }, [src])
 
-  // Until the real asset exists, render nothing — the 3-step explanation is the fallback.
+  // Until the real asset exists, render nothing - the 3-step explanation is the fallback.
   if (!ready) return null
 
   return (

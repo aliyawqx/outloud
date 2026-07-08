@@ -11,8 +11,8 @@ export async function pauseForCredits(userId: string, email?: string): Promise<v
   await addNotification({
     userId,
     kind: 'autopilot_paused',
-    title: 'autopilot paused — not enough credits',
-    body: 'top up in billing or wait for your monthly refill — it resumes on its own.',
+    title: 'autopilot paused - not enough credits',
+    body: 'top up in billing or wait for your monthly refill - it resumes on its own.',
     link: '/app/settings/billing',
   }).catch(() => {})
   if (email) await sendAutopilotPausedEmail(email)

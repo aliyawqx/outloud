@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 
 // Contact for privacy questions and data-deletion requests. Make sure this inbox
-// is actually monitored (or change it to one that is) — Meta and users may use it.
+// is actually monitored (or change it to one that is) - Meta and users may use it.
 const CONTACT_EMAIL = 'support@tryoutloud.app'
 const LAST_UPDATED = 'June 16, 2026'
 
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
         <H2>Data from connected platforms</H2>
         <P>
           Your use of connected platforms is also governed by their own terms and policies. We access only what the
-          permissions you grant allow — for example, publishing on your behalf, reading a post you choose to reply to,
+          permissions you grant allow - for example, publishing on your behalf, reading a post you choose to reply to,
           or searching public posts on a topic. You can revoke access at any time from your platform’s app settings, or
           by disconnecting the account in Outloud.
         </P>

@@ -12,7 +12,7 @@ import type { SampleSource } from '@/lib/voice/types'
 type Sample = { id: string; source: SampleSource; text: string }
 type XStatus = { connected: boolean; username?: string }
 
-// Enough signal to build a real Style Guide. Used to gate the build button — never shown
+// Enough signal to build a real Style Guide. Used to gate the build button - never shown
 // as a raw "x / 150" number (reads as machine-made); we show a friendly state instead.
 const WORD_GOAL = 150
 const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0)
@@ -181,7 +181,7 @@ export function VoiceOnboarding({
       }
       const added: Sample[] = (data.samples ?? []).map((s: Sample) => ({ id: s.id, source: s.source, text: s.text }))
       setSamples((s) => [...added, ...s])
-      if (added.length === 0) setError('No posts found on your X — paste a few things you’ve written instead.')
+      if (added.length === 0) setError('No posts found on your X - paste a few things you’ve written instead.')
       setStep(3)
     } catch {
       setError('Network error. Try again.')
@@ -222,7 +222,7 @@ export function VoiceOnboarding({
         : reason === 'state'
           ? 'That connection timed out. Tap Connect X again, or paste your writing instead.'
           : reason === 'auth'
-            ? 'Couldn’t connect X right now. Paste your writing instead — it works just as well.'
+            ? 'Couldn’t connect X right now. Paste your writing instead - it works just as well.'
             : 'Couldn’t connect X. Try again, or paste your writing instead.'
     setError(msg)
   }, [xError, searchParams])
@@ -245,16 +245,16 @@ export function VoiceOnboarding({
     try {
       await generateStyleGuide(profileId)
       setContinuing(false)
-      setStep(4) // voice is ready — offer autopilot before entering the app
+      setStep(4) // voice is ready - offer autopilot before entering the app
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not build your voice. Try again.')
       setContinuing(false)
     }
   }
 
-  // Step 4 — zero-touch autopilot (skippable). The whole ask is a topic and a
+  // Step 4 - zero-touch autopilot (skippable). The whole ask is a topic and a
   // time (addendum A.1); publishing runs server-side with no review gate by
-  // default — the review toggle lives in Autopilot settings for those who want it.
+  // default - the review toggle lives in Autopilot settings for those who want it.
   const [apInterests, setApInterests] = useState('')
   const [apTime, setApTime] = useState('09:00')
   const [apTimezone, setApTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
@@ -295,7 +295,7 @@ export function VoiceOnboarding({
   const shell = 'mx-auto flex min-h-screen flex-col justify-center px-margin-mobile py-12'
   const creatorLink = (
     <p className="mt-6 text-center font-body-sm text-body-sm text-on-surface-variant">
-      Or write in a creator’s voice —{' '}
+      Or write in a creator’s voice -{' '}
       <Link href="/app/voices" className="text-electric-indigo hover:underline">browse the library</Link>
     </p>
   )
@@ -347,12 +347,12 @@ export function VoiceOnboarding({
         </div>
 
         <h1 className="mb-2 font-headline-xl text-headline-xl">How should we learn your style?</h1>
-        <p className="mb-6 font-body-md text-body-md text-on-surface-variant">Pick one — you only need one.</p>
+        <p className="mb-6 font-body-md text-body-md text-on-surface-variant">Pick one - you only need one.</p>
 
         {error && <p className="mb-4 font-body-sm text-body-sm text-error">{error}</p>}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          {/* Option A — Connect X (fastest) */}
+          {/* Option A - Connect X (fastest) */}
           <button
             type="button"
             onClick={chooseX}
@@ -367,12 +367,12 @@ export function VoiceOnboarding({
               {busy ? 'Working…' : xStatus?.connected ? `Import from @${xStatus.username}` : 'Connect X'}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant">
-              We read your recent posts to learn how you write. Read-only — we never post for you.
+              We read your recent posts to learn how you write. Read-only - we never post for you.
             </span>
             {busy && <Spinner size={16} className="text-electric-indigo" />}
           </button>
 
-          {/* Option B — Paste your writing */}
+          {/* Option B - Paste your writing */}
           <button
             type="button"
             onClick={() => { setError(''); setMode('paste'); setStep(3) }}
@@ -401,7 +401,7 @@ export function VoiceOnboarding({
         <Stepper step={4} />
         <h1 className="mb-2 font-headline-xl text-headline-xl">Put your posting on autopilot</h1>
         <p className="mb-6 font-body-md text-body-md text-on-surface-variant">
-          give it a topic and a time — outloud writes and publishes in your voice on its own. it runs on our servers: no login needed, ever. autopilot is a pro feature — your setup is saved and it switches on when you upgrade.
+          give it a topic and a time - outloud writes and publishes in your voice on its own. it runs on our servers: no login needed, ever. autopilot is a pro feature - your setup is saved and it switches on when you upgrade.
         </p>
 
         <label className="mb-1 block font-code-label text-code-label uppercase text-on-surface-variant/70" htmlFor="ap-interests">
@@ -454,7 +454,7 @@ export function VoiceOnboarding({
           {busy ? <><Spinner size={18} /> Saving…</> : <>Save my autopilot setup<span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span></>}
         </button>
         <button type="button" onClick={() => finishOnboarding(true)} disabled={busy} className="mt-3 w-full text-center font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface">
-          skip for now — you can set this up later in Autopilot
+          skip for now - you can set this up later in Autopilot
         </button>
       </div>
     )
@@ -543,7 +543,7 @@ export function VoiceOnboarding({
         </div>
       </div>
 
-      {/* samples / empty — no raw word counts */}
+      {/* samples / empty - no raw word counts */}
       {samples.length > 0 ? (
         <div className="mb-4 flex flex-col gap-2">
           {samples.map((s) => (
@@ -561,14 +561,14 @@ export function VoiceOnboarding({
       ) : (
         <div className="mb-4 flex flex-col items-center gap-1 rounded-2xl border border-dashed border-border-muted bg-surface-container-lowest px-4 py-8 text-center">
           <span aria-hidden="true" className="material-symbols-outlined text-[28px] text-on-surface-variant/40">draw</span>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">Nothing added yet — paste a post above.</p>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">Nothing added yet - paste a post above.</p>
         </div>
       )}
 
       {creatorLink}
       </div>
 
-      {/* Sticky footer — the "min 150 words" bar + build button stay pinned to the
+      {/* Sticky footer - the "min 150 words" bar + build button stay pinned to the
           bottom of the screen while the content above scrolls. */}
       <div className="sticky bottom-0 border-t border-border-muted bg-surface/90 px-margin-mobile py-4 backdrop-blur-sm">
         <div className="mb-3">

@@ -5,7 +5,7 @@ import { getScheduledPost } from '@/lib/schedule/store'
 import { platformLabel, SCHEDULE_PLATFORMS } from '@/lib/schedule/types'
 import { PlatformGlyph } from '@/components/app/PlatformGlyph'
 
-export const metadata = { title: 'Post — Outloud' }
+export const metadata = { title: 'Post - Outloud' }
 
 // The tap-through target for "your post is live" notifications: the post itself
 // plus one icon per platform it went out on, each linking to the live post there.
@@ -13,7 +13,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const { id } = await params
   const session = await getSession()
   if (!session) redirect('/signup')
-  // A malformed id makes Postgres reject the uuid cast — same answer as "not yours".
+  // A malformed id makes Postgres reject the uuid cast - same answer as "not yours".
   const post = await getScheduledPost(session.userId, id).catch(() => null)
   if (!post) notFound()
 

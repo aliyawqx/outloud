@@ -12,9 +12,9 @@ import { PlanCard, Toggle } from '@/components/Pricing'
 // now always continuation-framed.
 //
 // Rendered as an OVERLAY over the real app (not a full-page replacement): the user
-// has genuinely logged into their account — sidebar, history and drafts sit behind this.
+// has genuinely logged into their account - sidebar, history and drafts sit behind this.
 // The card is DISMISSIBLE (per-tab): browsing the app stays open, but every metered
-// action is still enforced server-side (402) and reopens the plans via UpgradeModal —
+// action is still enforced server-side (402) and reopens the plans via UpgradeModal -
 // closing this never grants usage, it only postpones the ask.
 const PAID_PLANS = PLANS.filter((p) => p.id === 'starter' || p.id === 'pro')
 
@@ -68,7 +68,7 @@ export function TrialGate({ name }: { name?: string; trialUsed?: boolean }) {
           Keep posting in your voice{name ? `, ${name}` : ''}
         </h1>
         <p className="mt-3 max-w-xl font-body-md text-body-md text-on-surface-variant">
-          Your free trial credits are used up. Pick a plan to keep going — your voice, drafts, and
+          Your free trial credits are used up. Pick a plan to keep going - your voice, drafts, and
           history are all saved, so you pick up right where you left off.
         </p>
 

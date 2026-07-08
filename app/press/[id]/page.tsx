@@ -103,7 +103,7 @@ function TweetCard({
 /* ---------- frames ---------- */
 
 function Frame1() {
-  // Hero / social preview — strongest, minimal.
+  // Hero / social preview - strongest, minimal.
   return (
     <Shell>
       <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -122,7 +122,7 @@ function Frame1() {
 }
 
 function Frame2() {
-  // Core action — Outloud writing a post in your voice.
+  // Core action - Outloud writing a post in your voice.
   return (
     <Shell kicker="WRITE">
       <div className="flex flex-1 items-center gap-12">
@@ -132,7 +132,7 @@ function Frame2() {
             <span style={{ color: INDIGO }}>sound like you</span>.
           </h2>
           <p className="mt-6 text-[22px] leading-snug" style={{ color: '#9aa0aa' }}>
-            Drop a rough idea or a commit. Get a post in your cadence — not generic AI.
+            Drop a rough idea or a commit. Get a post in your cadence - not generic AI.
           </p>
         </div>
         <div className="flex flex-1 flex-col gap-4 rounded-3xl border p-7" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
@@ -165,7 +165,7 @@ function Frame2() {
 }
 
 function Frame3() {
-  // The wedge — your voice vs AI slop.
+  // The wedge - your voice vs AI slop.
   return (
     <Shell kicker="THE DIFFERENCE">
       <div className="flex flex-1 flex-col justify-center">
@@ -213,12 +213,12 @@ function Frame3() {
 }
 
 function Frame4() {
-  // Replies — a real angle, not generic praise.
+  // Replies - a real angle, not generic praise.
   return (
     <Shell kicker="REPLIES">
       <div className="flex flex-1 flex-col justify-center">
         <h2 className="mb-8 text-[52px] font-extrabold leading-tight tracking-tight text-white">
-          Replies with an actual take —<br />
+          Replies with an actual take -<br />
           not <span style={{ color: '#6b7280' }}>&ldquo;Great post! 🙌&rdquo;</span>
         </h2>
         <div className="flex items-start gap-5">
@@ -254,7 +254,7 @@ function Frame4() {
 }
 
 function Frame5() {
-  // Voice extraction / onboarding — paste posts -> learns voice.
+  // Voice extraction / onboarding - paste posts -> learns voice.
   const traits = ['lowercase', 'dry & technical', 'no emojis', 'short lines', 'specific numbers', 'no hashtags']
   return (
     <Shell kicker="ONBOARDING">
@@ -299,7 +299,7 @@ function Frame5() {
 }
 
 function Frame6() {
-  // Proof / story — 0->10k challenge + real 22k views receipt.
+  // Proof / story - 0->10k challenge + real 22k views receipt.
   return (
     <Shell kicker="BUILD IN PUBLIC">
       <div className="flex flex-1 items-center gap-12">

@@ -26,6 +26,6 @@ export function buildOwn(): { mergedTags: string[]; styleSummary: string } {
     mergedTags: [],
     styleSummary:
       'Your own captured voice.\n\n' +
-      '// TODO: train from your posts later — Phase 1 models the own-voice profile but does not capture it yet.',
+      '// TODO: train from your posts later - Phase 1 models the own-voice profile but does not capture it yet.',
   }
 }

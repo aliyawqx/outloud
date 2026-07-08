@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
 
-// Edit/cancel a queued post. Published/publishing posts are read-only — the
+// Edit/cancel a queued post. Published/publishing posts are read-only - the
 // API enforces it too (409), this is just honest UI.
 
 function toLocalInput(iso: string): string {
@@ -29,7 +29,7 @@ export function PostEditorModal({
 }) {
   const editable = post.status === 'scheduled' || post.status === 'draft'
   // The API also allows cancelling FAILED posts (they'd otherwise sit on the
-  // calendar forever) — so cancel is offered beyond the editable statuses.
+  // calendar forever) - so cancel is offered beyond the editable statuses.
   const cancellable = editable || post.status === 'failed'
   const [content, setContent] = useState(post.content)
   const [when, setWhen] = useState(toLocalInput(post.scheduledFor))

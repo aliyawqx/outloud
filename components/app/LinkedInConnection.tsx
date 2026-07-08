@@ -39,7 +39,7 @@ export function LinkedInConnection({ flash }: { flash?: 'connected' | 'error' })
 
   const needsReconnect = status?.connected && status.status === 'needs_reconnect'
   // Proactive nudge (spec §5): no refresh token means the 60-day token dies
-  // silently — warn a week ahead so there is no posting gap.
+  // silently - warn a week ahead so there is no posting gap.
   const expiringSoon = Boolean(
     status?.connected &&
       status.status === 'connected' &&
@@ -67,12 +67,12 @@ export function LinkedInConnection({ flash }: { flash?: 'connected' | 'error' })
       {flash === 'error' && <p className="font-body-sm text-body-sm text-error">Could not connect LinkedIn. Try again.</p>}
       {needsReconnect && (
         <p className="font-body-sm text-body-sm text-error">
-          connection expired — reconnect to keep posting to linkedin.
+          connection expired - reconnect to keep posting to linkedin.
         </p>
       )}
       {expiringSoon && (
         <p className="font-body-sm text-body-sm text-on-surface-variant">
-          expires soon — reconnect to avoid a posting gap.
+          expires soon - reconnect to avoid a posting gap.
         </p>
       )}
 

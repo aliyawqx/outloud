@@ -17,7 +17,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 type VoiceOption = { id: string; name: string; isActive: boolean }
 
 // The platforms a generated post can be published to. The SAME text goes to each
-// selected, connected platform — no per-platform rewrite.
+// selected, connected platform - no per-platform rewrite.
 type Dest = 'x' | 'threads' | 'linkedin'
 const DESTINATIONS: { key: Dest; label: string; endpoint: string }[] = [
   { key: 'x', label: 'X', endpoint: '/api/x/publish' },
@@ -49,11 +49,11 @@ function DraftCard({
   const [editing, setEditing] = useState(false)
 
   // Finishing an edit ("Done" or blurring the textarea) persists the new text to the
-  // saved chat so it survives a reload — without this, a reload restores the original.
+  // saved chat so it survives a reload - without this, a reload restores the original.
   function finishEdit() {
     if (text !== draft.fullText) {
       onTextChange?.(text)
-      // The schedule confirmation refers to the content at schedule time — edits clear it.
+      // The schedule confirmation refers to the content at schedule time - edits clear it.
       setScheduledFor(null)
     }
   }
@@ -75,7 +75,7 @@ function DraftCard({
   function changeImages(imgs: DraftImage[]) {
     setImages(imgs)
     onImagesChange?.(imgs)
-    // The schedule confirmation refers to the content at schedule time — image changes clear it.
+    // The schedule confirmation refers to the content at schedule time - image changes clear it.
     setScheduledFor(null)
   }
   // Per-platform outcome after a publish attempt (url on success, error on failure).
@@ -113,7 +113,7 @@ function DraftCard({
         return [d.key, { error }]
       }
       // Posted, but the image couldn't go to X (image posting needs a paid X tier).
-      const note = images.length && data.imageSkipped ? 'image not added — X image posting isn’t enabled' : undefined
+      const note = images.length && data.imageSkipped ? 'image not added - X image posting isn’t enabled' : undefined
       return [d.key, { url: data.url, note }]
     } catch {
       return [d.key, { error: 'Network error. Try again.' }]
@@ -164,7 +164,7 @@ function DraftCard({
         <p className="whitespace-pre-wrap font-body-md leading-relaxed text-on-surface">{text}</p>
       )}
 
-      {/* Images: AI / stock search / upload — up to 4 per draft, sent with the post. */}
+      {/* Images: AI / stock search / upload - up to 4 per draft, sent with the post. */}
       <DraftImageControls draftText={text} images={images} onChange={changeImages} onInsufficient={onInsufficient} />
 
       {/* Destination selector: same text to each selected, connected platform. */}
@@ -253,7 +253,7 @@ function DraftCard({
       {scheduledFor && (
         <div className="mt-3 flex flex-col gap-1 rounded-xl border border-cyber-lime/30 bg-cyber-lime/5 p-3">
           <p className="font-body-sm text-body-sm text-on-surface">
-            scheduled for {new Date(scheduledFor).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} — it&apos;s on your calendar.
+            scheduled for {new Date(scheduledFor).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} - it&apos;s on your calendar.
           </p>
           <a href="/app/calendar" className="font-code-label text-code-label text-cyber-lime hover:underline">
             View calendar →
@@ -279,7 +279,7 @@ function DraftCard({
       {Object.values(results).some((r) => r?.url) && (
         <div className="mt-3 flex flex-col gap-2 rounded-xl border border-electric-indigo/30 bg-electric-indigo/5 p-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            posted! start a new chat for your next post — keeps your credits on drafting, not old context.
+            posted! start a new chat for your next post - keeps your credits on drafting, not old context.
           </p>
           <button
             type="button"
@@ -340,7 +340,7 @@ export function ComposeHome({
   const [showUpgrade, setShowUpgrade] = useState(false)
   const { setBalance } = useCredits() // live header balance, reconciled from each response
   // Highlights the suggested option the user tapped (the input below stays available
-  // the whole time — tapping an option is just a shortcut for typing the answer).
+  // the whole time - tapping an option is just a shortcut for typing the answer).
   const [pickedOption, setPickedOption] = useState<string | null>(null)
 
   // Auto-grow the input with its content, up to ~3 rows (then it scrolls). The

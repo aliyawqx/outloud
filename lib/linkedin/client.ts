@@ -35,7 +35,7 @@ export function extractPostId(headers: Headers): string | null {
 function classifyHttpError(status: number, body: string): Error {
   if (status === 401) return new LinkedInAuthError()
   if (status === 403)
-    return new LinkedInAuthError('LinkedIn denied posting permission — reconnect with the posting scope.')
+    return new LinkedInAuthError('LinkedIn denied posting permission - reconnect with the posting scope.')
   if (status === 429) return new LinkedInRateLimitError()
   if (status === 426 || (status === 400 && /version/i.test(body))) return new LinkedInVersionError()
   return new LinkedInPublishError(`LinkedIn rejected the post (${status}).`)
@@ -166,7 +166,7 @@ export async function publishLinkedInPost(
       // auth/rate-limit/version errors propagate — falling back wouldn't help.
       if (postsApiWorks === null && err instanceof LinkedInAuthError && /posting permission/.test(err.message)) {
         console.warn(
-          '[linkedin] /rest/posts denied for this tier — falling back to /v2/ugcPosts. Set LINKEDIN_FORCE_UGC=1 to pin.',
+          '[linkedin] /rest/posts denied for this tier - falling back to /v2/ugcPosts. Set LINKEDIN_FORCE_UGC=1 to pin.',
         )
         postsApiWorks = false
       } else {

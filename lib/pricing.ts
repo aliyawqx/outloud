@@ -71,7 +71,7 @@ export const PLANS: Plan[] = [
     monthly: { perMo: 39, sub: 'Billed monthly' },
     annual: { perMo: 26, sub: 'Billed annually · $312/year', save: 'Save 33%' },
     features: [
-      'Autopilot — zero-touch scheduling + auto-publish on your calendar',
+      'Autopilot - zero-touch scheduling + auto-publish on your calendar',
       'Everything in Starter',
       'X Reply engine + trending discovery',
       'Style presets + adjustable hook intensity',
