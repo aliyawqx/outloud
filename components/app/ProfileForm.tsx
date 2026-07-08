@@ -66,15 +66,6 @@ export function ProfileForm({ initial }: { initial: Initial }) {
         <input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className={field} placeholder="https://…" />
       </label>
 
-      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3">
-        <span className="font-code-label text-code-label text-on-surface-variant">
-          Plan · <span className="capitalize text-on-surface">{initial.plan}</span>
-        </span>
-        <a href="/app/settings/billing" className="font-code-label text-code-label text-electric-indigo hover:underline">
-          Billing &amp; usage →
-        </a>
-      </div>
-
       {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}
       {saved && <p className="font-body-sm text-body-sm text-cyber-lime">Saved.</p>}
 
@@ -93,6 +84,15 @@ export function ProfileForm({ initial }: { initial: Initial }) {
         >
           <span className="material-symbols-outlined text-[18px]">logout</span> Sign out
         </button>
+      </div>
+
+      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3">
+        <span className="font-code-label text-code-label text-on-surface-variant">
+          Plan · <span className="capitalize text-on-surface">{initial.plan}</span>
+        </span>
+        <a href="/app/settings/billing" className="font-code-label text-code-label text-electric-indigo hover:underline">
+          Billing &amp; usage →
+        </a>
       </div>
     </form>
   )
