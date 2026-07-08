@@ -78,9 +78,16 @@ export function NotificationsBell() {
                   </span>
                 </>
               )
-              // A notification with a link (e.g. the live post) is a tap-through anchor.
+              // A notification with a link is a tap-through anchor. In-app links
+              // (e.g. the post page) open here; external ones in a new tab.
+              const external = Boolean(n.link && !n.link.startsWith('/'))
               return n.link ? (
-                <a key={n.id} href={n.link} target="_blank" rel="noreferrer" className="group flex items-start gap-2 rounded-xl p-2.5 hover:bg-white/[0.04]">
+                <a
+                  key={n.id}
+                  href={n.link}
+                  {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                  className="group flex items-start gap-2 rounded-xl p-2.5 hover:bg-white/[0.04]"
+                >
                   {inner}
                 </a>
               ) : (

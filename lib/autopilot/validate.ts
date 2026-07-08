@@ -8,7 +8,8 @@ const URL_RE = /https?:\/\/|www\./i
 export function validateAutopilotPost(text: string, maxLen = 280): { ok: boolean; reason?: string } {
   const t = (text ?? '').trim()
   if (!t) return { ok: false, reason: 'empty' }
-  if (t !== t.toLowerCase()) return { ok: false, reason: 'uppercase' }
+  // No casing check: casing is the VOICE's (a voice that capitalizes normally
+  // must come out capitalized). Em-dash stays — it's a base-rules slop ban.
   if (t.includes('—')) return { ok: false, reason: 'em-dash' }
   if (URL_RE.test(t)) return { ok: false, reason: 'url' }
   if (t.length > maxLen) return { ok: false, reason: 'too-long' }

@@ -11,7 +11,7 @@ import {
   getValidAccessToken as getLinkedInToken,
   markNeedsReconnect,
 } from '@/lib/linkedin/store'
-import { addNotification } from '@/lib/notifications/store'
+import { addNotification, hasRecentNotification } from '@/lib/notifications/store'
 import { getAccount as getThreadsAccount, getValidAccessToken as getThreadsToken } from '@/lib/threads/store'
 import { getPermalink, publishThread } from '@/lib/threads/client'
 import {
@@ -25,6 +25,7 @@ import { postTweet, uploadImageFromUrl } from '@/lib/x/client'
 import { X_MEDIA_SCOPE_ENABLED } from '@/lib/x/oauth'
 import { MediaScopeError, PostTooLongError, ReplyNotAllowedError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 import { finishPublish, type PublishOutcome } from './store'
+import { platformLabel, SCHEDULE_PLATFORMS } from './types'
 import type { ExternalPostIds, ScheduledPost, SchedulePlatform } from './types'
 
 // The publish executor. Deliberately callable for ONE post so the cron scan can
@@ -107,7 +108,23 @@ async function publishToX(post: ScheduledPost): Promise<AttemptResult> {
     return { platform: 'x', ok: true, id, permalink }
   } catch (err) {
     if (err instanceof XNotConnectedError) return { platform: 'x', ok: false, error: 'X not connected', transient: false }
-    if (err instanceof XAuthError) return { platform: 'x', ok: false, error: 'X connection expired — reconnect in Profile', transient: false }
+    if (err instanceof XAuthError) {
+      // A dead X token never heals on its own (X revokes old grants when the same
+      // X account is authorized again) — tell the user, or every X publish fails
+      // silently while the other platforms keep succeeding. Deduped: one nudge a
+      // day, not one per post.
+      if (!(await hasRecentNotification(post.userId, 'reconnect_needed', 24 * 3_600_000).catch(() => true))) {
+        await addNotification({
+          userId: post.userId,
+          kind: 'reconnect_needed',
+          title: 'reconnect x',
+          body: 'your x connection expired — reconnect in profile to keep posting there.',
+          link: '/app/profile',
+          refId: post.id,
+        }).catch((e) => console.error('[schedule/publish] notify failed:', e))
+      }
+      return { platform: 'x', ok: false, error: 'X connection expired — reconnect in Profile', transient: false }
+    }
     if (err instanceof MediaScopeError) return { platform: 'x', ok: false, error: 'X media permission missing — reconnect in Profile', transient: false }
     if (err instanceof PostTooLongError) return { platform: 'x', ok: false, error: `too long for X (limit ${err.limit})`, transient: false }
     if (err instanceof ReplyNotAllowedError) return { platform: 'x', ok: false, error: err.message, transient: false }
@@ -163,6 +180,7 @@ async function publishToLinkedIn(post: ScheduledPost): Promise<AttemptResult> {
         kind: 'reconnect_needed',
         title: 'reconnect linkedin',
         body: 'your linkedin connection expired — reconnect in profile to keep posting.',
+        link: '/app/profile',
         refId: post.id,
       }).catch((e) => console.error('[schedule/publish] notify failed:', e))
       return { platform: 'linkedin', ok: false, error: 'linkedin_needs_reconnect', transient: false }
@@ -197,15 +215,16 @@ export async function publishScheduledPost(post: ScheduledPost): Promise<'publis
   const outcome = decideOutcome(post.retryCount, results, prior, post.permalinks ?? {})
   await finishPublish(post.id, outcome)
   if (outcome.status === 'published') {
-    // Zero-touch users see output through THIS notification (addendum B) — the
-    // live link means they never have to open the platform or log in.
-    const links = Object.values(outcome.permalinks)
+    // Zero-touch users see output through THIS notification (addendum B). It
+    // links to OUR post page, which shows the text plus one icon per platform —
+    // each icon opens the live post there.
+    const on = SCHEDULE_PLATFORMS.filter((p) => outcome.externalPostIds[p])
     await addNotification({
       userId: post.userId,
       kind: 'post_published',
       title: 'your post is live',
-      body: links.length ? links.join('\n') : 'view it on your calendar.',
-      link: links[0],
+      body: on.length ? `live on ${on.map(platformLabel).join(', ')} — tap to open it.` : 'view it on your calendar.',
+      link: `/app/posts/${post.id}`,
       refId: post.id,
     }).catch((e) => console.error('[schedule/publish] notify failed:', e))
   }

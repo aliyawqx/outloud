@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { validateAutopilotPost } from './validate'
 
 describe('validateAutopilotPost', () => {
-  it('accepts a compliant lowercase post', () => {
+  it('accepts a compliant post', () => {
     expect(validateAutopilotPost('shipped a tiny fix today and it took three hours but the bug taught me more than the feature did')).toEqual({ ok: true })
+  })
+  it('accepts any casing — casing belongs to the voice, not the format', () => {
+    expect(validateAutopilotPost('Shipped a fix today. It held.')).toEqual({ ok: true })
   })
   it('rejects empty or whitespace-only output', () => {
     expect(validateAutopilotPost('')).toEqual({ ok: false, reason: 'empty' })
     expect(validateAutopilotPost('   \n ')).toEqual({ ok: false, reason: 'empty' })
-  })
-  it('rejects uppercase letters', () => {
-    expect(validateAutopilotPost('Shipped a fix today')).toEqual({ ok: false, reason: 'uppercase' })
   })
   it('rejects em-dashes', () => {
     expect(validateAutopilotPost('shipped a fix — finally')).toEqual({ ok: false, reason: 'em-dash' })

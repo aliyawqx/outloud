@@ -16,7 +16,7 @@ export type SidebarProfile = {
   plan: string
 }
 
-type NavItem = { href: string; label: string; icon: string; badge?: number; soon?: boolean }
+type NavItem = { href: string; label: string; icon: string; badge?: number }
 
 // Secondary navigation. The two creation actions (New post / New reply) are
 // promoted out of this list into prominent buttons at the top of the sidebar.
@@ -26,7 +26,6 @@ function navItems(voiceCount: number): NavItem[] {
     { href: '/app/autopilot', label: 'Autopilot', icon: 'auto_awesome' },
     { href: '/app/voices', label: 'Voices', icon: 'graphic_eq', badge: voiceCount },
     { href: '/app/prompts', label: 'Prompts', icon: 'bookmarks' },
-    { href: '/app/knowledge', label: 'Knowledge', icon: 'menu_book', soon: true },
   ]
 }
 
@@ -110,10 +109,6 @@ export function AppSidebar({
             {it.badge ? (
               <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-code-label text-[11px] text-on-surface-variant">
                 {it.badge}
-              </span>
-            ) : it.soon ? (
-              <span className="rounded-full border border-border-muted px-2 py-0.5 font-code-label text-[10px] uppercase text-on-surface-variant/60">
-                soon
               </span>
             ) : null}
           </Link>

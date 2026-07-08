@@ -9,6 +9,9 @@ reeldyn
 *.mp4
 *.mov
 *.MOV
+*.MP4
+# …except the landing/demo clip, which ships as a static asset (lib/media.ts).
+!public/demo/intro-v2.mp4
 cap_*.png
 hi_*.png
 site_*.png
