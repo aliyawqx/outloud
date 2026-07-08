@@ -43,7 +43,14 @@ export function AutopilotSettingsPanel({
   const [busy, setBusy] = useState<'save' | 'pause' | 'resume' | null>(null)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  // The master tumbler persists ITSELF (no Save needed). When the user flips it
+  // on before adding a topic/time, we expand the details and hold the intent in
+  // pendingOn — the next Save turns autopilot on together with the essentials.
+  const [pendingOn, setPendingOn] = useState(false)
+  const [toggling, setToggling] = useState(false)
+  const [enableHint, setEnableHint] = useState('')
   const tzOptions = useMemo(() => timezoneOptions(), [])
+  const expanded = s.enabled || pendingOn
 
   const connected: Record<SchedulePlatform, boolean> = {
     x: xConnected,
@@ -77,6 +84,58 @@ export function AutopilotSettingsPanel({
     setTime(i, { days: next.length === 0 || next.length === 7 ? undefined : next })
   }
 
+  async function toggleEnabled(v: boolean) {
+    setError('')
+    setEnableHint('')
+    if (!v) {
+      // OFF is always instant: nothing to validate.
+      setPendingOn(false)
+      if (!s.enabled) return
+      setToggling(true)
+      try {
+        const res = await fetch('/api/autopilot', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: false }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) return setError(data.error ?? 'Could not turn autopilot off. Try again.')
+        setS(data.settings)
+      } catch {
+        setError('Network error. Try again.')
+      } finally {
+        setToggling(false)
+      }
+      return
+    }
+    // ON: instant when the essentials exist; otherwise expand + hold the intent.
+    if (!s.interests.length || !s.postingTimes.length || !s.platforms.length) {
+      setPendingOn(true)
+      setEnableHint('add a topic and a posting time below, then hit Save — autopilot starts right away.')
+      return
+    }
+    setToggling(true)
+    try {
+      const res = await fetch('/api/autopilot', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: true }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setPendingOn(true)
+        setEnableHint(data.error ?? 'Finish the setup below, then hit Save.')
+        return
+      }
+      setS(data.settings)
+      setPendingOn(false)
+    } catch {
+      setError('Network error. Try again.')
+    } finally {
+      setToggling(false)
+    }
+  }
+
   async function save(overrides: Partial<AutopilotSettings> = {}) {
     setError('')
     setBusy('save')
@@ -86,7 +145,7 @@ export function AutopilotSettingsPanel({
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          enabled: next.enabled,
+          enabled: next.enabled || pendingOn, // the tumbler's held intent (see pendingOn)
           interests: next.interests,
           postingTimes: next.postingTimes,
           timezone: next.timezone,
@@ -103,6 +162,8 @@ export function AutopilotSettingsPanel({
         return
       }
       setS(data.settings)
+      setPendingOn(false)
+      setEnableHint('')
       setSaved(true)
     } catch {
       setError('Network error. Try again.')
@@ -144,16 +205,19 @@ export function AutopilotSettingsPanel({
         </div>
       )}
 
-      {/* Master toggle */}
-      <div className={`${card} flex items-center justify-between gap-4`}>
+      {/* Master toggle — persists itself; the details below only show when on. */}
+      <div className={`${card} flex items-center justify-between gap-4 ${toggling ? 'opacity-70' : ''}`}>
         <div>
           <p className="font-body-md text-body-md font-bold text-on-surface">Autopilot</p>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            {s.enabled ? (s.pausedAt ? 'on, but paused' : 'on — filling empty slots ahead of time') : 'off'}
+            {s.enabled ? (s.pausedAt ? 'on, but paused' : 'on — filling empty slots ahead of time') : pendingOn ? 'almost on — finish the setup below' : 'off'}
           </p>
+          {enableHint && <p className="mt-1 font-body-sm text-body-sm text-cyber-lime">{enableHint}</p>}
         </div>
-        <Toggle on={s.enabled} onChange={(v) => patch({ enabled: v })} label="Autopilot enabled" />
+        <Toggle on={s.enabled || pendingOn} onChange={(v) => { if (!toggling) void toggleEnabled(v) }} label="Autopilot enabled" />
       </div>
+
+      {expanded && (<>
 
       {/* Interests */}
       <div className={card}>
@@ -353,6 +417,7 @@ export function AutopilotSettingsPanel({
           </div>
         )}
       </div>
+      </>)}
     </div>
   )
 }
