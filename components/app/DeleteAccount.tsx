@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 
-// Danger zone: permanently delete the account. Two-step + typed confirmation,
-// because it's irreversible and wipes voices, history, prompts and X connection.
+// Permanently delete the account. Deliberately quiet (no card, no blurb) - just
+// the action; the typed confirmation stays because the delete is irreversible.
 export function DeleteAccount() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -36,23 +36,17 @@ export function DeleteAccount() {
   }
 
   return (
-    <div className="mt-12 rounded-2xl border border-error/30 p-5">
-      <h2 className="font-headline-sm text-headline-sm text-error">Delete account</h2>
-      <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-        Permanently delete your account and everything in it - voices, history, prompts and your X
-        connection. This can’t be undone.
-      </p>
-
+    <div>
       {!open ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-4 rounded-full border border-error/40 px-5 py-2.5 font-bold text-error transition-all hover:bg-error/10 active:scale-95"
+          className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error"
         >
-          Delete account
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">delete</span> Delete account
         </button>
       ) : (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="font-code-label text-code-label uppercase text-on-surface-variant">
               Type <span className="text-error">delete</span> to confirm

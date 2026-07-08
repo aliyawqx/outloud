@@ -5,6 +5,7 @@ import { XConnection } from '@/components/app/XConnection'
 import { ThreadsConnection } from '@/components/app/ThreadsConnection'
 import { LinkedInConnection } from '@/components/app/LinkedInConnection'
 import { DeleteAccount } from '@/components/app/DeleteAccount'
+import { SignOutButton } from '@/components/app/SignOutButton'
 import { ReplayTours } from '@/components/app/onboarding/ReplayTours'
 import { WatchIntroButton } from '@/components/app/onboarding/WatchIntroButton'
 
@@ -47,7 +48,11 @@ export default async function ProfilePage({
       <div className="mt-3 flex justify-end">
         <WatchIntroButton />
       </div>
-      <DeleteAccount />
+      {/* Quiet account actions: delete on the left, sign out on the right. */}
+      <div className="mt-12 flex items-start justify-between gap-4 border-t border-border-muted pt-5">
+        <DeleteAccount />
+        <SignOutButton />
+      </div>
     </div>
   )
 }

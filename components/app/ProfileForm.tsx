@@ -43,12 +43,6 @@ export function ProfileForm({ initial }: { initial: Initial }) {
     }
   }
 
-  async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/')
-    router.refresh()
-  }
-
   return (
     <form onSubmit={onSave} className="flex flex-col gap-5">
       <label className="flex flex-col gap-1.5">
@@ -69,20 +63,13 @@ export function ProfileForm({ initial }: { initial: Initial }) {
       {error && <p className="font-body-sm text-body-sm text-error">{error}</p>}
       {saved && <p className="font-body-sm text-body-sm text-cyber-lime">Saved.</p>}
 
-      <div className="flex items-center justify-between">
+      <div>
         <button
           type="submit"
           disabled={saving}
           className="flex items-center justify-center gap-2 rounded-full bg-electric-indigo px-6 py-2.5 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
         >
           {saving ? <><Spinner size={16} /> Saving…</> : 'Save changes'}
-        </button>
-        <button
-          type="button"
-          onClick={signOut}
-          className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error"
-        >
-          <span className="material-symbols-outlined text-[18px]">logout</span> Sign out
         </button>
       </div>
 
