@@ -1,8 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Spinner } from '@/components/Spinner'
-import { platformShort, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
+import { platformLabel, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
+import { PlatformGlyph } from '@/components/app/PlatformGlyph'
 import { PostEditorModal } from './PostEditorModal'
 
 // ONE calendar, two sources: manual (violet) and autopilot (lime). Month and
@@ -39,8 +41,12 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 
 function PlatformIcons({ platforms }: { platforms: string[] }) {
   return (
-    <span className="font-code-label text-[10px] uppercase text-on-surface-variant/70">
-      {platforms.map((p) => platformShort(p as SchedulePlatform)).join('·')}
+    <span className="flex items-center gap-1.5 text-on-surface-variant/70">
+      {platforms.map((p) => (
+        <span key={p} title={platformLabel(p as SchedulePlatform)}>
+          <PlatformGlyph platform={p as SchedulePlatform} className="h-3 w-3" />
+        </span>
+      ))}
     </span>
   )
 }
@@ -179,7 +185,33 @@ export function CalendarView() {
 
       {error && <p className="mb-3 font-body-sm text-body-sm text-error">{error}</p>}
 
-      {view === 'month' ? (
+      {/* First load: a pulsing grid placeholder instead of a flash of emptiness. */}
+      {loading && posts.length === 0 && !error && (
+        <div className="grid grid-cols-7 gap-px overflow-hidden rounded-2xl border border-border-muted bg-border-muted">
+          {Array.from({ length: view === 'month' ? 35 : 7 }, (_, i) => (
+            <div key={i} className="min-h-24 animate-pulse bg-surface-container-low" />
+          ))}
+        </div>
+      )}
+
+      {/* Guide an empty range instead of showing a blank grid (nothing scheduled at all). */}
+      {!loading && !error && posts.length === 0 && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-muted bg-surface-container-low p-4">
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            Nothing scheduled here yet. Write a post, or let autopilot keep this calendar full.
+          </p>
+          <span className="flex items-center gap-2">
+            <Link href="/app" className="rounded-full bg-electric-indigo px-4 py-1.5 font-code-label text-code-label font-bold text-white transition-colors hover:bg-primary-container">
+              New post
+            </Link>
+            <Link href="/app/autopilot" className="rounded-full border border-cyber-lime/50 px-4 py-1.5 font-code-label text-code-label text-cyber-lime transition-colors hover:bg-cyber-lime/10">
+              Set up autopilot
+            </Link>
+          </span>
+        </div>
+      )}
+
+      {(!loading || posts.length > 0) && (view === 'month' ? (
         <div className="overflow-hidden rounded-2xl border border-border-muted">
           <div className="grid grid-cols-7 border-b border-border-muted bg-surface-container-lowest">
             {WEEKDAYS.map((w) => (
@@ -199,7 +231,13 @@ export function CalendarView() {
                   <div className="flex flex-col gap-1">
                     {dayPosts.slice(0, 3).map((p) => <PostChip key={p.id} post={p} onClick={() => setEditing(p)} />)}
                     {dayPosts.length > 3 && (
-                      <span className="px-1.5 font-code-label text-[10px] text-on-surface-variant/60">+{dayPosts.length - 3} more</span>
+                      <button
+                        type="button"
+                        onClick={() => { setAnchor(d); setView('week') }}
+                        className="px-1.5 text-left font-code-label text-[10px] text-on-surface-variant/60 transition-colors hover:text-on-surface"
+                      >
+                        +{dayPosts.length - 3} more
+                      </button>
                     )}
                   </div>
                 </div>
@@ -253,7 +291,7 @@ export function CalendarView() {
             )
           })}
         </div>
-      )}
+      ))}
 
       {editing && (
         <PostEditorModal

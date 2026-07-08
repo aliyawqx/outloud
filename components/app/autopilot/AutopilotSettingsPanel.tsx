@@ -7,6 +7,7 @@ import { matchTopics } from '@/lib/autopilot/topics'
 import { timezoneOptions } from '@/lib/timezones'
 import type { PostingTime } from '@/lib/schedule/slots'
 import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
+import { PlatformGlyph } from '@/components/app/PlatformGlyph'
 import { X_FREE_POST_LIMIT } from '@/lib/x/client'
 
 const DAY_LABELS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
@@ -206,6 +207,14 @@ export function AutopilotSettingsPanel({
 
   const card = 'rounded-2xl border border-border-muted bg-surface-container-low p-5'
 
+  // Scannable section headers: one icon + title line per card, same weight everywhere.
+  const CardTitle = ({ icon, children }: { icon: string; children: React.ReactNode }) => (
+    <p className="mb-1 flex items-center gap-2 font-body-md text-body-md font-bold text-on-surface">
+      <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-electric-indigo">{icon}</span>
+      {children}
+    </p>
+  )
+
   return (
     <div className="flex flex-col gap-4">
       {pausedForCredits && (
@@ -235,7 +244,7 @@ export function AutopilotSettingsPanel({
 
       {/* Interests */}
       <div className={card}>
-        <p className="mb-1 font-body-md text-body-md font-bold text-on-surface">Interest areas</p>
+        <CardTitle icon="tag">Interest areas</CardTitle>
         <p className="mb-3 font-body-sm text-body-sm text-on-surface-variant">What autopilot writes about, rotating day by day.</p>
         <div className="mb-3 flex flex-wrap gap-2">
           {s.interests.map((it) => (
@@ -279,7 +288,7 @@ export function AutopilotSettingsPanel({
 
       {/* Posting times */}
       <div className={card}>
-        <p className="mb-1 font-body-md text-body-md font-bold text-on-surface">Posting times</p>
+        <CardTitle icon="schedule">Posting times</CardTitle>
         <p className="mb-3 font-body-sm text-body-sm text-on-surface-variant">
           Slots autopilot can fill, in your timezone. Leave days unselected to post every day.
         </p>
@@ -342,8 +351,8 @@ export function AutopilotSettingsPanel({
 
       {/* Platforms + review toggle */}
       <div className={card}>
-        <p className="mb-3 font-body-md text-body-md font-bold text-on-surface">Publish to</p>
-        <div className="flex gap-2">
+        <CardTitle icon="send">Publish to</CardTitle>
+        <div className="mt-3 flex gap-2">
           {SCHEDULE_PLATFORMS.map((p) => {
             const on = s.platforms.includes(p)
             const isConnected = connected[p]
@@ -356,12 +365,13 @@ export function AutopilotSettingsPanel({
                 disabled={!isConnected}
                 title={isConnected ? undefined : `Connect ${platformLabel(p)} in Profile to enable`}
                 onClick={() => patch({ platforms: on ? s.platforms.filter((x) => x !== p) : [...s.platforms, p] })}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex items-center gap-2 rounded-full border px-3.5 py-2 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   on ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
                 }`}
               >
-                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{on ? 'check_circle' : 'radio_button_unchecked'}</span>
+                <PlatformGlyph platform={p} className={`h-4 w-4 ${on ? '' : 'opacity-60'}`} />
                 {platformLabel(p)}
+                {on && <span aria-hidden="true" className="material-symbols-outlined text-[14px] text-electric-indigo">check</span>}
               </button>
             )
           })}
@@ -415,7 +425,8 @@ export function AutopilotSettingsPanel({
 
       {/* Upcoming auto posts */}
       <div className={card}>
-        <p className="mb-3 font-body-md text-body-md font-bold text-on-surface">Queued by autopilot</p>
+        <CardTitle icon="auto_awesome">Queued by autopilot</CardTitle>
+        <div className="mb-2" />
         {upcoming.length === 0 ? (
           <p className="font-body-sm text-body-sm text-on-surface-variant/60">
             nothing queued yet - posts appear here up to {Math.round(s.leadTimeMinutes / 60)}h before their slot.
