@@ -48,6 +48,7 @@ export async function GET(req: Request) {
       refreshToken: tok.refresh_token,
       scope: tok.scope,
       expiresAt: new Date(Date.now() + tok.expires_in * 1000),
+      verifiedType: me.verifiedType,
     })
     back.searchParams.set('x', 'connected')
   } catch (err) {

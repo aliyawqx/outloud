@@ -10,6 +10,10 @@ export type XAccount = {
   username: string
   scope: string
   expiresAt: string
+  /** verified_type from users/me at connect time ('blue' | 'business' | …); null = unknown/legacy row. */
+  verifiedType: string | null
+  /** Premium (any verified_type but 'none') unlocks long-form posts past 280 chars. */
+  premium: boolean
 }
 
 export type SaveAccountInput = {
@@ -20,6 +24,7 @@ export type SaveAccountInput = {
   refreshToken?: string
   scope: string
   expiresAt: Date
+  verifiedType?: string | null
 }
 
 type Row = {
@@ -30,7 +35,10 @@ type Row = {
   refresh_token_enc: string | null
   scope: string
   expires_at: Date
+  verified_type: string | null
 }
+
+const isPremium = (verifiedType: string | null): boolean => Boolean(verifiedType && verifiedType !== 'none')
 
 const REFRESH_SKEW_MS = 60_000
 
@@ -42,8 +50,8 @@ export function isExpiring(expiresAt: Date, now: Date): boolean {
 export async function saveAccount(i: SaveAccountInput): Promise<void> {
   await ensureSchema()
   await getPool().query(
-    `INSERT INTO x_accounts (user_id, x_user_id, username, access_token_enc, refresh_token_enc, scope, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO x_accounts (user_id, x_user_id, username, access_token_enc, refresh_token_enc, scope, expires_at, verified_type)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (user_id) DO UPDATE SET
        x_user_id = EXCLUDED.x_user_id,
        username = EXCLUDED.username,
@@ -51,6 +59,7 @@ export async function saveAccount(i: SaveAccountInput): Promise<void> {
        refresh_token_enc = EXCLUDED.refresh_token_enc,
        scope = EXCLUDED.scope,
        expires_at = EXCLUDED.expires_at,
+       verified_type = EXCLUDED.verified_type,
        updated_at = now()`,
     [
       i.userId,
@@ -60,6 +69,7 @@ export async function saveAccount(i: SaveAccountInput): Promise<void> {
       i.refreshToken ? encryptToken(i.refreshToken) : null,
       i.scope,
       i.expiresAt,
+      i.verifiedType ?? null,
     ],
   )
 }
@@ -75,6 +85,8 @@ export async function getAccount(userId: string): Promise<XAccount | null> {
     username: r.username,
     scope: r.scope,
     expiresAt: r.expires_at.toISOString(),
+    verifiedType: r.verified_type,
+    premium: isPremium(r.verified_type),
   }
 }
 

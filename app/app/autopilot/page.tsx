@@ -45,6 +45,7 @@ export default async function AutopilotPage() {
             initial={settings}
             upcoming={upcoming}
             xConnected={Boolean(x)}
+            xPremium={Boolean(x?.premium)}
             threadsConnected={Boolean(threads)}
             linkedInConnected={Boolean(li && li.status === 'connected')}
           />

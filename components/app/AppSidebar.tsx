@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
@@ -44,7 +44,6 @@ export function AppSidebar({
   history: SidebarHistoryItem[]
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   // A history chat is open when /app carries a ?session — in that case the compose
   // chat (highlighted gray in the History list) is the active item, NOT "New post".
   const viewingChat = Boolean(useSearchParams().get('session'))
@@ -85,12 +84,6 @@ export function AppSidebar({
 
   const isActive = (href: string) =>
     href === '/app' ? pathname === '/app' && !viewingChat : pathname.startsWith(href)
-
-  async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/')
-    router.refresh()
-  }
 
   // The two core creation actions, promoted to prominent buttons. "New post" is the
   // hero action (always filled); "New reply" is secondary (tinted when active).
@@ -153,13 +146,17 @@ export function AppSidebar({
     </nav>
   )
 
+  // Deliberately minimal: the profile row (name, credits · plan) plus the
+  // notifications bell. Billing, upgrade and sign-out live ON the profile page.
   const footer = (
-    <div className="flex shrink-0 flex-col gap-2 border-t border-border-muted p-3">
+    // `relative` anchors the notifications panel (absolute in NotificationsBell)
+    // to this row, so it opens upward aligned with the sidebar.
+    <div className="relative flex shrink-0 items-center gap-1 border-t border-border-muted p-3">
       <Link
         href="/app/profile"
         data-tour="profile-nav"
         onClick={() => setOpen(false)}
-        className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-white/[0.04]"
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-white/[0.04]"
       >
         {profile.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -183,32 +180,7 @@ export function AppSidebar({
           </span>
         </span>
       </Link>
-
       <NotificationsBell />
-
-      <Link
-        href="/app/settings/billing"
-        onClick={() => setOpen(false)}
-        className="flex items-center gap-2 rounded-xl px-3 py-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:bg-white/[0.04] hover:text-on-surface"
-      >
-        <span aria-hidden="true" className="material-symbols-outlined text-[18px]">receipt_long</span>
-        Billing &amp; usage
-      </Link>
-
-      <Link
-        href="/pricing"
-        className="flex items-center justify-center rounded-xl bg-surface-container-low px-3 py-2 font-code-label text-code-label text-cyber-lime transition-colors hover:brightness-110"
-      >
-        Upgrade plan
-      </Link>
-
-      <button
-        type="button"
-        onClick={signOut}
-        className="flex items-center gap-2 rounded-xl px-3 py-2 text-left font-code-label text-code-label text-on-surface-variant transition-colors hover:bg-white/[0.04] hover:text-error"
-      >
-        <span className="material-symbols-outlined text-[18px]">logout</span> Sign out
-      </button>
     </div>
   )
 

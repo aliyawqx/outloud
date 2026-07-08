@@ -7,6 +7,9 @@ import { matchTopics } from '@/lib/autopilot/topics'
 import { timezoneOptions } from '@/lib/timezones'
 import type { PostingTime } from '@/lib/schedule/slots'
 import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
+import { LINKEDIN_TEXT_LIMIT } from '@/lib/linkedin/client'
+import { THREADS_TEXT_LIMIT } from '@/lib/threads/client'
+import { X_FREE_POST_LIMIT, X_PREMIUM_POST_LIMIT } from '@/lib/x/client'
 
 const DAY_LABELS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
@@ -29,12 +32,14 @@ export function AutopilotSettingsPanel({
   initial,
   upcoming,
   xConnected,
+  xPremium,
   threadsConnected,
   linkedInConnected,
 }: {
   initial: AutopilotSettings
   upcoming: ScheduledPost[]
   xConnected: boolean
+  xPremium: boolean
   threadsConnected: boolean
   linkedInConnected: boolean
 }) {
@@ -57,6 +62,14 @@ export function AutopilotSettingsPanel({
     threads: threadsConnected,
     linkedin: linkedInConnected,
   }
+  // Mirrors the generation-side cap (lib/autopilot/generate.ts): auto posts are
+  // trimmed to the tightest platform selected, so say so — otherwise short posts
+  // read as "autopilot writes badly" instead of "X caps free accounts at 280".
+  const charCap = Math.min(
+    s.platforms.includes('x') ? (xPremium ? X_PREMIUM_POST_LIMIT : X_FREE_POST_LIMIT) : Infinity,
+    s.platforms.includes('threads') ? THREADS_TEXT_LIMIT : Infinity,
+    s.platforms.includes('linkedin') ? LINKEDIN_TEXT_LIMIT : Infinity,
+  )
   const pausedForCredits = s.pausedAt && s.pauseReason === 'insufficient_credits'
 
   function patch(p: Partial<AutopilotSettings>) {
@@ -363,6 +376,14 @@ export function AutopilotSettingsPanel({
             )
           })}
         </div>
+        {s.platforms.length > 0 && Number.isFinite(charCap) && (
+          <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">
+            Auto posts are kept under {charCap.toLocaleString()} characters — the limit of the tightest platform selected.
+            {s.platforms.includes('x') && !xPremium && (
+              <> X without Premium caps posts at {X_FREE_POST_LIMIT}; if you have X Premium, reconnect X in Profile and the cap lifts to long-form.</>
+            )}
+          </p>
+        )}
         <div className="mt-4 flex items-center justify-between gap-4">
           <div>
             <p className="font-body-md text-body-md text-on-surface">AI image on each post</p>

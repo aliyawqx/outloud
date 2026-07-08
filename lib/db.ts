@@ -152,6 +152,9 @@ CREATE TABLE IF NOT EXISTS x_accounts (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- users/me verified_type at connect time: any value but 'none' = premium (long-form posts).
+-- NULL on legacy rows = unknown → treated as free (280) until the user reconnects.
+ALTER TABLE x_accounts ADD COLUMN IF NOT EXISTS verified_type TEXT;
 
 -- Threads (Meta) connection. Mirrors x_accounts, but the long-lived token is
 -- self-refreshing so there is no separate refresh token.

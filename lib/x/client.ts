@@ -5,6 +5,8 @@ const API = 'https://api.x.com/2'
 // Characters a non-premium X account is allowed to post. Longer posts require
 // X Premium; the API rejects them for free accounts.
 export const X_FREE_POST_LIMIT = 280
+// Premium (verified) accounts can post long-form up to 25k characters.
+export const X_PREMIUM_POST_LIMIT = 25_000
 
 type Json = Record<string, unknown> | null
 
@@ -12,12 +14,16 @@ async function readJson(res: Response): Promise<Json> {
   return (await res.json().catch(() => null)) as Json
 }
 
-export async function getMe(accessToken: string): Promise<{ id: string; username: string }> {
-  const res = await fetch(`${API}/users/me`, { headers: { authorization: `Bearer ${accessToken}` } })
+export async function getMe(accessToken: string): Promise<{ id: string; username: string; verifiedType: string | null }> {
+  // verified_type ('blue' | 'business' | 'government' | 'none') is the premium
+  // signal: any value but 'none' unlocks long-form posts (see store.ts premium).
+  const res = await fetch(`${API}/users/me?user.fields=verified_type`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  })
   if (!res.ok) throw new XAuthError()
-  const data = (await readJson(res)) as { data?: { id?: string; username?: string } } | null
+  const data = (await readJson(res)) as { data?: { id?: string; username?: string; verified_type?: string } } | null
   if (!data?.data?.id || !data.data.username) throw new XAuthError()
-  return { id: data.data.id, username: data.data.username }
+  return { id: data.data.id, username: data.data.username, verifiedType: data.data.verified_type ?? null }
 }
 
 /** Publish a tweet. Pass `replyToTweetId` to post it as a reply to that tweet —
@@ -72,6 +78,9 @@ export async function postTweet(
   text: string,
   replyToTweetId?: string,
   mediaIds?: string[],
+  // The account's real cap (premium accounts post long-form) — drives only the
+  // too-long failure classification below, the API enforces the actual limit.
+  limit: number = X_FREE_POST_LIMIT,
 ): Promise<{ id: string }> {
   const payload: Record<string, unknown> = { text }
   if (replyToTweetId) payload.reply = { in_reply_to_tweet_id: replyToTweetId }
@@ -89,12 +98,12 @@ export async function postTweet(
     if (replyToTweetId && /reply to this conversation is not allowed|not allowed to reply|who can reply/i.test(reason)) {
       throw new ReplyNotAllowedError()
     }
-    // Non-premium accounts get rejected for over-limit posts. X phrases this a few
-    // ways; also treat any failure on text over the free limit as this case.
+    // Accounts get rejected for over-limit posts. X phrases this a few ways;
+    // also treat any failure on text over the account's limit as this case.
     const tooLong =
-      text.length > X_FREE_POST_LIMIT &&
+      text.length > limit &&
       (res.status === 403 || res.status === 400 || /280|character|too long|not permitted|premium/i.test(reason))
-    if (tooLong) throw new PostTooLongError(X_FREE_POST_LIMIT)
+    if (tooLong) throw new PostTooLongError(limit)
     throw new PublishError(reason || 'Could not publish to X.')
   }
   return { id: data.data.id }

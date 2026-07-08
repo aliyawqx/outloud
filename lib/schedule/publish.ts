@@ -21,7 +21,7 @@ import {
   ThreadsRateLimitError,
 } from '@/lib/threads/errors'
 import { getAccount as getXAccount, getValidAccessToken as getXToken } from '@/lib/x/store'
-import { postTweet, uploadImageFromUrl } from '@/lib/x/client'
+import { postTweet, uploadImageFromUrl, X_FREE_POST_LIMIT, X_PREMIUM_POST_LIMIT } from '@/lib/x/client'
 import { X_MEDIA_SCOPE_ENABLED } from '@/lib/x/oauth'
 import { MediaScopeError, PostTooLongError, ReplyNotAllowedError, XAuthError, XNotConnectedError } from '@/lib/x/errors'
 import { finishPublish, type PublishOutcome } from './store'
@@ -88,20 +88,23 @@ export function decideOutcome(
 async function publishToX(post: ScheduledPost): Promise<AttemptResult> {
   try {
     const token = await getXToken(post.userId)
+    // Fetched up-front: the account's premium flag sets the real character cap
+    // (free 280, premium long-form) and the username builds the permalink.
+    const account = await getXAccount(post.userId).catch(() => null)
+    const limit = account?.premium ? X_PREMIUM_POST_LIMIT : X_FREE_POST_LIMIT
     let mediaIds: string[] | undefined
     const urls = (post.media ?? []).map((m) => m.url).slice(0, 4)
     if (urls.length && X_MEDIA_SCOPE_ENABLED) {
       mediaIds = []
       for (const url of urls) mediaIds.push(await uploadImageFromUrl(token, url))
     }
-    const { id } = await postTweet(token, post.content, undefined, mediaIds)
+    const { id } = await postTweet(token, post.content, undefined, mediaIds, limit)
     // Link-in-first-reply: best-effort — a failed reply never fails the post.
     if (post.firstReply?.trim()) {
-      await postTweet(token, post.firstReply.trim(), id).catch((e) =>
+      await postTweet(token, post.firstReply.trim(), id, undefined, limit).catch((e) =>
         console.error('[schedule/publish] first reply failed:', e),
       )
     }
-    const account = await getXAccount(post.userId).catch(() => null)
     const permalink = account
       ? `https://x.com/${account.username}/status/${id}`
       : `https://x.com/i/status/${id}`

@@ -4,9 +4,14 @@ import { fetchOriginalTweets, getMe, postTweet } from './client'
 afterEach(() => vi.unstubAllGlobals())
 
 describe('getMe', () => {
-  it('returns id + username', async () => {
+  it('returns id + username + verified type', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ data: { id: '42', username: 'ada', verified_type: 'blue' } }), { status: 200 })))
+    expect(await getMe('tok')).toEqual({ id: '42', username: 'ada', verifiedType: 'blue' })
+  })
+
+  it('defaults verified type to null when the field is absent', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ data: { id: '42', username: 'ada' } }), { status: 200 })))
-    expect(await getMe('tok')).toEqual({ id: '42', username: 'ada' })
+    expect(await getMe('tok')).toEqual({ id: '42', username: 'ada', verifiedType: null })
   })
 
   it('throws XAuthError on 401', async () => {

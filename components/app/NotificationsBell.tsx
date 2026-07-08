@@ -44,22 +44,28 @@ export function NotificationsBell() {
   }
 
   return (
-    <div className="relative">
+    // No `relative` here on purpose: the panel anchors to the nearest positioned
+    // ancestor — the sidebar footer row — so it aligns with the sidebar edge
+    // instead of overflowing off-screen from the icon's corner.
+    <div>
+      {/* Compact icon-only trigger — it sits inline next to the profile row. */}
       <button
         type="button"
         aria-label={unread ? `Notifications (${unread} unread)` : 'Notifications'}
+        title="Notifications"
         aria-expanded={open}
         onClick={toggleOpen}
-        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:bg-white/[0.04] hover:text-on-surface"
+        className="relative flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-white/[0.04] hover:text-on-surface"
       >
-        <span aria-hidden="true" className="material-symbols-outlined text-[18px]">notifications</span>
-        Notifications
+        <span aria-hidden="true" className="material-symbols-outlined text-[20px]">notifications</span>
         {unread > 0 && (
-          <span className="ml-auto rounded-full bg-electric-indigo px-2 py-0.5 font-code-label text-[10px] font-bold text-white">{unread}</span>
+          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-electric-indigo px-1 font-code-label text-[9px] font-bold text-white">
+            {unread > 9 ? '9+' : unread}
+          </span>
         )}
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 max-h-80 w-72 overflow-y-auto rounded-2xl border border-border-muted bg-surface-container p-2 shadow-2xl">
+        <div className="absolute bottom-full left-2 z-50 mb-1 max-h-80 w-72 overflow-y-auto rounded-2xl border border-border-muted bg-surface-container p-2 shadow-2xl">
           {items.length === 0 ? (
             <p className="p-3 font-body-sm text-body-sm text-on-surface-variant/60">nothing yet</p>
           ) : (
