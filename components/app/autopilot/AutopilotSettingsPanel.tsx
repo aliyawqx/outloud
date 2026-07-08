@@ -88,9 +88,12 @@ export function AutopilotSettingsPanel({
     setError('')
     setEnableHint('')
     if (!v) {
-      // OFF is always instant: nothing to validate.
+      // OFF is always allowed: nothing to validate. Optimistic — flip the UI
+      // now, persist in the background, roll back if the server disagrees.
       setPendingOn(false)
       if (!s.enabled) return
+      const before = s
+      setS({ ...s, enabled: false })
       setToggling(true)
       try {
         const res = await fetch('/api/autopilot', {
@@ -99,9 +102,13 @@ export function AutopilotSettingsPanel({
           body: JSON.stringify({ enabled: false }),
         })
         const data = await res.json().catch(() => ({}))
-        if (!res.ok) return setError(data.error ?? 'Could not turn autopilot off. Try again.')
+        if (!res.ok) {
+          setS(before)
+          return setError(data.error ?? 'Could not turn autopilot off. Try again.')
+        }
         setS(data.settings)
       } catch {
+        setS(before)
         setError('Network error. Try again.')
       } finally {
         setToggling(false)
@@ -114,6 +121,8 @@ export function AutopilotSettingsPanel({
       setEnableHint('add a topic and a posting time below, then hit Save — autopilot starts right away.')
       return
     }
+    const before = s
+    setS({ ...s, enabled: true })
     setToggling(true)
     try {
       const res = await fetch('/api/autopilot', {
@@ -123,6 +132,7 @@ export function AutopilotSettingsPanel({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
+        setS(before)
         setPendingOn(true)
         setEnableHint(data.error ?? 'Finish the setup below, then hit Save.')
         return
@@ -130,6 +140,7 @@ export function AutopilotSettingsPanel({
       setS(data.settings)
       setPendingOn(false)
     } catch {
+      setS(before)
       setError('Network error. Try again.')
     } finally {
       setToggling(false)
