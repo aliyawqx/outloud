@@ -8,6 +8,7 @@ import {
   fetchProfiles,
   patchProfile,
   removeProfile,
+  restoreProfile,
   saveProfile,
 } from '@/lib/voice/client'
 import { getSource } from '@/lib/voice/catalog'
@@ -111,9 +112,29 @@ export function VoiceStudio({ onboarding = false }: { onboarding?: boolean }) {
     setProfiles((ps) => ps.map((p) => (p.id === id ? { ...p, name: newName } : p)))
     patchProfile(id, { name: newName }).catch(refresh)
   }
+  // Deleted = soft-deleted server-side, so the toast can undo it losslessly
+  // (style guide + samples survive). The toast auto-hides after 8s.
+  const [deleted, setDeleted] = useState<{ id: string; name: string } | null>(null)
+  useEffect(() => {
+    if (!deleted) return
+    const t = setTimeout(() => setDeleted(null), 8000)
+    return () => clearTimeout(t)
+  }, [deleted])
+
   const onDelete = (id: string) => {
+    const name = profiles.find((p) => p.id === id)?.name ?? 'voice'
     setProfiles((ps) => ps.filter((p) => p.id !== id))
+    setDeleted({ id, name })
     removeProfile(id).catch(refresh)
+  }
+
+  const onUndoDelete = () => {
+    if (!deleted) return
+    const { id } = deleted
+    setDeleted(null)
+    restoreProfile(id)
+      .then(({ profile }) => setProfiles((ps) => [...ps, profile]))
+      .catch(refresh)
   }
 
   const tabBtn = (t: Tab, label: string, count?: number) => (
@@ -215,6 +236,22 @@ export function VoiceStudio({ onboarding = false }: { onboarding?: boolean }) {
               onRename={onRename}
             />
           )}
+        </div>
+      )}
+
+      {deleted && (
+        <div
+          role="status"
+          className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border-muted bg-surface-container px-5 py-2.5 shadow-2xl"
+        >
+          <span className="font-body-sm text-body-sm text-on-surface">“{deleted.name}” deleted.</span>
+          <button
+            type="button"
+            onClick={onUndoDelete}
+            className="font-code-label text-code-label font-bold text-cyber-lime transition-opacity hover:opacity-80"
+          >
+            Undo
+          </button>
         </div>
       )}
     </>

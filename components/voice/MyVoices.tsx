@@ -47,6 +47,9 @@ export function MyVoices({
 }) {
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
+  // Two-step delete: the first click arms the button, the second actually
+  // deletes. Voices are expensive to recreate - never delete on a single tap.
+  const [confirming, setConfirming] = useState<string | null>(null)
 
   return (
     <ul className="flex flex-col gap-4">
@@ -141,14 +144,34 @@ export function MyVoices({
                   Edit style
                 </Link>
               )}
-              <button
-                type="button"
-                onClick={() => onDelete(p.id)}
-                className="ml-auto flex items-center gap-1 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error disabled:opacity-40"
-              >
-                <span className="material-symbols-outlined text-[16px]">delete</span>
-                Delete
-              </button>
+              {confirming === p.id ? (
+                <span className="ml-auto flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setConfirming(null); onDelete(p.id) }}
+                    className="flex items-center gap-1 rounded-full bg-error px-3 py-1 font-code-label text-code-label font-bold text-white transition-opacity hover:opacity-90"
+                  >
+                    <span aria-hidden="true" className="material-symbols-outlined text-[16px]">delete</span>
+                    Delete “{p.name.length > 18 ? `${p.name.slice(0, 18)}…` : p.name}”?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirming(null)}
+                    className="font-code-label text-code-label text-on-surface-variant transition-colors hover:text-on-surface"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirming(p.id)}
+                  className="ml-auto flex items-center gap-1 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  Delete
+                </button>
+              )}
             </div>
           </li>
         )

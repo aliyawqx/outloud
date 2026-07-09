@@ -95,27 +95,27 @@ export async function setStyleGuide(
   await ensureSchema()
   const { rows } = await getPool().query<Row>(
     `UPDATE voice_profiles SET style_guide = $1, style_summary = $2, updated_at = now()
-     WHERE owner_key = $3 AND id = $4 RETURNING *`,
+     WHERE owner_key = $3 AND id = $4 AND deleted_at IS NULL RETURNING *`,
     [guide.guideMarkdown, guide.summary, ownerKey, id],
   )
   return rows[0] ? mapRow(rows[0]) : null
 }
 
-/** List an owner's profiles, active first, then newest. */
+/** List an owner's profiles (soft-deleted excluded), active first, then newest. */
 export async function listProfiles(ownerKey: string): Promise<VoiceProfile[]> {
   await ensureSchema()
   const { rows } = await getPool().query<Row>(
-    `SELECT * FROM voice_profiles WHERE owner_key = $1 ORDER BY is_active DESC, created_at DESC`,
+    `SELECT * FROM voice_profiles WHERE owner_key = $1 AND deleted_at IS NULL ORDER BY is_active DESC, created_at DESC`,
     [ownerKey],
   )
   return rows.map(mapRow)
 }
 
-/** Fetch one profile, scoped to its owner. */
+/** Fetch one profile, scoped to its owner. Soft-deleted profiles read as absent. */
 export async function getProfile(ownerKey: string, id: string): Promise<VoiceProfile | null> {
   await ensureSchema()
   const { rows } = await getPool().query<Row>(
-    `SELECT * FROM voice_profiles WHERE owner_key = $1 AND id = $2`,
+    `SELECT * FROM voice_profiles WHERE owner_key = $1 AND id = $2 AND deleted_at IS NULL`,
     [ownerKey, id],
   )
   return rows[0] ? mapRow(rows[0]) : null
@@ -159,27 +159,42 @@ export async function updateProfile(
   sets.push(`updated_at = now()`)
   vals.push(ownerKey, id)
   const { rows } = await getPool().query<Row>(
-    `UPDATE voice_profiles SET ${sets.join(', ')} WHERE owner_key = $${i++} AND id = $${i} RETURNING *`,
+    `UPDATE voice_profiles SET ${sets.join(', ')} WHERE owner_key = $${i++} AND id = $${i} AND deleted_at IS NULL RETURNING *`,
     vals,
   )
   return rows[0] ? mapRow(rows[0]) : null
 }
 
-/** Delete a profile. Returns true if a row was removed. */
+/** Soft-delete a profile: it disappears from every read but keeps its style
+ *  guide and samples, so restoreProfile brings it back losslessly. Returns true
+ *  if a (live) row was marked. */
 export async function deleteProfile(ownerKey: string, id: string): Promise<boolean> {
   await ensureSchema()
   const { rowCount } = await getPool().query(
-    `DELETE FROM voice_profiles WHERE owner_key = $1 AND id = $2`,
+    `UPDATE voice_profiles SET deleted_at = now(), is_active = false, updated_at = now()
+     WHERE owner_key = $1 AND id = $2 AND deleted_at IS NULL`,
     [ownerKey, id],
   )
   return (rowCount ?? 0) > 0
+}
+
+/** Undo a soft delete. Comes back INACTIVE (never silently steals the active
+ *  slot); the user re-picks it if they want it active. Returns the profile. */
+export async function restoreProfile(ownerKey: string, id: string): Promise<VoiceProfile | null> {
+  await ensureSchema()
+  const { rows } = await getPool().query<Row>(
+    `UPDATE voice_profiles SET deleted_at = NULL, updated_at = now()
+     WHERE owner_key = $1 AND id = $2 AND deleted_at IS NOT NULL RETURNING *`,
+    [ownerKey, id],
+  )
+  return rows[0] ? mapRow(rows[0]) : null
 }
 
 /** Clear the active flag on a profile. Returns it, or null if not found. */
 export async function deactivateProfile(ownerKey: string, id: string): Promise<VoiceProfile | null> {
   await ensureSchema()
   const { rows } = await getPool().query<Row>(
-    'UPDATE voice_profiles SET is_active = false, updated_at = now() WHERE owner_key = $1 AND id = $2 RETURNING *',
+    'UPDATE voice_profiles SET is_active = false, updated_at = now() WHERE owner_key = $1 AND id = $2 AND deleted_at IS NULL RETURNING *',
     [ownerKey, id],
   )
   return rows[0] ? mapRow(rows[0]) : null
@@ -192,10 +207,10 @@ export async function setActiveProfile(ownerKey: string, id: string): Promise<Vo
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    const found = await client.query('SELECT 1 FROM voice_profiles WHERE owner_key = $1 AND id = $2', [
-      ownerKey,
-      id,
-    ])
+    const found = await client.query(
+      'SELECT 1 FROM voice_profiles WHERE owner_key = $1 AND id = $2 AND deleted_at IS NULL',
+      [ownerKey, id],
+    )
     if (found.rowCount === 0) {
       await client.query('ROLLBACK')
       return null

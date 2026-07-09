@@ -36,6 +36,11 @@ export function removeProfile(id: string): Promise<{ ok: true }> {
   return api(`/api/voice/profiles/${id}`, { method: 'DELETE' })
 }
 
+/** Undo a soft delete (the "Undo" toast right after removing a voice). */
+export function restoreProfile(id: string): Promise<{ profile: VoiceProfile }> {
+  return api(`/api/voice/profiles/${id}/restore`, { method: 'POST' })
+}
+
 /** Create an empty own-voice profile (to attach samples + a Style Guide to). */
 export function createOwnVoice(name: string): Promise<{ profile: VoiceProfile }> {
   return api('/api/voice/profiles', {

@@ -100,6 +100,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS voice_profiles_one_active_idx
 -- Captured Style Guide (own-voice) + channel.
 ALTER TABLE voice_profiles ADD COLUMN IF NOT EXISTS style_guide TEXT NOT NULL DEFAULT '';
 ALTER TABLE voice_profiles ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'x';
+-- Soft delete: voices are expensive to recreate (style guide + samples), so
+-- "delete" only stamps this and every read filters it out; restore clears it.
+-- Samples survive untouched (the FK cascade never fires), making undo lossless.
+ALTER TABLE voice_profiles ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
 -- Writing samples ingested for own-voice capture.
 CREATE TABLE IF NOT EXISTS writing_samples (
