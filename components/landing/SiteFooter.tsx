@@ -50,11 +50,17 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-border-muted pt-6 sm:flex-row sm:items-center">
+        <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-border-muted pt-6 sm:flex-row sm:items-center">
           <p className="font-body-sm text-body-sm text-on-surface-variant/70">© 2026 Outloud. Built for builders.</p>
-          <a href="mailto:support@tryoutloud.app" className="font-body-sm text-body-sm text-on-surface-variant/70 transition-colors hover:text-on-surface">
-            support@tryoutloud.app
-          </a>
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+            <a href="https://launchstag.com" target="_blank" rel="noopener">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://launchstag.com/badge-dark.svg" alt="Featured on Launchstag" width={198} height={62} />
+            </a>
+            <a href="mailto:support@tryoutloud.app" className="font-body-sm text-body-sm text-on-surface-variant/70 transition-colors hover:text-on-surface">
+              support@tryoutloud.app
+            </a>
+          </div>
         </div>
       </div>
     </footer>
