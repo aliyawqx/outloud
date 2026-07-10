@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 
 const COLUMNS = [
-  { title: 'Product', links: [{ label: 'Features', href: '#features' }, { label: 'Pricing', href: '#pricing' }, { label: 'FAQ', href: '#faq' }] },
+  // Root-anchored so they work from ANY page the footer appears on (e.g. /pricing).
+  { title: 'Product', links: [{ label: 'Features', href: '/#features' }, { label: 'Pricing', href: '/pricing' }, { label: 'FAQ', href: '/#faq' }] },
   { title: 'Company', links: [{ label: 'Log in', href: '/login' }, { label: 'Get started', href: '/signup' }, { label: 'Contact', href: 'mailto:support@tryoutloud.app' }] },
   { title: 'Legal', links: [{ label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' }] },
 ]

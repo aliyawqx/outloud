@@ -92,8 +92,11 @@ export function PlanFinder() {
         </p>
       </div>
 
-      <div className="reveal grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col gap-8">
+      {/* ONE containing card so the questions read as part of the same widget as
+          the recommendation - two boxes inside one frame. */}
+      <div className="reveal rounded-3xl border border-border-muted bg-surface-container-low p-4 sm:p-6">
+        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="flex flex-col gap-8 rounded-2xl border border-border-muted bg-surface-container-lowest p-5 sm:p-6">
           {/* 1 - what they make */}
           <div>
             <p className="mb-3 font-code-label text-code-label uppercase text-on-surface-variant">
@@ -145,7 +148,7 @@ export function PlanFinder() {
         </div>
 
         {/* live recommendation */}
-        <div className="rounded-3xl border border-electric-indigo bg-surface-container-low p-6 indigo-glow lg:sticky lg:top-6">
+        <div className="rounded-2xl border border-electric-indigo bg-surface-container-lowest p-6 indigo-glow lg:sticky lg:top-6">
           <p className="font-code-label text-code-label uppercase text-on-surface-variant">We recommend</p>
           <p className="mt-1 font-headline-lg text-headline-lg">{plan.name}</p>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">{plan.tagline}</p>
@@ -184,6 +187,7 @@ export function PlanFinder() {
           >
             Get {plan.name}
           </Link>
+        </div>
         </div>
       </div>
     </section>

@@ -52,20 +52,25 @@ export function PlanCompare() {
   return (
     <section className="mx-auto max-w-5xl px-margin-mobile py-16 md:px-margin-desktop">
       <div className="reveal mb-8 text-center">
+        <div className="mb-3 inline-block border-b border-cyber-lime/30 pb-1 font-code-label text-code-label text-cyber-lime">
+          0x03 // COMPARE
+        </div>
         <h2 className="mb-2 font-headline-lg text-headline-lg">Compare features</h2>
         <p className="font-body-md text-body-md text-on-surface-variant">See in detail what each plan gets you.</p>
       </div>
 
-      <div className="reveal overflow-x-auto rounded-2xl border border-border-muted">
+      <div className="reveal overflow-x-auto rounded-2xl border border-electric-indigo/30">
         <table className="w-full min-w-[560px] border-collapse text-left">
           <thead>
-            <tr className="border-b border-border-muted bg-surface-container-lowest">
+            <tr className="border-b border-electric-indigo/30 bg-surface-container-lowest">
               <th className="p-4 font-code-label text-code-label uppercase text-on-surface-variant/60">Plan</th>
               {COLS.map((c) => (
-                <th key={c.id} className={`p-4 ${c.highlight ? 'bg-electric-indigo/10' : ''}`}>
-                  <span className="block font-body-md text-body-md font-bold text-on-surface">{c.name}</span>
+                <th key={c.id} className={`p-4 ${c.highlight ? 'border-t-2 border-t-electric-indigo bg-electric-indigo/15' : ''}`}>
+                  <span className={`block font-body-md text-body-md font-bold ${c.highlight ? 'text-electric-indigo' : 'text-on-surface'}`}>
+                    {c.name}
+                  </span>
                   <span className="block font-code-label text-code-label text-on-surface-variant">{c.priceLine}</span>
-                  <span className="block font-code-label text-code-label text-on-surface-variant">
+                  <span className="block font-code-label text-code-label text-cyber-lime">
                     {fmtCredits(c.allowance)} credits {c.per === 'total' ? 'to start' : '/ mo'}
                   </span>
                 </th>
@@ -73,13 +78,13 @@ export function PlanCompare() {
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-border-muted bg-surface-container-lowest/50">
-              <td colSpan={4} className="px-4 py-2 font-code-label text-code-label uppercase text-on-surface-variant/60">
+            <tr className="border-b border-border-muted bg-cyber-lime/[0.06]">
+              <td colSpan={4} className="px-4 py-2 font-code-label text-code-label uppercase tracking-wide text-cyber-lime">
                 What your credits buy
               </td>
             </tr>
             {ACTIONS.map((a) => (
-              <tr key={a.label} className="border-b border-border-muted">
+              <tr key={a.label} className="border-b border-border-muted transition-colors hover:bg-white/[0.03]">
                 <td className="p-4">
                   <span className="block font-body-sm text-body-sm text-on-surface">{a.label}</span>
                   <span className="block font-code-label text-code-label text-on-surface-variant/60">
@@ -87,8 +92,10 @@ export function PlanCompare() {
                   </span>
                 </td>
                 {COLS.map((c) => (
-                  <td key={c.id} className={`p-4 font-body-sm text-body-sm text-on-surface tabular-nums ${c.highlight ? 'bg-electric-indigo/10' : ''}`}>
-                    {Math.floor(c.allowance / a.cost).toLocaleString()}
+                  <td key={c.id} className={`p-4 font-body-sm text-body-sm tabular-nums ${c.highlight ? 'bg-electric-indigo/15' : ''}`}>
+                    <span className={`font-bold ${c.highlight ? 'text-electric-indigo' : 'text-on-surface'}`}>
+                      {Math.floor(c.allowance / a.cost).toLocaleString()}
+                    </span>
                     <span className="ml-1 font-code-label text-code-label text-on-surface-variant/60">
                       {c.per === 'total' ? 'total' : '/ mo'}
                     </span>
@@ -96,16 +103,16 @@ export function PlanCompare() {
                 ))}
               </tr>
             ))}
-            <tr className="border-b border-border-muted bg-surface-container-lowest/50">
-              <td colSpan={4} className="px-4 py-2 font-code-label text-code-label uppercase text-on-surface-variant/60">
+            <tr className="border-b border-border-muted bg-cyber-lime/[0.06]">
+              <td colSpan={4} className="px-4 py-2 font-code-label text-code-label uppercase tracking-wide text-cyber-lime">
                 Features
               </td>
             </tr>
             {FEATURES.map((f) => (
-              <tr key={f.label} className="border-b border-border-muted last:border-b-0">
+              <tr key={f.label} className="border-b border-border-muted transition-colors last:border-b-0 hover:bg-white/[0.03]">
                 <td className="p-4 font-body-sm text-body-sm text-on-surface">{f.label}</td>
                 {COLS.map((c, i) => (
-                  <td key={c.id} className={`p-4 ${c.highlight ? 'bg-electric-indigo/10' : ''}`}>{check(f.on[i])}</td>
+                  <td key={c.id} className={`p-4 ${c.highlight ? 'bg-electric-indigo/15' : ''}`}>{check(f.on[i])}</td>
                 ))}
               </tr>
             ))}

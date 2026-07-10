@@ -4,6 +4,7 @@ import { Pricing } from '@/components/Pricing'
 import { PlanCompare } from '@/components/PlanCompare'
 import { PlanFinder } from '@/components/PlanFinder'
 import { ScrollReveal } from '@/components/ScrollReveal'
+import { SiteFooter } from '@/components/landing/SiteFooter'
 import { TrialBanner } from '@/components/TrialBanner'
 import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
@@ -52,12 +53,7 @@ export default async function PricingPage() {
         <PlanCompare />
       </main>
 
-      <footer className="border-t border-border-muted bg-charcoal-black py-10">
-        <div className="mx-auto flex max-w-container-max flex-col items-center justify-between gap-4 px-margin-mobile md:flex-row md:px-margin-desktop">
-          <Logo wordClass="text-body-md" />
-          <p className="font-body-sm text-body-sm text-on-surface-variant">© 2026 Outloud. Built for builders.</p>
-        </div>
-      </footer>
+      <SiteFooter />
       <ScrollReveal />
     </>
   )
