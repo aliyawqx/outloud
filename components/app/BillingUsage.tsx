@@ -321,10 +321,11 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
   )
 }
 
-// ONE billing screen (Higgsfield pattern): everything money-related behind three
-// tabs - Plan (subscription + invoices), Top up (credit packs), Usage (meters).
+// ONE billing screen: Usage first (the default - what people check most), then
+// Plan, which carries the subscription, the credit top-ups and the Polar portal
+// together on one tab.
 export function BillingUsage({ plan, trialing, hasBilling, unlimited = false }: { plan: string; trialing: boolean; hasBilling: boolean; unlimited?: boolean }) {
-  const [tab, setTab] = useState<'plan' | 'topup' | 'usage'>('plan')
+  const [tab, setTab] = useState<'usage' | 'plan'>('usage')
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
       active ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
@@ -334,13 +335,17 @@ export function BillingUsage({ plan, trialing, hasBilling, unlimited = false }: 
     <div className="mx-auto max-w-xl">
       <h1 className="mb-4 font-headline-xl text-headline-xl">Billing &amp; usage</h1>
       <div className="mb-6 inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
-        <button type="button" className={pill(tab === 'plan')} onClick={() => setTab('plan')}>Plan</button>
-        <button type="button" className={pill(tab === 'topup')} onClick={() => setTab('topup')}>Top up</button>
         <button type="button" className={pill(tab === 'usage')} onClick={() => setTab('usage')}>Usage</button>
+        <button type="button" className={pill(tab === 'plan')} onClick={() => setTab('plan')}>Plan</button>
       </div>
-      {tab === 'plan' && <BillingTab plan={plan} trialing={trialing} hasBilling={hasBilling} />}
-      {tab === 'topup' && <TopUpTab plan={plan} trialing={trialing} />}
-      {tab === 'usage' && <UsageTab plan={plan} unlimited={unlimited} />}
+      {tab === 'usage' ? (
+        <UsageTab plan={plan} unlimited={unlimited} />
+      ) : (
+        <div className="flex flex-col gap-6">
+          <BillingTab plan={plan} trialing={trialing} hasBilling={hasBilling} />
+          <TopUpTab plan={plan} trialing={trialing} />
+        </div>
+      )}
     </div>
   )
 }
