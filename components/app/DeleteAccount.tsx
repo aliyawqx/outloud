@@ -41,7 +41,7 @@ export function DeleteAccount() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:text-error"
+          className="flex items-center gap-2 font-code-label text-code-label text-error transition-opacity hover:opacity-80"
         >
           <span aria-hidden="true" className="material-symbols-outlined text-[18px]">delete</span> Delete account
         </button>

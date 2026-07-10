@@ -6,7 +6,7 @@ import { AddCredits } from '@/components/app/AddCredits'
 import { startCheckout, openBillingPortal } from '@/lib/billing/client'
 import { PLAN_ALLOWANCE, fmtCredits } from '@/lib/creditsConfig'
 import { isPaidPlan } from '@/lib/billing/plans'
-import { STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
+import { PLANS, STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
 
 type Feature = { key: string; label: string; cost: number; count: number; total: number }
 type LedgerEntry = { id: string; createdAt: string; reason: string; amount: number; metadata: Record<string, unknown> }
@@ -238,6 +238,11 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
   // Plans the user can move up to.
   const upgrades = (['starter', 'pro'] as const).filter((p) => PLAN_META[p].allowance > meta.allowance)
 
+  // Feature list for the current plan - the same copy as the pricing cards. A
+  // card-free trial maps to the 'trial' card; founder shows Pro's list.
+  const featurePlanId = plan === 'founder' ? 'pro' : plan === 'free' ? 'trial' : plan
+  const planFeatures = PLANS.find((p) => p.id === featurePlanId)?.features ?? []
+
   return (
     <div className="flex flex-col gap-6">
       {/* Start a subscription now - skip the rest of a card-free trial window. */}
@@ -275,6 +280,17 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
             {meta.price > 0 ? `$${meta.price}/mo` : 'no card'} · {fmtCredits(meta.allowance)} credits/mo
           </span>
         </div>
+        {/* What the plan actually includes - same feature copy as the pricing cards. */}
+        {planFeatures.length > 0 && (
+          <ul className="mt-4 space-y-2 border-t border-border-muted pt-4">
+            {planFeatures.map((f) => (
+              <li key={f} className="flex items-start gap-2.5 font-body-sm text-body-sm text-on-surface">
+                <span aria-hidden="true" className="material-symbols-outlined mt-0.5 text-[16px] text-cyber-lime">check_circle</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        )}
         {/* Deliberately informational-only: an "Upgrade to X" button right under the
             current plan's name read as "your plan is X" (user feedback). Upgrading
             lives on the plan card in Profile and on /pricing. */}

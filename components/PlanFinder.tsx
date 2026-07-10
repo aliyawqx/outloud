@@ -26,11 +26,14 @@ const USES: { key: UseKey; label: string; cost: number; unit: string; default: n
 ]
 
 export function PlanFinder() {
-  const [selected, setSelected] = useState<UseKey[]>(['posts'])
-  const [autopilot, setAutopilot] = useState(false)
+  // Defaults deliberately land on Pro: autopilot pre-selected (the flagship) plus
+  // a realistic posts+replies volume - the visitor starts from the recommended
+  // plan and dials DOWN, not up (Higgsfield does the same with Plus).
+  const [selected, setSelected] = useState<UseKey[]>(['posts', 'replies'])
+  const [autopilot, setAutopilot] = useState(true)
   const [counts, setCounts] = useState<Record<UseKey, number>>({
-    posts: 20,
-    replies: 30,
+    posts: 30,
+    replies: 40,
     images: 10,
     topics: 4,
   })
