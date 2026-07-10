@@ -51,7 +51,7 @@ export function PlanFinder() {
   const [busy, setBusy] = useState(false)
   const [counts, setCounts] = useState<Record<UseKey, number>>({
     posts: 135,
-    replies: 45,
+    replies: 50,
     images: 10,
     topics: 4,
   })
