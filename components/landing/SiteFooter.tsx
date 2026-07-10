@@ -19,7 +19,7 @@ export function SiteFooter() {
         <div className="flex flex-col justify-between gap-12 md:flex-row">
           {/* left: brand + final nudge */}
           <div className="max-w-xs">
-            <Logo />
+            <Logo iconClass="h-14 w-14" wordClass="text-headline-lg" />
             <p className="mt-4 font-body-sm text-body-sm text-on-surface-variant">
               Posts that sound like you. Never smellable as AI.
             </p>

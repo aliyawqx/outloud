@@ -82,7 +82,7 @@ export function PlanFinder() {
       role="checkbox"
       aria-checked={opts.on}
       onClick={opts.onClick}
-      className="flex items-center gap-2.5 rounded-lg border border-border-muted bg-surface-container-low px-3.5 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
+      className="flex items-center gap-2.5 rounded-2xl border border-border-muted bg-surface-container-low px-3.5 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
     >
       <span
         aria-hidden="true"
@@ -101,19 +101,13 @@ export function PlanFinder() {
       >
         {opts.label}
       </span>
-      {/* Rounded-square checkbox (Higgsfield style): filled with the accent when
-          selected, an empty outline otherwise. */}
       <span
         aria-hidden="true"
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition-colors ${
-          opts.on
-            ? opts.accent === 'lime'
-              ? 'bg-cyber-lime text-charcoal-black'
-              : 'bg-electric-indigo text-white'
-            : 'border-2 border-on-surface-variant/40'
+        className={`material-symbols-outlined text-[20px] ${
+          opts.on ? (opts.accent === 'lime' ? 'text-cyber-lime' : 'text-electric-indigo') : 'text-on-surface-variant/40'
         }`}
       >
-        {opts.on && <span className="material-symbols-outlined text-[15px] font-bold">check</span>}
+        {opts.on ? 'check_circle' : 'radio_button_unchecked'}
       </span>
     </button>
   )
