@@ -50,7 +50,7 @@ export function PlanFinder() {
   const [mode, setMode] = useState<BillingMode>('annual')
   const [busy, setBusy] = useState(false)
   const [counts, setCounts] = useState<Record<UseKey, number>>({
-    posts: 30,
+    posts: 100,
     replies: 40,
     images: 10,
     topics: 4,
