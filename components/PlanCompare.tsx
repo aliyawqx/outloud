@@ -65,7 +65,10 @@ export function PlanCompare() {
         <p className="font-body-md text-lg text-on-surface-variant">See in detail what each plan gets you.</p>
       </div>
 
-      <div className={`reveal relative ${expanded ? '' : 'max-h-[560px] overflow-hidden'}`}>
+      {/* NO `reveal` here: this className is state-driven, and a React re-render
+          would wipe the observer-added `in` class - the table would vanish on
+          the first "Show more" click. */}
+      <div className={`relative ${expanded ? '' : 'max-h-[560px] overflow-hidden'}`}>
       <div className="overflow-x-auto rounded-2xl border border-electric-indigo/30">
         <table className="w-full min-w-[560px] border-collapse text-left">
           <thead>
