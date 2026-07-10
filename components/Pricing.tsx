@@ -183,12 +183,13 @@ export function Pricing({ condensed = false, currentPlan = null }: { condensed?:
       </p>
 
       {condensed && (
-        <div className="reveal mt-6 text-center">
+        <div className="reveal mt-8 text-center">
           <Link
             href="/pricing"
-            className="font-body-md text-body-md text-electric-indigo transition-colors hover:text-primary"
+            className="indigo-glow group inline-flex items-center gap-2 rounded-full bg-electric-indigo px-8 py-3.5 font-body-md text-body-md font-bold text-white transition-all hover:bg-primary-container active:scale-95"
           >
-            See full pricing →
+            More details about pricing
+            <span aria-hidden="true" className="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
           </Link>
         </div>
       )}
