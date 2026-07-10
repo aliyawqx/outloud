@@ -55,7 +55,7 @@ export function PlanCard({ plan, mode, current = false }: { plan: Plan; mode: Bi
     <div
       className={`glass-card indigo-glow relative flex flex-col rounded-3xl p-8 transition-all hover:-translate-y-1.5 ${
         plan.highlight
-          ? 'border-electric-indigo'
+          ? 'border-electric-indigo shadow-[0_0_50px_-12px] shadow-electric-indigo/50 md:scale-[1.04]'
           : 'hover:border-electric-indigo/40'
       }`}
     >
