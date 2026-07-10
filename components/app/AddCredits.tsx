@@ -28,7 +28,7 @@ export function AddCredits({ eligible = true, reason }: { eligible?: boolean; re
       {!eligible && reason && (
         <p className="font-body-sm text-body-sm text-on-surface-variant">{reason}</p>
       )}
-      <div className={`grid grid-cols-2 gap-2 sm:grid-cols-4 ${!eligible ? 'pointer-events-none opacity-50' : ''}`}>
+      <div className={`grid gap-2 sm:grid-cols-3 ${!eligible ? 'pointer-events-none opacity-50' : ''}`}>
         {CREDIT_PACKS.map((p) => (
           <button
             key={p.id}

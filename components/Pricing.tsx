@@ -174,26 +174,6 @@ export function Pricing({ condensed = false, currentPlan = null }: { condensed?:
         ))}
       </div>
 
-      {/* One-time packs teaser - the $5 "urgent" pack is the hook: credits right
-          now without committing to a plan (works during the free trial too). */}
-      <div className="reveal mx-auto mt-10 flex max-w-3xl flex-col items-center justify-between gap-4 rounded-2xl border border-cyber-lime/30 bg-cyber-lime/5 px-6 py-5 sm:flex-row">
-        <div>
-          <p className="font-body-md text-body-md font-bold text-on-surface">
-            Need credits right now, without a plan?
-          </p>
-          <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-            One-time packs from <span className="font-bold text-cyber-lime">$5 for 20,000 credits</span> (≈ 20 posts) -
-            no subscription, they never expire, and they work during the free trial.
-          </p>
-        </div>
-        <Link
-          href="/signup"
-          className="shrink-0 rounded-full border border-cyber-lime/60 px-6 py-2.5 font-body-sm text-body-sm font-bold text-cyber-lime transition-colors hover:bg-cyber-lime/10"
-        >
-          Get credits
-        </Link>
-      </div>
-
       <p className="reveal mx-auto mt-6 max-w-xl text-center font-body-sm text-body-sm text-on-surface-variant/70">
         Credits are shared across actions. Post ≈ {fmtCredits(COST_PER_POST)} cr · Reply ≈ {fmtCredits(COST_PER_REPLY)} cr.
       </p>
