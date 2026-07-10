@@ -101,13 +101,19 @@ export function PlanFinder() {
       >
         {opts.label}
       </span>
+      {/* Rounded-square checkbox (Higgsfield style): filled with the accent when
+          selected, an empty outline otherwise. */}
       <span
         aria-hidden="true"
-        className={`material-symbols-outlined text-[20px] ${
-          opts.on ? (opts.accent === 'lime' ? 'text-cyber-lime' : 'text-electric-indigo') : 'text-on-surface-variant/40'
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition-colors ${
+          opts.on
+            ? opts.accent === 'lime'
+              ? 'bg-cyber-lime text-charcoal-black'
+              : 'bg-electric-indigo text-white'
+            : 'border-2 border-on-surface-variant/40'
         }`}
       >
-        {opts.on ? 'check_circle' : 'radio_button_unchecked'}
+        {opts.on && <span className="material-symbols-outlined text-[15px] font-bold">check</span>}
       </span>
     </button>
   )
