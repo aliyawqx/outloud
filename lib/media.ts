@@ -4,6 +4,7 @@
 // landing hero and the in-app intro overlay. To swap the clip, drop the new file
 // under public/demo/ with a NEW versioned name (busts CDN + browser caches),
 // update this path, and regenerate public/intro-poster.jpg from its first frame.
-// v3 = the same clip transcoded to 1080p + faststart (5.8MB vs the 41MB 4K
-// original) - the 4K master lives outside the deploy; keep hero video ≤~8MB.
-export const INTRO_VIDEO_URL = '/demo/intro-v3.mp4'
+// The 4K original (41MB): the 1080p transcode (promo/intro-v3-1080p.mp4) played
+// badly in prod, so it's parked until that's understood - size alone isn't
+// worth a broken player.
+export const INTRO_VIDEO_URL = '/demo/intro-v2.mp4'

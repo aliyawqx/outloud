@@ -3,7 +3,7 @@ node_modules
 .git
 
 # Media / promo assets — not needed for the build, and huge (reel/ is multi-GB).
-# NO blanket *.mp4 rule here: the landing demo clip public/demo/intro-v3.mp4 must
+# NO blanket *.mp4 rule here: the landing demo clip public/demo/intro-v2.mp4 must
 # ship with the deploy, and Vercel's ignore negation (!file) proved unreliable
 # against a wildcard (the file 404'd in prod). Keep stray media inside these
 # excluded directories instead.
