@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { COST_PER_POST, COST_PER_REPLY, fmtCredits } from '@/lib/creditsConfig'
+import { planDisplayName } from '@/lib/pricing'
 
 // The subscription, impossible to miss (user feedback: "couldn't find where the
 // plan lives"). Sits at the TOP of the profile page: plan badge, credits left,
@@ -22,7 +23,7 @@ export function PlanCard({
   unlimited: boolean
 }) {
   const isPaid = plan === 'starter' || plan === 'pro' || plan === 'founder'
-  const label = unlimited ? 'Founder' : trialing && !isPaid ? 'Free trial' : plan
+  const label = unlimited ? 'Founder' : trialing && !isPaid ? 'Free trial' : planDisplayName(plan)
   const total = creditBalance + topupBalance
   const when = endsAt
     ? new Date(endsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })

@@ -233,7 +233,7 @@ export function PlanFinder() {
                     />
                   </div>
                   {autopilot && (
-                    <p className="mt-2 font-body-sm text-body-sm text-cyber-lime">autopilot is a Pro feature</p>
+                    <p className="mt-2 font-body-sm text-body-sm text-cyber-lime">autopilot is a Max feature</p>
                   )}
                   {overflow && (
                     <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">

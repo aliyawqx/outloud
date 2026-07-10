@@ -9,6 +9,7 @@ import { NotificationsBell } from '@/components/app/NotificationsBell'
 import { useCredits } from '@/components/app/CreditsContext'
 import { Tooltip } from '@/components/ui/tooltip'
 import { fmtCredits } from '@/lib/creditsConfig'
+import { planDisplayName } from '@/lib/pricing'
 
 export type SidebarProfile = {
   displayName: string
@@ -170,7 +171,7 @@ export function AppSidebar({
           <span className="truncate font-body-sm text-body-sm text-on-surface">{profile.displayName}</span>
           <span className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant">
             <span className="truncate">
-              {unlimited ? 'Unlimited' : `${fmtCredits(balance)} credits`} · <span className="capitalize">{profile.plan}</span>
+              {unlimited ? 'Unlimited' : `${fmtCredits(balance)} credits`} · <span>{planDisplayName(profile.plan)}</span>
             </span>
             {!unlimited && (
               <Tooltip label="credits are spent per chat session. start a new chat for each post so they go to drafting, not old context.">

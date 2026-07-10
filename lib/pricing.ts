@@ -50,7 +50,9 @@ export const PLANS: Plan[] = [
   },
   {
     id: 'starter',
-    name: 'Starter',
+    // Display renamed Starter→Pro (2026-07); the internal id stays 'starter'
+    // because DB rows, Polar products and tier gating key off the id.
+    name: 'Pro',
     tagline: 'For solo builders posting in their own voice',
     monthly: { perMo: 15, sub: 'Billed monthly', anchor: 19 },
     // Annual copy leads with the exact dollar saving, never the yearly total.
@@ -62,11 +64,12 @@ export const PLANS: Plan[] = [
       'Topic search to find what to reply to',
       '1 connected account per platform',
     ],
-    cta: 'Get Starter',
+    cta: 'Get Pro',
   },
   {
     id: 'pro',
-    name: 'Pro',
+    // Display renamed Pro→Max (2026-07); internal id stays 'pro'.
+    name: 'Max',
     tagline: 'Set it and it runs.',
     highlight: true,
     badge: 'Most popular',
@@ -74,12 +77,29 @@ export const PLANS: Plan[] = [
     annual: { perMo: 26, sub: 'Save $156 a year', save: 'Save $156' },
     features: [
       'Autopilot - zero-touch scheduling + auto-publish on your calendar',
-      'Everything in Starter',
+      'Everything in Pro',
       'X Reply engine + trending discovery',
       'Style presets + adjustable hook intensity',
       'Multiple accounts / handle strategy',
       'Priority generation',
     ],
-    cta: 'Upgrade to Pro',
+    cta: 'Upgrade to Max',
   },
 ]
+
+/** Human plan name for an INTERNAL plan id ('starter'→'Pro', 'pro'→'Max').
+ *  Ids never change (DB + Polar + gating key off them); only display names do. */
+export function planDisplayName(id: string): string {
+  switch (id) {
+    case 'starter':
+      return 'Pro'
+    case 'pro':
+      return 'Max'
+    case 'founder':
+      return 'Founder'
+    case 'free':
+      return 'Free'
+    default:
+      return id.charAt(0).toUpperCase() + id.slice(1)
+  }
+}

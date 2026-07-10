@@ -110,7 +110,7 @@ export async function PUT(req: Request) {
     const tier = await getUserTier(session.userId, session.email)
     if (!tier.canUseAutopilot) {
       return NextResponse.json(
-        { error: 'Autopilot is a Pro feature. Upgrade to turn it on.', needsPro: true },
+        { error: 'Autopilot is a Max feature. Upgrade to turn it on.', needsPro: true },
         { status: 403 },
       )
     }

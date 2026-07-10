@@ -18,8 +18,8 @@ import {
 
 const COLS = [
   { id: 'trial', name: 'Free trial', priceLine: 'Free · 3 days', allowance: PLAN_ALLOWANCE.free, per: 'total', highlight: false },
-  { id: 'starter', name: 'Starter', priceLine: '$15/mo', allowance: PLAN_ALLOWANCE.starter, per: 'per month', highlight: false },
-  { id: 'pro', name: 'Pro', priceLine: '$39/mo', allowance: PLAN_ALLOWANCE.pro, per: 'per month', highlight: true },
+  { id: 'starter', name: 'Pro', priceLine: '$15/mo', allowance: PLAN_ALLOWANCE.starter, per: 'per month', highlight: false },
+  { id: 'pro', name: 'Max', priceLine: '$39/mo', allowance: PLAN_ALLOWANCE.pro, per: 'per month', highlight: true },
 ] as const
 
 const ACTIONS = [

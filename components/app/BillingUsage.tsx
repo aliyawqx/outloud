@@ -6,7 +6,7 @@ import { AddCredits } from '@/components/app/AddCredits'
 import { startCheckout, openBillingPortal } from '@/lib/billing/client'
 import { PLAN_ALLOWANCE, fmtCredits } from '@/lib/creditsConfig'
 import { isPaidPlan } from '@/lib/billing/plans'
-import { PLANS, STARTER_PRICE, PRO_PRICE } from '@/lib/pricing'
+import { PLANS, STARTER_PRICE, PRO_PRICE, planDisplayName } from '@/lib/pricing'
 
 type Feature = { key: string; label: string; cost: number; count: number; total: number }
 type LedgerEntry = { id: string; createdAt: string; reason: string; amount: number; metadata: Record<string, unknown> }
@@ -70,8 +70,8 @@ function dayLabel(date: string): string {
 
 const PLAN_META: Record<string, { name: string; price: number; allowance: number }> = {
   free: { name: 'Free', price: 0, allowance: 0 },
-  starter: { name: 'Starter', price: STARTER_PRICE, allowance: PLAN_ALLOWANCE.starter },
-  pro: { name: 'Pro', price: PRO_PRICE, allowance: PLAN_ALLOWANCE.pro },
+  starter: { name: planDisplayName('starter'), price: STARTER_PRICE, allowance: PLAN_ALLOWANCE.starter },
+  pro: { name: planDisplayName('pro'), price: PRO_PRICE, allowance: PLAN_ALLOWANCE.pro },
   founder: { name: 'Founder', price: 0, allowance: PLAN_ALLOWANCE.founder },
 }
 
