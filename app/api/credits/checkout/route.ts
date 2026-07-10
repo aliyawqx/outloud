@@ -22,14 +22,16 @@ export async function POST(req: Request) {
   const pack = typeof packId === 'string' ? packById(packId) : null
   if (!pack) return NextResponse.json({ error: 'Unknown credit pack.' }, { status: 400 })
 
-  // Top-ups are only for users on an active PAID plan — not free users and not
-  // during the free trial. The path forward for them is to start/convert a plan.
+  // Top-ups are for paid plans AND live trials (isTrialActive counts topup_balance,
+  // so bought credits stay spendable for the rest of the trial window). Only an
+  // EXPIRED free account is blocked - its purchase would sit locked behind the
+  // plan wall, which is a refund complaint waiting to happen.
   const profile = await getProfile(session.userId)
-  if (!isPaidPlan(profile?.plan) || profile?.trialing) {
-    const error = profile?.trialing
-      ? "Top-ups unlock once your plan starts, after your free trial."
-      : 'Top-ups are available on a paid plan. Upgrade to add credits.'
-    return NextResponse.json({ error, ineligible: true }, { status: 409 })
+  if (!isPaidPlan(profile?.plan) && !profile?.trialing) {
+    return NextResponse.json(
+      { error: 'Top-ups are available on a paid plan. Upgrade to add credits.', ineligible: true },
+      { status: 409 },
+    )
   }
 
   const productId = process.env[pack.productEnv]

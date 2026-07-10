@@ -193,12 +193,8 @@ function TopUpTab({ plan, trialing }: { plan: string; trialing: boolean }) {
         and are spent after your plan credits.
       </p>
       <AddCredits
-        eligible={isPaidPlan(plan) && !trialing}
-        reason={
-          trialing
-            ? 'Top-ups unlock once your plan starts, after your free trial.'
-            : 'Top-ups are available on a paid plan. Upgrade to add credits.'
-        }
+        eligible={isPaidPlan(plan) || trialing}
+        reason="Top-ups are available on a paid plan. Upgrade to add credits."
       />
     </div>
   )

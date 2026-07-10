@@ -9,20 +9,23 @@ const PRO_PLANS = new Set(['pro', 'founder'])
 const PAID_PLANS = new Set(['starter', 'pro', 'founder'])
 
 /** Card-free 3-day trial still running. Same semantics as the layout's trial
- *  window: it ends when credits hit 0 OR the window elapses OR a Polar sub
- *  takes over. Pure so both the layout and getUserTier share it. */
+ *  window: it ends when ALL credits hit 0 OR the window elapses OR a Polar sub
+ *  takes over. Purchased top-up credits COUNT: trial users may buy packs, and
+ *  those credits must stay spendable for the rest of the window (deduct spends
+ *  the plan bucket first, then topup). Pure so the layout and getUserTier share it. */
 export function isTrialActive(
   p: {
     trialing?: boolean | null
     polarSubscriptionId?: string | null
     creditBalance?: number | null
+    topupBalance?: number | null
     creditsResetAt?: string | Date | null
   } | null,
 ): boolean {
   return Boolean(
     p?.trialing &&
       !p.polarSubscriptionId &&
-      (p.creditBalance ?? 0) > 0 &&
+      (p.creditBalance ?? 0) + (p.topupBalance ?? 0) > 0 &&
       p.creditsResetAt &&
       new Date(p.creditsResetAt).getTime() > Date.now(),
   )

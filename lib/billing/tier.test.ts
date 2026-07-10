@@ -19,6 +19,12 @@ describe('isTrialActive', () => {
     expect(isTrialActive({ ...base, polarSubscriptionId: 'sub_x' })).toBe(false)
     expect(isTrialActive(null)).toBe(false)
   })
+  it('purchased top-up credits keep the trial alive after the plan pool empties', () => {
+    expect(isTrialActive({ ...base, creditBalance: 0, topupBalance: 100_000 })).toBe(true)
+    expect(
+      isTrialActive({ ...base, creditBalance: 0, topupBalance: 100_000, creditsResetAt: new Date(Date.now() - 1000).toISOString() }),
+    ).toBe(false)
+  })
 })
 
 describe('canUseAutopilot semantics (billing spec §6)', () => {
