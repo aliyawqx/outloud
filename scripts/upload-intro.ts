@@ -22,8 +22,10 @@ function tokenFromEnvFiles(): string | undefined {
 async function main() {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.replace(/^["']|["']$/g, '') || tokenFromEnvFiles()
   if (!token) throw new Error('BLOB_READ_WRITE_TOKEN is not set')
-  const data = await readFile('public/demo/intro-v2.mp4')
-  const blob = await put('demo/intro-v2.mp4', data, {
+  // 1080p transcode of the 4K master (promo/): 5.8MB vs 41MB - loads fast, and
+  // via Blob the 404-in-deploy problem doesn't exist.
+  const data = await readFile('promo/intro-v3-1080p.mp4')
+  const blob = await put('demo/intro-1080.mp4', data, {
     access: 'public',
     contentType: 'video/mp4',
     token,

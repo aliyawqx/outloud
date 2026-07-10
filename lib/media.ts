@@ -8,4 +8,4 @@
 // honors .gitignore's *.mp4 exclusion, so a public/ mp4 silently 404s in prod
 // (this bit us twice). Refresh by running scripts/upload-intro.ts and keeping
 // this URL in sync with what it prints.
-export const INTRO_VIDEO_URL = 'https://lgucdhdm6methfcr.public.blob.vercel-storage.com/demo/intro-v2.mp4'
+export const INTRO_VIDEO_URL = 'https://lgucdhdm6methfcr.public.blob.vercel-storage.com/demo/intro-1080.mp4'
