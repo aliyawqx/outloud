@@ -377,8 +377,8 @@ export function AutopilotSettingsPanel({
                 disabled={!isConnected}
                 title={isConnected ? undefined : `Connect ${platformLabel(p)} in Profile to enable`}
                 onClick={() => patch({ platforms: on ? s.platforms.filter((x) => x !== p) : [...s.platforms, p] })}
-                className={`flex items-center gap-2 rounded-full border px-3.5 py-2 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                  on ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
+                className={`flex items-center gap-2 rounded-full border border-border-muted bg-surface-container px-3.5 py-2 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  on ? 'font-bold text-electric-indigo' : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
                 <PlatformGlyph platform={p} className={`h-4 w-4 ${on ? '' : 'opacity-60'}`} />

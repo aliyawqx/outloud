@@ -73,6 +73,8 @@ export function PlanFinder() {
   const annual = mode === 'annual'
   const yearlySavings = (plan.monthly.perMo - plan.annual.perMo) * 12
 
+  // Selection reads through the ACCENTED label + tick, never a tinted background -
+  // the card itself stays neutral gray (Higgsfield pattern).
   const optionRow = (opts: { on: boolean; icon: string; label: string; accent?: 'lime'; onClick: () => void }) => (
     <button
       key={opts.label}
@@ -80,13 +82,7 @@ export function PlanFinder() {
       role="checkbox"
       aria-checked={opts.on}
       onClick={opts.onClick}
-      className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors ${
-        opts.on
-          ? opts.accent === 'lime'
-            ? 'border-cyber-lime/60 bg-cyber-lime/10'
-            : 'border-electric-indigo/60 bg-electric-indigo/10'
-          : 'border-border-muted bg-surface-container-low hover:border-border-muted hover:bg-white/[0.03]'
-      }`}
+      className="flex items-center gap-3 rounded-xl border border-border-muted bg-surface-container-low px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
     >
       <span
         aria-hidden="true"
@@ -96,7 +92,13 @@ export function PlanFinder() {
       >
         {opts.icon}
       </span>
-      <span className={`flex-1 font-body-md text-body-md ${opts.on ? 'font-bold text-on-surface' : 'text-on-surface'}`}>
+      <span
+        className={`flex-1 font-body-md text-body-md ${
+          opts.on
+            ? `font-bold ${opts.accent === 'lime' ? 'text-cyber-lime' : 'text-electric-indigo'}`
+            : 'text-on-surface'
+        }`}
+      >
         {opts.label}
       </span>
       <span
