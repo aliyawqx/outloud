@@ -5,7 +5,7 @@ import { Spinner } from '@/components/Spinner'
 import { CREDIT_PACKS, fmtCredits, COST_PER_POST, COST_PER_REPLY } from '@/lib/creditsConfig'
 import { startPackCheckout } from '@/lib/billing/client'
 
-// The default-selected pack is the "best value" one (the $50 main top-up).
+// The default-selected pack is the "best value" one (the $45 / 500k main top-up).
 const DEFAULT_PACK = CREDIT_PACKS.find((p) => p.bestValue) ?? CREDIT_PACKS[0]
 
 // Full-screen top-up card, shown when a user on an active PAID plan runs out of credits.

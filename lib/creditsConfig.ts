@@ -68,15 +68,21 @@ export function fmtCredits(n: number): string {
 }
 
 /** Overage credit packs — one-time Polar checkout. `productEnv` names the Polar
- *  product id env var. priceUsd is display-only (Polar holds the real charge).
- *  TODO: confirm final prices. */
+ *  product id env var. priceUsd is display-only (Polar holds the real charge). */
 // priceUsd is DISPLAY ONLY — the real charge is the Polar product's price. Keep these
-// in sync with Polar ($10 / $40 / $70). The bestValue pack ($40 / 500k) is the
-// default-selected "main" top-up shown first in the top-up card.
+// in sync with Polar ($12 / $45 / $80): update the Polar products BEFORE deploying a
+// price change here. The bestValue pack ($45 / 500k) is the default-selected "main"
+// top-up shown first in the top-up card.
+//
+// Pricing rule: every pack's per-credit rate stays ABOVE every plan's rate
+// (Starter $15/200k = $0.075 per 1k, Pro $39/600k = $0.065 per 1k), so a big
+// top-up never becomes a cheaper substitute for subscribing. Bigger packs still
+// get a better rate ($0.12 → $0.09 → $0.08 per 1k), but the 1M pack remains
+// worse value than any plan — top-ups complement subscriptions, never replace them.
 export const CREDIT_PACKS = [
-  { id: 'pack_100k', label: '100,000 credits', credits: 100_000, priceUsd: 10, bestValue: false, productEnv: 'POLAR_PACK_100K_PRODUCT_ID' },
-  { id: 'pack_500k', label: '500,000 credits', credits: 500_000, priceUsd: 40, bestValue: true, productEnv: 'POLAR_PACK_500K_PRODUCT_ID' },
-  { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 70, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
+  { id: 'pack_100k', label: '100,000 credits', credits: 100_000, priceUsd: 12, bestValue: false, productEnv: 'POLAR_PACK_100K_PRODUCT_ID' },
+  { id: 'pack_500k', label: '500,000 credits', credits: 500_000, priceUsd: 45, bestValue: true, productEnv: 'POLAR_PACK_500K_PRODUCT_ID' },
+  { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 80, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
 ] as const
 
 export type CreditReason =

@@ -41,11 +41,23 @@ describe('credit config', () => {
   })
 
   it('locked top-up prices, with exactly one best-value pack', () => {
-    expect(packById('pack_100k')?.priceUsd).toBe(10)
-    expect(packById('pack_500k')?.priceUsd).toBe(40)
-    expect(packById('pack_1m')?.priceUsd).toBe(70)
+    expect(packById('pack_100k')?.priceUsd).toBe(12)
+    expect(packById('pack_500k')?.priceUsd).toBe(45)
+    expect(packById('pack_1m')?.priceUsd).toBe(80)
     expect(CREDIT_PACKS.filter((p) => p.bestValue)).toHaveLength(1)
     expect(packById('pack_500k')?.bestValue).toBe(true)
+  })
+
+  it('every pack is worse per-credit value than any plan (top-ups never replace subscribing)', () => {
+    // Plan per-credit rates: Starter $15/200k, Pro $39/600k.
+    const planRates = [15 / 200_000, 39 / 600_000]
+    const cheapestPlanRate = Math.min(...planRates)
+    const bestPlanRateCeiling = Math.max(...planRates)
+    for (const p of CREDIT_PACKS) {
+      const packRate = p.priceUsd / p.credits
+      expect(packRate).toBeGreaterThan(cheapestPlanRate)
+      expect(packRate).toBeGreaterThan(bestPlanRateCeiling)
+    }
   })
 
   it('every pack has credits, a price and a Polar product env', () => {

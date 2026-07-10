@@ -1,5 +1,7 @@
 import { getSession } from '@/lib/auth/session'
 import { getProfile } from '@/lib/profile/store'
+import { isStaff } from '@/lib/appLock'
+import { PlanCard } from '@/components/app/PlanCard'
 import { ProfileForm } from '@/components/app/ProfileForm'
 import { XConnection } from '@/components/app/XConnection'
 import { ThreadsConnection } from '@/components/app/ThreadsConnection'
@@ -28,13 +30,20 @@ export default async function ProfilePage({
     <div className="mx-auto max-w-xl">
       <h1 className="mb-1 font-headline-xl text-headline-xl">Your profile</h1>
       <p className="mb-8 font-body-md text-body-md text-on-surface-variant">{session.email}</p>
+      <PlanCard
+        plan={profile?.plan ?? 'free'}
+        trialing={Boolean(profile?.trialing)}
+        endsAt={profile?.creditsResetAt ?? null}
+        creditBalance={profile?.creditBalance ?? 0}
+        topupBalance={profile?.topupBalance ?? 0}
+        unlimited={isStaff(session.email)}
+      />
       <div data-tour="account-settings">
         <ProfileForm
           initial={{
             displayName: profile?.displayName ?? '',
             handle: profile?.handle ?? '',
             avatarUrl: profile?.avatarUrl ?? '',
-            plan: profile?.plan ?? 'free',
           }}
         />
       </div>

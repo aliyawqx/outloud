@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Spinner } from '@/components/Spinner'
 
-type Initial = { displayName: string; handle: string; avatarUrl: string; plan: string }
+type Initial = { displayName: string; handle: string; avatarUrl: string }
 
 const field =
   'w-full rounded-lg border border-border-muted bg-surface-container-lowest px-4 py-3 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:border-electric-indigo focus:outline-none'
@@ -73,14 +73,6 @@ export function ProfileForm({ initial }: { initial: Initial }) {
         </button>
       </div>
 
-      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3">
-        <span className="font-code-label text-code-label text-on-surface-variant">
-          Plan · <span className="capitalize text-on-surface">{initial.plan}</span>
-        </span>
-        <a href="/app/settings/billing" className="font-code-label text-code-label text-electric-indigo hover:underline">
-          Billing &amp; usage →
-        </a>
-      </div>
     </form>
   )
 }
