@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import {
   COST_PER_AI_PHOTO,
   COST_PER_PHOTO_SEARCH,
@@ -49,6 +52,9 @@ const check = (on: boolean) =>
   )
 
 export function PlanCompare() {
+  // Collapsed by default: header + the credits rows peek out, the rest fades -
+  // "Show more" reveals the full table.
+  const [expanded, setExpanded] = useState(false)
   return (
     <section className="mx-auto max-w-5xl px-margin-mobile py-16 md:px-margin-desktop">
       <div className="reveal mb-8 text-center">
@@ -59,7 +65,8 @@ export function PlanCompare() {
         <p className="font-body-md text-lg text-on-surface-variant">See in detail what each plan gets you.</p>
       </div>
 
-      <div className="reveal overflow-x-auto rounded-2xl border border-electric-indigo/30">
+      <div className={`reveal relative ${expanded ? '' : 'max-h-[560px] overflow-hidden'}`}>
+      <div className="overflow-x-auto rounded-2xl border border-electric-indigo/30">
         <table className="w-full min-w-[560px] border-collapse text-left">
           <thead>
             <tr className="border-b border-electric-indigo/30 bg-surface-container-lowest">
@@ -118,6 +125,21 @@ export function PlanCompare() {
             ))}
           </tbody>
         </table>
+      </div>
+      {!expanded && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-charcoal-black to-transparent" />
+      )}
+      </div>
+
+      <div className="mt-6 text-center">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+          className="rounded-full border border-border-muted px-8 py-3 font-body-md text-body-md font-bold text-on-surface transition-colors hover:border-electric-indigo"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
       </div>
 
       <p className="reveal mt-4 text-center font-code-label text-code-label text-on-surface-variant/60">
