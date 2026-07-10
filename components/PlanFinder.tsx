@@ -82,18 +82,18 @@ export function PlanFinder() {
       role="checkbox"
       aria-checked={opts.on}
       onClick={opts.onClick}
-      className="flex items-center gap-3 rounded-xl border border-border-muted bg-surface-container-low px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
+      className="flex items-center gap-2.5 rounded-lg border border-border-muted bg-surface-container-low px-3.5 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
     >
       <span
         aria-hidden="true"
-        className={`material-symbols-outlined text-[20px] ${
+        className={`material-symbols-outlined text-[18px] ${
           opts.on ? (opts.accent === 'lime' ? 'text-cyber-lime' : 'text-electric-indigo') : 'text-on-surface-variant'
         }`}
       >
         {opts.icon}
       </span>
       <span
-        className={`flex-1 font-body-md text-body-md ${
+        className={`flex-1 truncate font-body-sm text-body-sm ${
           opts.on
             ? `font-bold ${opts.accent === 'lime' ? 'text-cyber-lime' : 'text-electric-indigo'}`
             : 'text-on-surface'
@@ -103,7 +103,7 @@ export function PlanFinder() {
       </span>
       <span
         aria-hidden="true"
-        className={`material-symbols-outlined text-[22px] ${
+        className={`material-symbols-outlined text-[20px] ${
           opts.on ? (opts.accent === 'lime' ? 'text-cyber-lime' : 'text-electric-indigo') : 'text-on-surface-variant/40'
         }`}
       >
