@@ -20,11 +20,11 @@ const COLS = [
 ] as const
 
 const ACTIONS = [
-  { label: 'Posts in your voice', cost: COST_PER_POST },
-  { label: 'Replies', cost: COST_PER_REPLY },
-  { label: 'AI images', cost: COST_PER_AI_PHOTO },
-  { label: 'Topic searches', cost: COST_PER_TOPIC_SEARCH },
-  { label: 'Stock photo searches', cost: COST_PER_PHOTO_SEARCH },
+  { label: 'Posts written in your voice', cost: COST_PER_POST },
+  { label: 'Replies to other people’s posts', cost: COST_PER_REPLY },
+  { label: 'AI-generated images for your posts', cost: COST_PER_AI_PHOTO },
+  { label: 'Topic scans that find posts worth replying to', cost: COST_PER_TOPIC_SEARCH },
+  { label: 'Stock photos matched to your posts', cost: COST_PER_PHOTO_SEARCH },
 ] as const
 
 // true = included; per-plan flags in column order: trial / starter / pro.
@@ -55,8 +55,8 @@ export function PlanCompare() {
         <div className="mb-3 inline-block border-b border-cyber-lime/30 pb-1 font-code-label text-code-label text-cyber-lime">
           0x03 // COMPARE
         </div>
-        <h2 className="mb-2 font-headline-lg text-headline-lg">Compare features</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant">See in detail what each plan gets you.</p>
+        <h2 className="mb-3 font-headline-xl text-headline-lg md:text-headline-xl">Compare features</h2>
+        <p className="font-body-md text-lg text-on-surface-variant">See in detail what each plan gets you.</p>
       </div>
 
       <div className="reveal overflow-x-auto rounded-2xl border border-electric-indigo/30">
