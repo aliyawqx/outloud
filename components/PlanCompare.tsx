@@ -66,11 +66,11 @@ export function PlanCompare() {
               <th className="p-4 font-code-label text-code-label uppercase text-on-surface-variant/60">Plan</th>
               {COLS.map((c) => (
                 <th key={c.id} className={`p-4 ${c.highlight ? 'border-t-2 border-t-electric-indigo bg-electric-indigo/15' : ''}`}>
-                  <span className={`block font-body-md text-body-md font-bold ${c.highlight ? 'text-electric-indigo' : 'text-on-surface'}`}>
+                  <span className={`block font-headline-sm text-headline-sm ${c.highlight ? 'text-electric-indigo' : 'text-on-surface'}`}>
                     {c.name}
                   </span>
-                  <span className="block font-code-label text-code-label text-on-surface-variant">{c.priceLine}</span>
-                  <span className="block font-code-label text-code-label text-cyber-lime">
+                  <span className="block font-body-sm text-body-sm text-on-surface-variant">{c.priceLine}</span>
+                  <span className="block font-body-sm text-body-sm font-bold text-cyber-lime">
                     {fmtCredits(c.allowance)} credits {c.per === 'total' ? 'to start' : '/ mo'}
                   </span>
                 </th>
@@ -79,24 +79,24 @@ export function PlanCompare() {
           </thead>
           <tbody>
             <tr className="border-b border-border-muted bg-cyber-lime/[0.06]">
-              <td colSpan={4} className="px-4 py-2 font-code-label text-code-label uppercase tracking-wide text-cyber-lime">
+              <td colSpan={4} className="px-4 py-2.5 font-body-sm text-body-sm font-bold uppercase tracking-wide text-cyber-lime">
                 What your credits buy
               </td>
             </tr>
             {ACTIONS.map((a) => (
               <tr key={a.label} className="border-b border-border-muted transition-colors hover:bg-white/[0.03]">
                 <td className="p-4">
-                  <span className="block font-body-sm text-body-sm text-on-surface">{a.label}</span>
-                  <span className="block font-code-label text-code-label text-on-surface-variant/60">
+                  <span className="block font-body-md text-body-md text-on-surface">{a.label}</span>
+                  <span className="block font-body-sm text-body-sm text-on-surface-variant/60">
                     {fmtCredits(a.cost)} credits each
                   </span>
                 </td>
                 {COLS.map((c) => (
-                  <td key={c.id} className={`p-4 font-body-sm text-body-sm tabular-nums ${c.highlight ? 'bg-electric-indigo/15' : ''}`}>
+                  <td key={c.id} className={`p-4 font-body-md text-body-md tabular-nums ${c.highlight ? 'bg-electric-indigo/15' : ''}`}>
                     <span className={`font-bold ${c.highlight ? 'text-electric-indigo' : 'text-on-surface'}`}>
                       {Math.floor(c.allowance / a.cost).toLocaleString()}
                     </span>
-                    <span className="ml-1 font-code-label text-code-label text-on-surface-variant/60">
+                    <span className="ml-1.5 font-body-sm text-body-sm text-on-surface-variant/60">
                       {c.per === 'total' ? 'total' : '/ mo'}
                     </span>
                   </td>
@@ -104,13 +104,13 @@ export function PlanCompare() {
               </tr>
             ))}
             <tr className="border-b border-border-muted bg-cyber-lime/[0.06]">
-              <td colSpan={4} className="px-4 py-2 font-code-label text-code-label uppercase tracking-wide text-cyber-lime">
+              <td colSpan={4} className="px-4 py-2.5 font-body-sm text-body-sm font-bold uppercase tracking-wide text-cyber-lime">
                 Features
               </td>
             </tr>
             {FEATURES.map((f) => (
               <tr key={f.label} className="border-b border-border-muted transition-colors last:border-b-0 hover:bg-white/[0.03]">
-                <td className="p-4 font-body-sm text-body-sm text-on-surface">{f.label}</td>
+                <td className="p-4 font-body-md text-body-md text-on-surface">{f.label}</td>
                 {COLS.map((c, i) => (
                   <td key={c.id} className={`p-4 ${c.highlight ? 'bg-electric-indigo/15' : ''}`}>{check(f.on[i])}</td>
                 ))}

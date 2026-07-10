@@ -56,28 +56,29 @@ export function PlanFinder() {
   const stepper = (u: (typeof USES)[number]) => (
     <div key={u.key} className="flex items-center justify-between gap-3 rounded-xl border border-border-muted bg-surface-container-lowest px-4 py-3">
       <div className="min-w-0">
-        <p className="font-body-sm text-body-sm text-on-surface">{u.label}</p>
-        <p className="font-code-label text-code-label text-on-surface-variant/60">≈ {fmtCredits(u.cost)} credits each</p>
+        <p className="font-body-md text-body-md text-on-surface">{u.label}</p>
+        <p className="font-body-sm text-body-sm text-on-surface-variant/60">≈ {fmtCredits(u.cost)} credits each</p>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2.5">
         <button
           type="button"
           aria-label={`Fewer ${u.unit}`}
           onClick={() => setCounts((c) => ({ ...c, [u.key]: Math.max(0, c[u.key] - u.step) }))}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border-muted text-on-surface-variant transition-colors hover:text-on-surface"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border-muted text-on-surface-variant transition-colors hover:border-electric-indigo/60 hover:text-on-surface"
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">remove</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">remove</span>
         </button>
-        <span className="w-16 text-center font-code-label text-code-label text-on-surface">
-          {counts[u.key]} <span className="block text-[9px] text-on-surface-variant/60">{u.unit}</span>
+        <span className="w-20 text-center">
+          <span className="block font-body-md text-body-md font-bold tabular-nums text-on-surface">{counts[u.key]}</span>
+          <span className="block font-code-label text-[10px] text-on-surface-variant/60">{u.unit}</span>
         </span>
         <button
           type="button"
           aria-label={`More ${u.unit}`}
           onClick={() => setCounts((c) => ({ ...c, [u.key]: Math.min(u.max, c[u.key] + u.step) }))}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border-muted text-on-surface-variant transition-colors hover:text-on-surface"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border-muted text-on-surface-variant transition-colors hover:border-electric-indigo/60 hover:text-on-surface"
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">add</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">add</span>
         </button>
       </div>
     </div>
@@ -99,9 +100,9 @@ export function PlanFinder() {
         <div className="flex flex-col gap-8 rounded-2xl border border-border-muted bg-surface-container-lowest p-5 sm:p-6">
           {/* 1 - what they make */}
           <div>
-            <p className="mb-3 font-code-label text-code-label uppercase text-on-surface-variant">
-              <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-electric-indigo text-[11px] font-bold text-white">1</span>
-              What are you here to make? <span className="normal-case text-on-surface-variant/60">(pick any)</span>
+            <p className="mb-4 flex items-center gap-2.5 font-body-md text-body-md font-bold text-on-surface">
+              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-[13px] font-bold text-white">1</span>
+              What are you here to make? <span className="font-normal text-on-surface-variant/60">(pick any)</span>
             </p>
             <div className="flex flex-wrap gap-2">
               {USES.map((u) => {
@@ -113,8 +114,8 @@ export function PlanFinder() {
                     role="checkbox"
                     aria-checked={on}
                     onClick={() => toggle(u.key)}
-                    className={`rounded-full border px-4 py-2 font-code-label text-code-label transition-colors ${
-                      on ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
+                    className={`rounded-full border px-5 py-2.5 font-body-sm text-body-sm transition-colors ${
+                      on ? 'border-electric-indigo bg-electric-indigo/15 font-bold text-on-surface' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
                     {u.label}
@@ -126,8 +127,8 @@ export function PlanFinder() {
                 role="checkbox"
                 aria-checked={autopilot}
                 onClick={() => setAutopilot((v) => !v)}
-                className={`rounded-full border px-4 py-2 font-code-label text-code-label transition-colors ${
-                  autopilot ? 'border-cyber-lime bg-cyber-lime/10 text-cyber-lime' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
+                className={`rounded-full border px-5 py-2.5 font-body-sm text-body-sm transition-colors ${
+                  autopilot ? 'border-cyber-lime bg-cyber-lime/10 font-bold text-cyber-lime' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
                 }`}
               >
                 Hands-off autopilot
@@ -138,8 +139,8 @@ export function PlanFinder() {
           {/* 2 - how much */}
           {selected.length > 0 && (
             <div>
-              <p className="mb-3 font-code-label text-code-label uppercase text-on-surface-variant">
-                <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-electric-indigo text-[11px] font-bold text-white">2</span>
+              <p className="mb-4 flex items-center gap-2.5 font-body-md text-body-md font-bold text-on-surface">
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-electric-indigo text-[13px] font-bold text-white">2</span>
                 How much per month?
               </p>
               <div className="flex flex-col gap-2">{USES.filter((u) => selected.includes(u.key)).map(stepper)}</div>
@@ -149,36 +150,36 @@ export function PlanFinder() {
 
         {/* live recommendation */}
         <div className="rounded-2xl border border-electric-indigo bg-surface-container-lowest p-6 indigo-glow lg:sticky lg:top-6">
-          <p className="font-code-label text-code-label uppercase text-on-surface-variant">We recommend</p>
-          <p className="mt-1 font-headline-lg text-headline-lg">{plan.name}</p>
-          <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">{plan.tagline}</p>
+          <p className="font-code-label text-code-label uppercase tracking-widest text-electric-indigo">We recommend</p>
+          <p className="mt-1.5 font-headline-xl text-headline-lg md:text-headline-xl">{plan.name}</p>
+          <p className="mt-1.5 font-body-md text-body-md text-on-surface-variant">{plan.tagline}</p>
 
-          <div className="mt-5">
-            <div className="flex items-baseline justify-between font-code-label text-code-label text-on-surface-variant">
+          <div className="mt-6">
+            <div className="flex items-baseline justify-between font-body-sm text-body-sm text-on-surface-variant">
               <span>Expected monthly usage</span>
-              <span className="tabular-nums text-on-surface">
+              <span className="font-bold tabular-nums text-on-surface">
                 {fmtCredits(needed)} / {fmtCredits(allowance)}
               </span>
             </div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
+            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high">
               <div
                 className={`h-full rounded-full ${overflow ? 'bg-error' : 'bg-electric-indigo'}`}
                 style={{ width: `${usagePct}%` }}
               />
             </div>
             {autopilot && (
-              <p className="mt-2 font-code-label text-code-label text-cyber-lime">autopilot needs Pro</p>
+              <p className="mt-2.5 font-body-sm text-body-sm font-bold text-cyber-lime">autopilot needs Pro</p>
             )}
             {overflow && (
-              <p className="mt-2 font-code-label text-code-label text-on-surface-variant">
+              <p className="mt-2.5 font-body-sm text-body-sm text-on-surface-variant">
                 that&apos;s more than the plan includes - add a credit top-up when you run low.
               </p>
             )}
           </div>
 
-          <div className="mt-5 flex items-end gap-1">
+          <div className="mt-6 flex items-end gap-2">
             <span className="font-headline-xl text-headline-xl leading-none">${plan.annual.perMo}</span>
-            <span className="mb-1 font-body-sm text-body-sm text-on-surface-variant">/mo billed annually · ${plan.monthly.perMo} monthly</span>
+            <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo billed annually · ${plan.monthly.perMo} monthly</span>
           </div>
 
           <Link

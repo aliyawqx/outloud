@@ -16,7 +16,7 @@ const PLAN_CREDITS: Record<string, number> = {
 
 export function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: BillingMode) => void }) {
   const pill = (active: boolean) =>
-    `rounded-full px-5 py-1.5 font-code-label text-code-label transition-colors ${
+    `rounded-full px-6 py-2 font-body-sm text-body-sm font-bold transition-colors ${
       active ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
     }`
   return (
@@ -152,10 +152,10 @@ export function Pricing({ condensed = false, currentPlan = null }: { condensed?:
         <div className="mb-3 inline-block border-b border-cyber-lime/30 pb-1 font-code-label text-code-label text-cyber-lime">
           0x02 // PRICING
         </div>
-        <h2 className="mb-3 font-headline-lg text-headline-lg">
+        <h2 className="mb-4 font-headline-xl text-headline-lg md:text-headline-xl">
           Write it yourself, or let it run.
         </h2>
-        <p className="mx-auto mb-8 max-w-xl font-body-md text-body-md text-on-surface-variant">
+        <p className="mx-auto mb-8 max-w-2xl font-body-md text-lg text-on-surface-variant">
           Start free for 3 days - with autopilot switched on, so you can watch it work.
         </p>
         <Toggle mode={mode} setMode={setMode} />
