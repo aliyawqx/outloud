@@ -31,6 +31,7 @@ export default async function ReplyPage() {
       xConnected={Boolean(x)}
       threadsConnected={Boolean(threads)}
       plan={profile?.plan ?? 'free'}
+      trialing={Boolean(profile?.trialing)}
     />
   )
 }

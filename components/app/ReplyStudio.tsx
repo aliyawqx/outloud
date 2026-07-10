@@ -295,25 +295,27 @@ export function ReplyStudio({
   xConnected,
   threadsConnected,
   plan = 'free',
+  trialing = false,
 }: {
   voices: VoiceOption[]
   xConnected: boolean
   threadsConnected: boolean
   plan?: string
+  trialing?: boolean
 }) {
   const router = useRouter()
   const { balance, unlimited } = useCredits()
   const active = voices.find((v) => v.isActive) ?? voices[0]
   const [voiceId, setVoiceId] = useState(active?.id ?? '')
   const [mode, setMode] = useState<'link' | 'discover'>('link')
-  // Out-of-credits walls: paid plan → top-up packs; trial/free → subscribe (same as
-  // New Post). Shown before we ever fetch a post the user couldn't afford to reply to.
+  // Out-of-credits walls: paid plan OR live trial → top-up packs (trials may buy
+  // credits; a purchase revives the trial window); expired free → subscribe.
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [showTopUp, setShowTopUp] = useState(false)
   const canAfford = unlimited || balance >= COST_PER_REPLY
   function gateForReply(): boolean {
     if (canAfford) return true
-    if (isPaidPlan(plan)) setShowTopUp(true)
+    if (isPaidPlan(plan) || trialing) setShowTopUp(true)
     else setShowUpgrade(true)
     return false
   }

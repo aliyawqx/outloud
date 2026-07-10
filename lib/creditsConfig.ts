@@ -82,6 +82,10 @@ export function fmtCredits(n: number): string {
 // anchorUsd is the crossed-out "was" price shown next to priceUsd (Higgsfield-style
 // anchor). Display-only, like priceUsd.
 export const CREDIT_PACKS = [
+  // The $5 "urgent" mini pack: deliberately the WORST per-credit rate ($0.167/1k) -
+  // it exists for "I need credits right now, not a plan" moments and makes every
+  // bigger pack (and every plan) look like the smarter buy.
+  { id: 'pack_30k', label: '30,000 credits', credits: 30_000, priceUsd: 5, anchorUsd: 6, bestValue: false, productEnv: 'POLAR_PACK_30K_PRODUCT_ID' },
   { id: 'pack_100k', label: '100,000 credits', credits: 100_000, priceUsd: 12, anchorUsd: 15, bestValue: false, productEnv: 'POLAR_PACK_100K_PRODUCT_ID' },
   { id: 'pack_500k', label: '500,000 credits', credits: 500_000, priceUsd: 45, anchorUsd: 60, bestValue: true, productEnv: 'POLAR_PACK_500K_PRODUCT_ID' },
   { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 80, anchorUsd: 110, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
