@@ -36,7 +36,7 @@ export function Toggle({ mode, setMode }: { mode: BillingMode; setMode: (m: Bill
   )
 }
 
-export function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
+export function PlanCard({ plan, mode, current = false }: { plan: Plan; mode: BillingMode; current?: boolean }) {
   const annual = mode === 'annual'
   const price = annual ? plan.annual.perMo : plan.monthly.perMo
   const sub = annual ? plan.annual.sub : plan.monthly.sub
@@ -59,11 +59,16 @@ export function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
           : 'hover:border-electric-indigo/40'
       }`}
     >
-      {plan.badge && (
+      {/* "Current plan" (for a signed-in visitor) beats the marketing badge. */}
+      {current ? (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-cyber-lime px-3 py-1 font-code-label text-code-label font-bold uppercase text-charcoal-black">
+          Current plan
+        </span>
+      ) : plan.badge ? (
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-electric-indigo px-3 py-1 font-code-label text-code-label font-bold text-white">
           {plan.badge}
         </span>
-      )}
+      ) : null}
 
       <h3 className="font-headline-lg text-headline-lg">{plan.name}</h3>
       <p className="mt-2 mb-6 font-body-sm text-body-sm text-on-surface-variant">{plan.tagline}</p>
@@ -109,7 +114,11 @@ export function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
         </ul>
       )}
 
-      {paidPlan ? (
+      {current ? (
+        <span className="rounded-full border border-cyber-lime/50 px-6 py-3 text-center font-bold text-cyber-lime">
+          Your current plan
+        </span>
+      ) : paidPlan ? (
         <button
           type="button"
           disabled={busy}
@@ -130,7 +139,7 @@ export function PlanCard({ plan, mode }: { plan: Plan; mode: BillingMode }) {
   )
 }
 
-export function Pricing({ condensed = false }: { condensed?: boolean }) {
+export function Pricing({ condensed = false, currentPlan = null }: { condensed?: boolean; currentPlan?: string | null }) {
   const [mode, setMode] = useState<BillingMode>('annual')
 
   // Show every plan (free trial first) on both the home and the full pricing page.
@@ -154,7 +163,7 @@ export function Pricing({ condensed = false }: { condensed?: boolean }) {
 
       <div className={`reveal mx-auto grid grid-cols-1 gap-8 ${cols}`} style={{ transitionDelay: '100ms' }}>
         {plans.map((p) => (
-          <PlanCard key={p.id} plan={p} mode={mode} />
+          <PlanCard key={p.id} plan={p} mode={mode} current={p.id === currentPlan} />
         ))}
       </div>
 

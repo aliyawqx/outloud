@@ -1,12 +1,28 @@
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
 import { Pricing } from '@/components/Pricing'
+import { PlanCompare } from '@/components/PlanCompare'
+import { PlanFinder } from '@/components/PlanFinder'
 import { ScrollReveal } from '@/components/ScrollReveal'
 import { TrialBanner } from '@/components/TrialBanner'
+import { getSession } from '@/lib/auth/session'
+import { getProfile } from '@/lib/profile/store'
 
 export const metadata = { title: 'Outloud | Pricing' }
 
-export default function PricingPage() {
+/** The signed-in visitor's plan as a pricing-card id ('trial'|'starter'|'pro'), or null. */
+async function currentPlanId(): Promise<string | null> {
+  const session = await getSession().catch(() => null)
+  if (!session) return null
+  const profile = await getProfile(session.userId).catch(() => null)
+  if (!profile) return null
+  if (profile.plan === 'starter' || profile.plan === 'pro') return profile.plan
+  if (profile.trialing) return 'trial'
+  return null
+}
+
+export default async function PricingPage() {
+  const currentPlan = await currentPlanId()
   return (
     <>
       <TrialBanner sticky />
@@ -31,7 +47,9 @@ export default function PricingPage() {
       </header>
 
       <main className="pb-24 pt-8">
-        <Pricing />
+        <Pricing currentPlan={currentPlan} />
+        <PlanFinder />
+        <PlanCompare />
       </main>
 
       <footer className="border-t border-border-muted bg-charcoal-black py-10">

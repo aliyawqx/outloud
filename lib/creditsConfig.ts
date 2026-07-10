@@ -79,10 +79,12 @@ export function fmtCredits(n: number): string {
 // top-up never becomes a cheaper substitute for subscribing. Bigger packs still
 // get a better rate ($0.12 → $0.09 → $0.08 per 1k), but the 1M pack remains
 // worse value than any plan — top-ups complement subscriptions, never replace them.
+// anchorUsd is the crossed-out "was" price shown next to priceUsd (Higgsfield-style
+// anchor). Display-only, like priceUsd.
 export const CREDIT_PACKS = [
-  { id: 'pack_100k', label: '100,000 credits', credits: 100_000, priceUsd: 12, bestValue: false, productEnv: 'POLAR_PACK_100K_PRODUCT_ID' },
-  { id: 'pack_500k', label: '500,000 credits', credits: 500_000, priceUsd: 45, bestValue: true, productEnv: 'POLAR_PACK_500K_PRODUCT_ID' },
-  { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 80, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
+  { id: 'pack_100k', label: '100,000 credits', credits: 100_000, priceUsd: 12, anchorUsd: 15, bestValue: false, productEnv: 'POLAR_PACK_100K_PRODUCT_ID' },
+  { id: 'pack_500k', label: '500,000 credits', credits: 500_000, priceUsd: 45, anchorUsd: 60, bestValue: true, productEnv: 'POLAR_PACK_500K_PRODUCT_ID' },
+  { id: 'pack_1m', label: '1,000,000 credits', credits: 1_000_000, priceUsd: 80, anchorUsd: 110, bestValue: false, productEnv: 'POLAR_PACK_1M_PRODUCT_ID' },
 ] as const
 
 export type CreditReason =

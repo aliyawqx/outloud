@@ -64,8 +64,9 @@ export function TopUpModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="w-full max-w-sm rounded-3xl border border-electric-indigo bg-surface-container-low p-7 text-left indigo-glow">
-          <div className="mb-1 flex items-end gap-1">
+          <div className="mb-1 flex items-end gap-2">
             <span className="font-headline-xl text-headline-xl leading-none">${pack.priceUsd}</span>
+            <span className="mb-1 font-body-md text-body-md text-on-surface-variant/50 line-through">${pack.anchorUsd}</span>
             <span className="mb-1 font-body-md text-body-md text-on-surface-variant">one-time</span>
           </div>
           <p className="mb-5 font-code-label text-code-label text-on-surface-variant">

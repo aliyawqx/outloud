@@ -48,8 +48,10 @@ export function AddCredits({ eligible = true, reason }: { eligible?: boolean; re
               {fmtCredits(p.credits)}
             </span>
             <span className="font-code-label text-code-label text-on-surface-variant">credits</span>
-            <span className="mt-1 inline-flex items-center gap-1.5 font-code-label text-code-label text-electric-indigo">
-              {busy === p.id ? <Spinner size={12} /> : null}${p.priceUsd}
+            <span className="mt-1 inline-flex items-center gap-1.5 font-code-label text-code-label">
+              {busy === p.id ? <Spinner size={12} /> : null}
+              <span className="text-on-surface-variant/50 line-through">${p.anchorUsd}</span>
+              <span className="font-bold text-electric-indigo">${p.priceUsd}</span>
             </span>
           </button>
         ))}

@@ -75,7 +75,7 @@ const PLAN_META: Record<string, { name: string; price: number; allowance: number
   founder: { name: 'Founder', price: 0, allowance: PLAN_ALLOWANCE.founder },
 }
 
-function UsageTab({ trialing, plan, unlimited }: { trialing: boolean; plan: string; unlimited: boolean }) {
+function UsageTab({ plan, unlimited }: { plan: string; unlimited: boolean }) {
   const [usage, setUsage] = useState<Usage | null>(null)
   const [error, setError] = useState('')
 
@@ -180,17 +180,26 @@ function UsageTab({ trialing, plan, unlimited }: { trialing: boolean; plan: stri
         )}
       </div>
 
-      {/* Buy more credits - only on an active paid plan (not free, not in trial) */}
-      <div data-tour="plans-topups">
-        <AddCredits
-          eligible={isPaidPlan(plan) && !trialing}
-          reason={
-            trialing
-              ? 'Top-ups unlock once your plan starts, after your free trial.'
-              : 'Top-ups are available on a paid plan. Upgrade to add credits.'
-          }
-        />
-      </div>
+    </div>
+  )
+}
+
+// Higgsfield-style purchase tab: just the credit packs, framed simply.
+function TopUpTab({ plan, trialing }: { plan: string; trialing: boolean }) {
+  return (
+    <div className="flex flex-col gap-4" data-tour="plans-topups">
+      <p className="font-body-sm text-body-sm text-on-surface-variant">
+        One-time credit packs on top of your plan. <span className="text-on-surface">Top-up credits never expire</span>{' '}
+        and are spent after your plan credits.
+      </p>
+      <AddCredits
+        eligible={isPaidPlan(plan) && !trialing}
+        reason={
+          trialing
+            ? 'Top-ups unlock once your plan starts, after your free trial.'
+            : 'Top-ups are available on a paid plan. Upgrade to add credits.'
+        }
+      />
     </div>
   )
 }
@@ -296,8 +305,10 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
   )
 }
 
+// ONE billing screen (Higgsfield pattern): everything money-related behind three
+// tabs - Plan (subscription + invoices), Top up (credit packs), Usage (meters).
 export function BillingUsage({ plan, trialing, hasBilling, unlimited = false }: { plan: string; trialing: boolean; hasBilling: boolean; unlimited?: boolean }) {
-  const [tab, setTab] = useState<'usage' | 'billing'>('usage')
+  const [tab, setTab] = useState<'plan' | 'topup' | 'usage'>('plan')
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 font-code-label text-code-label transition-colors ${
       active ? 'bg-electric-indigo text-white' : 'text-on-surface-variant hover:text-on-surface'
@@ -307,10 +318,13 @@ export function BillingUsage({ plan, trialing, hasBilling, unlimited = false }: 
     <div className="mx-auto max-w-xl">
       <h1 className="mb-4 font-headline-xl text-headline-xl">Billing &amp; usage</h1>
       <div className="mb-6 inline-flex items-center gap-1 rounded-full border border-border-muted bg-surface-container-low p-1">
+        <button type="button" className={pill(tab === 'plan')} onClick={() => setTab('plan')}>Plan</button>
+        <button type="button" className={pill(tab === 'topup')} onClick={() => setTab('topup')}>Top up</button>
         <button type="button" className={pill(tab === 'usage')} onClick={() => setTab('usage')}>Usage</button>
-        <button type="button" className={pill(tab === 'billing')} onClick={() => setTab('billing')}>Billing</button>
       </div>
-      {tab === 'usage' ? <UsageTab trialing={trialing} plan={plan} unlimited={unlimited} /> : <BillingTab plan={plan} trialing={trialing} hasBilling={hasBilling} />}
+      {tab === 'plan' && <BillingTab plan={plan} trialing={trialing} hasBilling={hasBilling} />}
+      {tab === 'topup' && <TopUpTab plan={plan} trialing={trialing} />}
+      {tab === 'usage' && <UsageTab plan={plan} unlimited={unlimited} />}
     </div>
   )
 }
