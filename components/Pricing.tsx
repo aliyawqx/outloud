@@ -73,11 +73,17 @@ export function PlanCard({ plan, mode, current = false }: { plan: Plan; mode: Bi
       <h3 className="font-headline-lg text-headline-lg">{plan.name}</h3>
       <p className="mt-2 mb-6 font-body-sm text-body-sm text-on-surface-variant">{plan.tagline}</p>
 
-      <div className="mb-1 flex items-end gap-1">
+      <div className="mb-1 flex items-end gap-1.5">
         {plan.trial ? (
           <span className="font-headline-xl text-headline-xl leading-none">Free</span>
         ) : (
           <>
+            {/* Annual: anchor with the monthly price struck through, then the real one. */}
+            {annual && (
+              <span className="font-headline-xl text-2xl leading-none text-error line-through decoration-2">
+                ${plan.monthly.perMo}
+              </span>
+            )}
             <span className="font-headline-xl text-headline-xl leading-none">${price}</span>
             <span className="mb-1 font-body-md text-body-md text-on-surface-variant">/mo</span>
           </>

@@ -260,9 +260,7 @@ export function PlanFinder() {
                   <span className="font-headline-xl text-headline-xl leading-none">
                     ${annual ? plan.annual.perMo : plan.monthly.perMo}
                   </span>
-                  <span className="mb-0.5 font-body-md text-body-md text-on-surface-variant">
-                    /month{annual ? ', billed annually' : ''}
-                  </span>
+                  <span className="mb-0.5 font-body-md text-body-md text-on-surface-variant">/month</span>
                 </div>
 
                 <button
@@ -299,7 +297,7 @@ export function PlanFinder() {
               </button>
               <span className={`font-body-sm text-body-sm ${annual ? 'font-bold text-on-surface' : 'text-on-surface-variant'}`}>Annual</span>
               <span className="rounded-full bg-electric-indigo px-2.5 py-1 font-code-label text-[11px] font-bold uppercase text-white">
-                Save 33%
+                Save ${yearlySavings}
               </span>
             </div>
           </div>

@@ -52,7 +52,8 @@ export const PLANS: Plan[] = [
     name: 'Starter',
     tagline: 'For solo builders posting in their own voice',
     monthly: { perMo: 15, sub: 'Billed monthly' },
-    annual: { perMo: 10, sub: 'Billed annually · $120/year', save: 'Save 33%' },
+    // Annual copy leads with the exact dollar saving, never the yearly total.
+    annual: { perMo: 10, sub: 'Save $60 a year', save: 'Save $60' },
     features: [
       'Posts in your voice across X, LinkedIn & Threads',
       'Voice capture from your existing posts',
@@ -69,7 +70,7 @@ export const PLANS: Plan[] = [
     highlight: true,
     badge: 'Most popular',
     monthly: { perMo: 39, sub: 'Billed monthly' },
-    annual: { perMo: 26, sub: 'Billed annually · $312/year', save: 'Save 33%' },
+    annual: { perMo: 26, sub: 'Save $156 a year', save: 'Save $156' },
     features: [
       'Autopilot - zero-touch scheduling + auto-publish on your calendar',
       'Everything in Starter',
