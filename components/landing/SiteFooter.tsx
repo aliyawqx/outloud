@@ -25,10 +25,10 @@ export function SiteFooter() {
             </p>
             <Link
               href="/signup"
-              className="group mt-5 inline-flex items-center gap-1.5 font-code-label text-code-label text-electric-indigo transition-colors hover:text-on-surface"
+              className="indigo-glow group mt-5 inline-flex items-center gap-2 rounded-full bg-electric-indigo px-6 py-2.5 font-body-md text-body-md font-bold text-white transition-all hover:bg-primary-container active:scale-95"
             >
               Start free
-              <span aria-hidden="true" className="material-symbols-outlined text-[16px] transition-transform group-hover:translate-x-0.5">arrow_forward</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1">arrow_forward</span>
             </Link>
           </div>
 
