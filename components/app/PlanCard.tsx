@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { fmtCredits } from '@/lib/creditsConfig'
+import { COST_PER_POST, COST_PER_REPLY, fmtCredits } from '@/lib/creditsConfig'
 
 // The subscription, impossible to miss (user feedback: "couldn't find where the
 // plan lives"). Sits at the TOP of the profile page: plan badge, credits left,
@@ -44,8 +44,14 @@ export function PlanCard({
             {unlimited ? 'Unlimited' : fmtCredits(total)}
             {!unlimited && <span className="ml-2 font-body-sm text-body-sm text-on-surface-variant">credits left</span>}
           </p>
-          {!unlimited && when && (
+          {!unlimited && (
             <p className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">
+              ≈ {Math.floor(total / COST_PER_POST).toLocaleString()} posts or{' '}
+              {Math.floor(total / COST_PER_REPLY).toLocaleString()} replies
+            </p>
+          )}
+          {!unlimited && when && (
+            <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
               {trialing && !isPaid ? `trial ends ${when}` : `plan credits refresh ${when}`}
               {topupBalance > 0 && <> · {fmtCredits(topupBalance)} top-up credits never expire</>}
             </p>

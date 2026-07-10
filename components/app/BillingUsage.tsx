@@ -266,24 +266,9 @@ function BillingTab({ plan, trialing, hasBilling }: { plan: string; trialing: bo
             {meta.price > 0 ? `$${meta.price}/mo` : 'no card'} · {fmtCredits(meta.allowance)} credits/mo
           </span>
         </div>
-        {/* Hide the plain upgrade buttons while the "start now" box is shown - they'd be
-            the same two plans, just without the skip-trial framing. */}
-        {upgrades.length > 0 && !canStartNow && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {upgrades.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => upgrade(p)}
-                disabled={busy !== null}
-                className="inline-flex items-center gap-2 rounded-full bg-electric-indigo px-5 py-2 font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
-              >
-                {busy === p ? <Spinner size={14} /> : null}
-                Upgrade to {PLAN_META[p].name}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Deliberately informational-only: an "Upgrade to X" button right under the
+            current plan's name read as "your plan is X" (user feedback). Upgrading
+            lives on the plan card in Profile and on /pricing. */}
         {error && !canStartNow && <p className="mt-2 font-body-sm text-body-sm text-error">{error}</p>}
       </div>
 
