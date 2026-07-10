@@ -112,7 +112,7 @@ export function PlanFinder() {
 
   return (
     <section className="mx-auto max-w-container-max px-margin-mobile py-16 md:px-margin-desktop">
-      <div className="reveal mb-8">
+      <div className="reveal mb-8 text-center">
         <h2 className="mb-2 font-headline-xl text-headline-lg md:text-headline-xl">Find the best plan for you</h2>
         <p className="font-body-md text-lg text-on-surface-variant">
           Choose what you want to create and see exactly what you need.
