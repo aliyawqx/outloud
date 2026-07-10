@@ -78,10 +78,11 @@ export function PlanCard({ plan, mode, current = false }: { plan: Plan; mode: Bi
           <span className="font-headline-xl text-headline-xl leading-none">Free</span>
         ) : (
           <>
-            {/* Annual: anchor with the monthly price struck through, then the real one. */}
-            {annual && (
+            {/* Struck-through anchor before the real price: annual anchors on the
+                monthly price, monthly on its own "was" anchor. */}
+            {(annual ? plan.monthly.perMo : plan.monthly.anchor) != null && (annual || plan.monthly.anchor) && (
               <span className="font-headline-xl text-2xl leading-none text-error line-through decoration-2">
-                ${plan.monthly.perMo}
+                ${annual ? plan.monthly.perMo : plan.monthly.anchor}
               </span>
             )}
             <span className="font-headline-xl text-headline-xl leading-none">${price}</span>

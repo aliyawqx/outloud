@@ -252,9 +252,9 @@ export function PlanFinder() {
                 </ul>
 
                 <div className="mt-6 flex items-end gap-2">
-                  {annual && (
+                  {(annual || plan.monthly.anchor) && (
                     <span className="font-headline-xl text-2xl leading-none text-error line-through decoration-2">
-                      ${plan.monthly.perMo}
+                      ${annual ? plan.monthly.perMo : plan.monthly.anchor}
                     </span>
                   )}
                   <span className="font-headline-xl text-headline-xl leading-none">

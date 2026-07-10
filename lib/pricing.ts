@@ -10,7 +10,8 @@ export type Plan = {
   /** Free trial tier: rendered as "Free / 3 days" and ignores the billing toggle. */
   trial?: boolean
   badge?: string
-  monthly: { perMo: number; sub: string }
+  /** `anchor` is the crossed-out "was" price shown before the real one. */
+  monthly: { perMo: number; sub: string; anchor?: number }
   annual: { perMo: number; sub: string; save: string }
   features: string[]
   cta: string
@@ -51,7 +52,7 @@ export const PLANS: Plan[] = [
     id: 'starter',
     name: 'Starter',
     tagline: 'For solo builders posting in their own voice',
-    monthly: { perMo: 15, sub: 'Billed monthly' },
+    monthly: { perMo: 15, sub: 'Billed monthly', anchor: 19 },
     // Annual copy leads with the exact dollar saving, never the yearly total.
     annual: { perMo: 10, sub: 'Save $60 a year', save: 'Save $60' },
     features: [
@@ -69,7 +70,7 @@ export const PLANS: Plan[] = [
     tagline: 'Set it and it runs.',
     highlight: true,
     badge: 'Most popular',
-    monthly: { perMo: 39, sub: 'Billed monthly' },
+    monthly: { perMo: 39, sub: 'Billed monthly', anchor: 49 },
     annual: { perMo: 26, sub: 'Save $156 a year', save: 'Save $156' },
     features: [
       'Autopilot - zero-touch scheduling + auto-publish on your calendar',
