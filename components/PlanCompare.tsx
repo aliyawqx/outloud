@@ -66,7 +66,7 @@ export function PlanCompare() {
               <th className="p-4 font-code-label text-code-label uppercase text-on-surface-variant/60">Plan</th>
               {COLS.map((c) => (
                 <th key={c.id} className={`p-4 ${c.highlight ? 'border-t-2 border-t-electric-indigo bg-electric-indigo/15' : ''}`}>
-                  <span className={`block font-headline-sm text-headline-sm ${c.highlight ? 'text-electric-indigo' : 'text-on-surface'}`}>
+                  <span className={`block font-headline-lg text-2xl font-bold ${c.highlight ? 'text-electric-indigo' : 'text-on-surface'}`}>
                     {c.name}
                   </span>
                   <span className="block font-body-sm text-body-sm text-on-surface-variant">{c.priceLine}</span>
