@@ -5,6 +5,8 @@ import { listUpcomingAutopilot } from '@/lib/schedule/store'
 import { getAccount as getXAccount } from '@/lib/x/store'
 import { getAccount as getThreadsAccount } from '@/lib/threads/store'
 import { getUserTier } from '@/lib/billing/tier'
+import { isStaff } from '@/lib/appLock'
+import { planAllowance } from '@/lib/creditsConfig'
 import { AutopilotProLock } from '@/components/app/autopilot/AutopilotProLock'
 import { AutopilotSettingsPanel } from '@/components/app/autopilot/AutopilotSettingsPanel'
 import { LinkedInReconnectBanner } from '@/components/app/LinkedInReconnectBanner'
@@ -48,6 +50,7 @@ export default async function AutopilotPage() {
             xPremium={Boolean(x?.premium)}
             threadsConnected={Boolean(threads)}
             linkedInConnected={Boolean(li && li.status === 'connected')}
+            monthlyAllowance={isStaff(session.email) ? null : planAllowance(tier.plan)}
           />
         </>
       )}

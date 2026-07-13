@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getUserTier } from '@/lib/billing/tier'
 import { getAutopilotSettings, upsertAutopilotSettings, type AutopilotSettingsPatch } from '@/lib/autopilot/store'
+import { estimateMonthlyCredits } from '@/lib/autopilot/estimate'
+import { isStaff } from '@/lib/appLock'
+import { fmtCredits, planAllowance } from '@/lib/creditsConfig'
+import { getProfile } from '@/lib/profile/store'
 import { parsePlatforms } from '@/lib/schedule/parse'
 import { isValidTimeZone, type PostingTime } from '@/lib/schedule/slots'
 
@@ -118,6 +122,29 @@ export async function PUT(req: Request) {
     if (!merged.interests.length) return NextResponse.json({ error: 'Add at least one interest first.' }, { status: 400 })
     if (!merged.postingTimes.length) return NextResponse.json({ error: 'Add at least one posting time first.' }, { status: 400 })
     if (!merged.platforms.length) return NextResponse.json({ error: 'Pick at least one platform first.' }, { status: 400 })
+  }
+
+  // The schedule must FIT the plan (mirror of the live estimate in the panel):
+  // a config that would burn more credits than the month refills is rejected,
+  // not silently accepted and paused mid-month. Checked whenever the burn rate
+  // could grow (times / AI images / enabling) — turning things OFF always works.
+  if (!isStaff(session.email) && (patch.postingTimes !== undefined || patch.aiImages === true || patch.enabled === true)) {
+    const current = await getAutopilotSettings(session.userId)
+    const next = { ...current, ...patch }
+    if (next.enabled || patch.enabled === true) {
+      const profile = await getProfile(session.userId)
+      const allowance = planAllowance(profile?.plan ?? 'free')
+      const est = estimateMonthlyCredits(next.postingTimes, next.aiImages)
+      if (est.creditsPerMonth > allowance) {
+        return NextResponse.json(
+          {
+            error: `This schedule needs about ${fmtCredits(est.creditsPerMonth)} credits a month (${est.postsPerMonth} posts), but your plan refills ${fmtCredits(allowance)}. Remove a time slot${next.aiImages ? ' or switch off AI images' : ''}.`,
+            overBudget: true,
+          },
+          { status: 400 },
+        )
+      }
+    }
   }
 
   try {

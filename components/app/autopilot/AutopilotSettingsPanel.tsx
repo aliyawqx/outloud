@@ -6,6 +6,8 @@ import type { AutopilotSettings } from '@/lib/autopilot/store'
 import { matchTopics } from '@/lib/autopilot/topics'
 import { deviceTimezone, timezoneOptions } from '@/lib/timezones'
 import type { PostingTime } from '@/lib/schedule/slots'
+import { estimateMonthlyCredits } from '@/lib/autopilot/estimate'
+import { fmtCredits } from '@/lib/creditsConfig'
 import { platformLabel, SCHEDULE_PLATFORMS, type ScheduledPost, type SchedulePlatform } from '@/lib/schedule/types'
 import { PlatformGlyph } from '@/components/app/PlatformGlyph'
 import { X_FREE_POST_LIMIT } from '@/lib/x/client'
@@ -34,6 +36,7 @@ export function AutopilotSettingsPanel({
   xPremium,
   threadsConnected,
   linkedInConnected,
+  monthlyAllowance = null,
 }: {
   initial: AutopilotSettings
   upcoming: ScheduledPost[]
@@ -41,6 +44,8 @@ export function AutopilotSettingsPanel({
   xPremium: boolean
   threadsConnected: boolean
   linkedInConnected: boolean
+  /** Plan credits refilled per month; null = unlimited (staff). Caps the schedule. */
+  monthlyAllowance?: number | null
 }) {
   const [s, setS] = useState(initial)
   const [interestDraft, setInterestDraft] = useState('')
@@ -63,6 +68,14 @@ export function AutopilotSettingsPanel({
     linkedin: linkedInConnected,
   }
   const pausedForCredits = s.pausedAt && s.pauseReason === 'insufficient_credits'
+
+  // Live burn projection - mirrors the server-side cap in PUT /api/autopilot.
+  const estimate = estimateMonthlyCredits(s.postingTimes, s.aiImages)
+  const overBudget = monthlyAllowance != null && estimate.creditsPerMonth > monthlyAllowance
+  // Would ONE more every-day slot still fit? Gates the "+ Add time" button.
+  const nextSlotFits =
+    monthlyAllowance == null ||
+    estimateMonthlyCredits([...s.postingTimes, { time: '09:00' }], s.aiImages).creditsPerMonth <= monthlyAllowance
 
   function patch(p: Partial<AutopilotSettings>) {
     setSaved(false)
@@ -353,12 +366,41 @@ export function AutopilotSettingsPanel({
           ))}
           <button
             type="button"
+            disabled={!nextSlotFits}
+            title={nextSlotFits ? undefined : 'Another slot would need more credits than your plan refills each month.'}
             onClick={() => patch({ postingTimes: [...s.postingTimes, { time: '09:00' }] })}
-            className="self-start rounded-full border border-border-muted px-4 py-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:border-electric-indigo/60 hover:text-on-surface"
+            className="self-start rounded-full border border-border-muted px-4 py-1.5 font-code-label text-code-label text-on-surface-variant transition-colors hover:border-electric-indigo/60 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
           >
             + Add time
           </button>
         </div>
+
+        {/* Live burn meter: what THIS schedule costs a month vs the plan refill. */}
+        {s.postingTimes.length > 0 && (
+          <div className={`mt-4 rounded-xl border p-3.5 ${overBudget ? 'border-error/50 bg-error/5' : 'border-border-muted bg-surface-container-lowest'}`}>
+            <div className="flex items-baseline justify-between gap-3 font-body-sm text-body-sm">
+              <span className="text-on-surface-variant">
+                ≈ {estimate.postsPerMonth} auto posts / mo · {fmtCredits(estimate.perPost)} credits each{s.aiImages ? ' (incl. AI image)' : ''}
+              </span>
+              <span className={`shrink-0 font-bold tabular-nums ${overBudget ? 'text-error' : 'text-on-surface'}`}>
+                {fmtCredits(estimate.creditsPerMonth)}{monthlyAllowance != null && <> / {fmtCredits(monthlyAllowance)}</>} credits / mo
+              </span>
+            </div>
+            {monthlyAllowance != null && (
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high">
+                <div
+                  className={`h-full rounded-full ${overBudget ? 'bg-error' : 'bg-cyber-lime'}`}
+                  style={{ width: `${Math.min(100, Math.round((estimate.creditsPerMonth / monthlyAllowance) * 100))}%` }}
+                />
+              </div>
+            )}
+            {overBudget && (
+              <p className="mt-2 font-body-sm text-body-sm text-error">
+                This schedule needs more credits than your plan refills each month - remove a time slot{s.aiImages ? ' or switch off AI images' : ''}.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Platforms + review toggle */}
@@ -415,7 +457,8 @@ export function AutopilotSettingsPanel({
         <button
           type="button"
           onClick={() => save()}
-          disabled={busy !== null}
+          disabled={busy !== null || overBudget}
+          title={overBudget ? 'The schedule exceeds your monthly plan credits - trim it first.' : undefined}
           className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-6 py-2.5 font-code-label text-code-label font-bold text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
         >
           {busy === 'save' ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">check</span>}
