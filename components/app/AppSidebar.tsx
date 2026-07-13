@@ -147,12 +147,25 @@ export function AppSidebar({
     </nav>
   )
 
-  // Deliberately minimal: the profile row (name, credits · plan) plus the
-  // notifications bell. Billing, upgrade and sign-out live ON the profile page.
+  // Deliberately minimal: an upgrade CTA (hidden on the top plan), then the
+  // profile row (name, credits · plan) plus the notifications bell. Billing and
+  // sign-out live ON the profile page.
+  const showUpgrade = !unlimited && profile.plan !== 'pro' && profile.plan !== 'founder'
   const footer = (
     // `relative` anchors the notifications panel (absolute in NotificationsBell)
     // to this row, so it opens upward aligned with the sidebar.
-    <div className="relative flex shrink-0 items-center gap-1 border-t border-border-muted p-3">
+    <div className="relative flex shrink-0 flex-col gap-2 border-t border-border-muted p-3">
+      {showUpgrade && (
+        <Link
+          href="/pricing"
+          onClick={() => setOpen(false)}
+          className="indigo-glow flex items-center justify-center gap-2 rounded-xl bg-electric-indigo px-3 py-2.5 font-body-sm text-body-sm font-bold text-white transition-all hover:bg-primary-container active:scale-[0.98]"
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">rocket_launch</span>
+          Upgrade plan
+        </Link>
+      )}
+      <div className="flex items-center gap-1">
       <Link
         href="/app/profile"
         data-tour="profile-nav"
@@ -182,6 +195,7 @@ export function AppSidebar({
         </span>
       </Link>
       <NotificationsBell />
+      </div>
     </div>
   )
 
