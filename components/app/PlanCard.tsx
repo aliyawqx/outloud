@@ -53,7 +53,7 @@ export function PlanCard({
           )}
           {!unlimited && when && (
             <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-              {trialing && !isPaid ? `trial ends ${when}` : `plan credits refresh ${when}`}
+              {trialing && !isPaid ? `trial ends ${when}` : `your next billing is on ${when}`}
               {topupBalance > 0 && <> · {fmtCredits(topupBalance)} top-up credits never expire</>}
             </p>
           )}

@@ -93,7 +93,7 @@ export function PlanWelcome({ plan }: { plan: string }) {
           </span>
           <h2 className="mt-4 font-headline-xl text-headline-lg md:text-headline-xl">Congratulations! 🎉</h2>
           <p className="mt-2 font-body-md text-body-md text-on-surface-variant">
-            {fmtCredits(allowance)} credits just landed - they refresh every month. Here&apos;s what&apos;s now yours:
+            {fmtCredits(allowance)} credits just landed - you get a fresh batch on every billing date. Here&apos;s what&apos;s now yours:
           </p>
           <ul className="mx-auto mt-5 max-w-sm space-y-2.5 text-left">
             {meta.features.slice(0, 4).map((f) => (

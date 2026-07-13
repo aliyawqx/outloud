@@ -61,7 +61,7 @@ function resetLabel(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return ` · resets ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+  return ` · next billing ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
 }
 function dayLabel(date: string): string {
   const [y, m, d] = date.split('-').map(Number)
