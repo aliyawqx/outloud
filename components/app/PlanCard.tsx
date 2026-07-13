@@ -1,6 +1,10 @@
+'use client'
+
 import Link from 'next/link'
+import { useState } from 'react'
 import { COST_PER_POST, COST_PER_REPLY, fmtCredits } from '@/lib/creditsConfig'
 import { planDisplayName } from '@/lib/pricing'
+import { UpgradeModal } from '@/components/app/UpgradeModal'
 
 // The subscription, impossible to miss (user feedback: "couldn't find where the
 // plan lives"). Sits at the TOP of the profile page: plan badge, credits left,
@@ -22,6 +26,8 @@ export function PlanCard({
   topupBalance: number
   unlimited: boolean
 }) {
+  // In-app upgrade: the plan picker → Polar checkout, never the landing pricing.
+  const [showUpgrade, setShowUpgrade] = useState(false)
   const isPaid = plan === 'starter' || plan === 'pro' || plan === 'founder'
   const label = unlimited ? 'Founder' : trialing && !isPaid ? 'Free trial' : planDisplayName(plan)
   const total = creditBalance + topupBalance
@@ -31,6 +37,7 @@ export function PlanCard({
 
   return (
     <div className="relative mb-8 overflow-hidden rounded-3xl border border-electric-indigo/40 bg-surface-container-low p-6 indigo-glow">
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
       <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-electric-indigo/15 blur-[70px]" />
       <div className="relative flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -60,12 +67,13 @@ export function PlanCard({
         </div>
         <div className="flex items-center gap-3">
           {!unlimited && plan !== 'pro' && plan !== 'founder' && (
-            <Link
-              href="/pricing"
+            <button
+              type="button"
+              onClick={() => setShowUpgrade(true)}
               className="rounded-full bg-electric-indigo px-5 py-2.5 font-code-label text-code-label font-bold text-white transition-colors hover:bg-primary-container"
             >
               Upgrade
-            </Link>
+            </button>
           )}
           <Link
             href="/app/settings/billing"

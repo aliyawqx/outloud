@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { SidebarHistory, type SidebarHistoryItem } from '@/components/app/SidebarHistory'
 import { NotificationsBell } from '@/components/app/NotificationsBell'
+import { UpgradeModal } from '@/components/app/UpgradeModal'
 import { useCredits } from '@/components/app/CreditsContext'
 import { Tooltip } from '@/components/ui/tooltip'
 import { fmtCredits } from '@/lib/creditsConfig'
@@ -49,6 +50,8 @@ export function AppSidebar({
   // chat (highlighted gray in the History list) is the active item, NOT "New post".
   const viewingChat = Boolean(useSearchParams().get('session'))
   const [open, setOpen] = useState(false)
+  // In-app upgrade: the plan picker modal → Polar checkout, never the landing.
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const items = navItems(voiceCount)
   const { balance, unlimited } = useCredits()
 
@@ -156,14 +159,17 @@ export function AppSidebar({
     // to this row, so it opens upward aligned with the sidebar.
     <div className="relative flex shrink-0 flex-col gap-2 border-t border-border-muted p-3">
       {showUpgrade && (
-        <Link
-          href="/pricing"
-          onClick={() => setOpen(false)}
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false)
+            setShowUpgradeModal(true)
+          }}
           className="indigo-glow flex items-center justify-center gap-2 rounded-xl bg-electric-indigo px-3 py-2.5 font-body-sm text-body-sm font-bold text-white transition-all hover:bg-primary-container active:scale-[0.98]"
         >
           <span aria-hidden="true" className="material-symbols-outlined text-[18px]">rocket_launch</span>
           Upgrade plan
-        </Link>
+        </button>
       )}
       <div className="flex items-center gap-1">
       <Link
@@ -201,6 +207,7 @@ export function AppSidebar({
 
   return (
     <>
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       {/* Mobile top bar: menu on the LEFT (matches the left-opening drawer), mascot
           centered. Only the mascot here - the wordmark lives inside the open drawer. */}
       <header className="sticky top-0 z-40 flex h-14 items-center border-b border-border-muted bg-surface-glass px-margin-mobile backdrop-blur-md lg:hidden">
