@@ -5,6 +5,7 @@ import { PlanCard } from '@/components/app/PlanCard'
 import { ProfileForm } from '@/components/app/ProfileForm'
 import { XConnection } from '@/components/app/XConnection'
 import { ThreadsConnection } from '@/components/app/ThreadsConnection'
+import { canConnectThreads } from '@/lib/threads/access'
 import { LinkedInConnection } from '@/components/app/LinkedInConnection'
 import { DeleteAccount } from '@/components/app/DeleteAccount'
 import { SignOutButton } from '@/components/app/SignOutButton'
@@ -50,7 +51,7 @@ export default async function ProfilePage({
 
       <div data-tour="connections" className="mt-8 flex flex-col gap-4">
         <XConnection flash={flash} />
-        <ThreadsConnection flash={threadsFlash} />
+        <ThreadsConnection flash={threadsFlash} allowed={canConnectThreads(session.email)} />
         <LinkedInConnection flash={linkedinFlash} />
       </div>
       <ReplayTours />

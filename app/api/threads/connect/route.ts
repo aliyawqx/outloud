@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
+import { canConnectThreads } from '@/lib/threads/access'
 import { threadsConfig } from '@/lib/threads/config'
 import { buildAuthUrl, makeState } from '@/lib/threads/oauth'
 import { safeReturnTo, sealOAuthTx, THREADS_OAUTH_COOKIE, THREADS_OAUTH_MAX_AGE_S } from '@/lib/threads/stateCookie'
@@ -7,6 +8,11 @@ import { safeReturnTo, sealOAuthTx, THREADS_OAUTH_COOKIE, THREADS_OAUTH_MAX_AGE_
 export async function GET(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.redirect(new URL('/login', req.url))
+
+  // Threads access is invite-only until Meta's app review passes - see lib/threads/access.
+  if (!canConnectThreads(session.email)) {
+    return NextResponse.redirect(new URL('/app/profile?threads=unavailable', req.url))
+  }
 
   const { clientId, redirectUri } = threadsConfig()
   const state = makeState()

@@ -6,7 +6,14 @@ import { Spinner } from '@/components/Spinner'
 
 type Status = { connected: boolean; username?: string; scope?: string }
 
-export function ThreadsConnection({ flash }: { flash?: 'connected' | 'error' }) {
+export function ThreadsConnection({
+  flash,
+  allowed = true,
+}: {
+  flash?: 'connected' | 'error'
+  /** Threads is invite-only until Meta's app review passes; false disables Connect. */
+  allowed?: boolean
+}) {
   const router = useRouter()
   const [status, setStatus] = useState<Status | null>(null)
   const [busy, setBusy] = useState(false)
@@ -53,6 +60,23 @@ export function ThreadsConnection({ flash }: { flash?: 'connected' | 'error' }) 
           {busy && <Spinner size={14} />}
           {busy ? 'Disconnecting…' : 'Disconnect'}
         </button>
+      ) : !allowed ? (
+        <>
+          <button
+            type="button"
+            disabled
+            className="cursor-not-allowed self-start rounded-full bg-electric-indigo px-5 py-2 font-bold text-white opacity-40"
+          >
+            Connect Threads
+          </button>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            Threads connections aren&apos;t available for everyone just yet. Want access? Email{' '}
+            <a href="mailto:contact@tryoutloud.app" className="text-electric-indigo hover:underline">
+              contact@tryoutloud.app
+            </a>{' '}
+            and we&apos;ll open it up for you.
+          </p>
+        </>
       ) : (
         <a
           href="/api/threads/connect"
