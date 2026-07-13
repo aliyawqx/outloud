@@ -71,8 +71,8 @@ export function ThreadsConnection({
           </button>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
             Threads connections aren&apos;t available for everyone just yet. Want access? Email{' '}
-            <a href="mailto:contact@tryoutloud.app" className="text-electric-indigo hover:underline">
-              contact@tryoutloud.app
+            <a href="mailto:support@tryoutloud.app" className="text-electric-indigo hover:underline">
+              support@tryoutloud.app
             </a>{' '}
             and we&apos;ll open it up for you.
           </p>
