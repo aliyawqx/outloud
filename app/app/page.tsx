@@ -10,10 +10,11 @@ import { listPrompts } from '@/lib/prompts/store'
 import { SEED_PROMPTS } from '@/lib/prompts/seeds'
 import { hasReadyVoice, isVoiceReady } from '@/lib/voice/ready'
 import { ComposeHome, type ComposeSession } from '@/components/app/ComposeHome'
+import { PlanWelcome } from '@/components/app/PlanWelcome'
 
 export const metadata = { title: 'Outloud | Compose' }
 
-export default async function AppHomePage({ searchParams }: { searchParams: Promise<{ session?: string }> }) {
+export default async function AppHomePage({ searchParams }: { searchParams: Promise<{ session?: string; upgraded?: string }> }) {
   const session = await getSession()
   if (!session) return null // layout already guards; keeps types happy
 
@@ -39,7 +40,7 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
     ...custom.map((p) => ({ command: p.command, title: p.title })),
   ]
   // Reopening a past chat from History (?session=<id>) → restore the transcript.
-  const { session: sessionId } = await searchParams
+  const { session: sessionId, upgraded } = await searchParams
   let initialSession: ComposeSession | undefined
   if (sessionId) {
     const entry = await getComposeEntry(session.userId, sessionId)
@@ -53,10 +54,13 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
   }
 
   return (
-    // key on the session id (or "new") forces a fresh mount when switching chats or
-    // starting a new one, so the composer always reflects the chosen transcript and
-    // never keeps the previous chat's state.
-    <ComposeHome
+    <>
+      {/* Post-checkout celebration - Polar's success redirect lands here with ?upgraded= */}
+      {(upgraded === 'starter' || upgraded === 'pro') && <PlanWelcome plan={upgraded} />}
+      {/* key on the session id (or "new") forces a fresh mount when switching chats or
+          starting a new one, so the composer always reflects the chosen transcript and
+          never keeps the previous chat's state. */}
+      <ComposeHome
       key={sessionId ?? 'new'}
       name={firstName}
       voices={readyVoices.map((v) => ({ id: v.id, name: v.name, isActive: v.isActive }))}
@@ -65,6 +69,7 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
       xConnected={Boolean(xAccount)}
       threadsConnected={Boolean(threadsAccount)}
       linkedInConnected={Boolean(linkedInAccount && linkedInAccount.status === 'connected')}
-    />
+      />
+    </>
   )
 }
