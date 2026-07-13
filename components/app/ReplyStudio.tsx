@@ -750,7 +750,7 @@ export function ReplyStudio({
         </div>
       )}
 
-      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      {showUpgrade && <UpgradeModal outOfCredits onClose={() => setShowUpgrade(false)} />}
       {showTopUp && <TopUpModal onClose={() => setShowTopUp(false)} />}
     </div>
   )
