@@ -11,7 +11,10 @@ import { isValidTimeZone, type PostingTime } from '@/lib/schedule/slots'
 
 const MAX_INTERESTS = 20
 const INTEREST_MAX_LEN = 80
-const MAX_POSTING_TIMES = 8
+// No product cap on slots anymore - the credit-budget check below is the real
+// limiter (a schedule can't outspend the plan's monthly refill). This is only a
+// payload sanity bound: 48 = one slot every half hour, far past any budget.
+const MAX_POSTING_TIMES = 48
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
 function parseInterests(raw: unknown): string[] | null {
@@ -87,7 +90,7 @@ export async function PUT(req: Request) {
     if (!postingTimes) return NextResponse.json({ error: 'Invalid posting times.' }, { status: 400 })
     patch.postingTimes = postingTimes
     // Each posting time IS one post per day — the quota is derived, not chosen.
-    patch.slotsPerDay = Math.min(8, Math.max(1, postingTimes.length))
+    patch.slotsPerDay = Math.min(MAX_POSTING_TIMES, Math.max(1, postingTimes.length))
   }
   if (b.timezone !== undefined) {
     if (typeof b.timezone !== 'string' || !isValidTimeZone(b.timezone)) {
