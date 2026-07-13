@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCheckout } from '@/lib/billing/polar'
 import { isPaidPlanId } from '@/lib/billing/plans'
-import { setPlan, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
+import { setPlan, setPlanStatus, setTrialing, markTrialStarted, setPolarRefs } from '@/lib/profile/store'
 import { grantPlan, addCredits, packById } from '@/lib/credits'
 
 // GET /api/billing/success?checkout_id=... — where Polar redirects after checkout.
@@ -33,12 +33,17 @@ export async function GET(req: Request) {
         await setPolarRefs(userId, { customerId: checkout.customerId, subscriptionId: checkout.subscriptionId })
         if (checkout.amount > 0) {
           // Real charge (trial converted/skipped or direct subscribe) → full allowance.
+          // plan_status must flip too: a stale 'expired' (from a lapsed trial) fails
+          // the canUseAutopilot status check and locks Max features on a freshly
+          // paid account whenever the webhook is late or lost.
           await setTrialing(userId, false)
+          await setPlanStatus(userId, 'active')
           await grantPlan(userId, plan)
         } else {
           // No charge → a Polar trial started. Subscribers get the FULL plan allowance
           // up front (not the 10k pool); the trial flags still block top-ups + mark it used.
           await markTrialStarted(userId)
+          await setPlanStatus(userId, 'trialing')
           await grantPlan(userId, plan)
         }
         home.searchParams.set('upgraded', plan)
