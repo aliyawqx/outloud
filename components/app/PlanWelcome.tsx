@@ -70,16 +70,35 @@ function ConfettiBurst() {
   return <canvas ref={ref} aria-hidden="true" className="pointer-events-none fixed inset-0 z-[95]" />
 }
 
-export function PlanWelcome({ plan }: { plan: string }) {
+const seenKey = (plan: string) => `outloud_plan_welcome:${plan}`
+
+export function PlanWelcome({ plan, fromCheckout = false }: { plan: string; fromCheckout?: boolean }) {
   const router = useRouter()
-  const [open, setOpen] = useState(true)
+  // fromCheckout (?upgraded=) always celebrates; an EXISTING paid user gets it
+  // once - localStorage remembers. Starts closed to avoid a hydration flash.
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    try {
+      if (fromCheckout || !localStorage.getItem(seenKey(plan))) setOpen(true)
+    } catch {
+      if (fromCheckout) setOpen(true)
+    }
+  }, [plan, fromCheckout])
+
   const meta = PLANS.find((p) => p.id === plan)
   const allowance = PLAN_ALLOWANCE[plan] ?? 0
   if (!open || !meta) return null
 
+  function markSeen() {
+    try {
+      localStorage.setItem(seenKey(plan), '1')
+    } catch {}
+  }
+
   function close() {
     setOpen(false)
-    router.replace('/app') // strip ?upgraded= so refreshes don't re-celebrate
+    markSeen()
+    if (fromCheckout) router.replace('/app') // strip ?upgraded= so refreshes don't re-celebrate
   }
 
   return (
@@ -107,7 +126,10 @@ export function PlanWelcome({ plan }: { plan: string }) {
             {plan === 'pro' && (
               <Link
                 href="/app/autopilot"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  markSeen()
+                  setOpen(false)
+                }}
                 className="rounded-full bg-electric-indigo px-6 py-3 font-body-md text-body-md font-bold text-white transition-all hover:bg-primary-container active:scale-95"
               >
                 Set up autopilot

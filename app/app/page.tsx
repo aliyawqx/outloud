@@ -55,8 +55,13 @@ export default async function AppHomePage({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      {/* Post-checkout celebration - Polar's success redirect lands here with ?upgraded= */}
-      {(upgraded === 'starter' || upgraded === 'pro') && <PlanWelcome plan={upgraded} />}
+      {/* Celebration: after checkout (?upgraded=) always; for an existing paid
+          user once (PlanWelcome remembers in localStorage). */}
+      {upgraded === 'starter' || upgraded === 'pro' ? (
+        <PlanWelcome plan={upgraded} fromCheckout />
+      ) : profile?.plan === 'starter' || profile?.plan === 'pro' ? (
+        <PlanWelcome plan={profile.plan} />
+      ) : null}
       {/* key on the session id (or "new") forces a fresh mount when switching chats or
           starting a new one, so the composer always reflects the chosen transcript and
           never keeps the previous chat's state. */}
