@@ -171,6 +171,19 @@ export function AppSidebar({
           Upgrade plan
         </button>
       )}
+      {/* The plan, its own row (user feedback: not buried inside the profile line).
+          Taps through to the billing page's Plan tab. */}
+      <Link
+        href="/app/settings/billing"
+        onClick={() => setOpen(false)}
+        className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-white/[0.04]"
+      >
+        <span aria-hidden="true" className="material-symbols-outlined text-[20px] text-electric-indigo">workspace_premium</span>
+        <span className="flex-1 font-body-sm text-body-sm text-on-surface">{unlimited ? 'Founder' : planDisplayName(profile.plan)} plan</span>
+        <span className="font-code-label text-code-label text-on-surface-variant">
+          {unlimited ? 'Unlimited' : `${fmtCredits(balance)} cr`}
+        </span>
+      </Link>
       <div className="flex items-center gap-1">
       <Link
         href="/app/profile"
@@ -189,9 +202,7 @@ export function AppSidebar({
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-body-sm text-body-sm text-on-surface">{profile.displayName}</span>
           <span className="flex items-center gap-1 font-code-label text-code-label text-on-surface-variant">
-            <span className="truncate">
-              {unlimited ? 'Unlimited' : `${fmtCredits(balance)} credits`} · <span>{planDisplayName(profile.plan)}</span>
-            </span>
+            <span className="truncate">{unlimited ? 'Unlimited' : `${fmtCredits(balance)} credits`}</span>
             {!unlimited && (
               <Tooltip label="credits are spent per chat session. start a new chat for each post so they go to drafting, not old context.">
                 <span aria-hidden="true" className="material-symbols-outlined shrink-0 text-[14px] text-on-surface-variant/60">info</span>
