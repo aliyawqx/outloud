@@ -73,7 +73,12 @@ function PostChip({ post, onClick }: { post: ScheduledPost; onClick: () => void 
   )
 }
 
-export function CalendarView() {
+export function CalendarView({
+  connected,
+}: {
+  /** Live platform connections - the editor blocks scheduling to unconnected ones. */
+  connected?: Partial<Record<SchedulePlatform, boolean>>
+} = {}) {
   const [view, setView] = useState<ViewMode>('month')
   // Anchor: first of the shown month, or the Monday of the shown week.
   const [anchor, setAnchor] = useState(() => new Date())
@@ -296,6 +301,7 @@ export function CalendarView() {
       {editing && (
         <PostEditorModal
           post={editing}
+          connected={connected}
           onClose={() => setEditing(null)}
           onChanged={() => {
             setEditing(null)

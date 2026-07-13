@@ -1,5 +1,7 @@
 import { getSession } from '@/lib/auth/session'
 import { getAccount as getLinkedInAccount } from '@/lib/linkedin/store'
+import { getAccount as getThreadsAccount } from '@/lib/threads/store'
+import { getAccount as getXAccount } from '@/lib/x/store'
 import { CalendarView } from '@/components/app/calendar/CalendarView'
 import { LinkedInReconnectBanner } from '@/components/app/LinkedInReconnectBanner'
 
@@ -9,7 +11,13 @@ const EXPIRY_NUDGE_MS = 7 * 86_400_000
 
 export default async function CalendarPage() {
   const session = await getSession()
-  const li = session ? await getLinkedInAccount(session.userId) : null
+  const [li, x, threads] = session
+    ? await Promise.all([
+        getLinkedInAccount(session.userId),
+        getXAccount(session.userId),
+        getThreadsAccount(session.userId),
+      ])
+    : [null, null, null]
   const needsReconnect = li?.status === 'needs_reconnect'
   const expiring = Boolean(
     li && li.status === 'connected' && !li.hasRefreshToken && li.expiresAt.getTime() - Date.now() < EXPIRY_NUDGE_MS,
@@ -23,7 +31,13 @@ export default async function CalendarPage() {
         </p>
       </div>
       {(needsReconnect || expiring) && <LinkedInReconnectBanner expiring={!needsReconnect && expiring} />}
-      <CalendarView />
+      <CalendarView
+        connected={{
+          x: Boolean(x),
+          threads: Boolean(threads),
+          linkedin: Boolean(li && li.status === 'connected'),
+        }}
+      />
     </div>
   )
 }

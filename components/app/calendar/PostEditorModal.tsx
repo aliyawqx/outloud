@@ -22,10 +22,14 @@ export function PostEditorModal({
   post,
   onClose,
   onChanged,
+  connected,
 }: {
   post: ScheduledPost
   onClose: () => void
   onChanged: () => void
+  /** Which platforms have a live connection - unconnected ones can't be toggled
+   *  ON (a post scheduled to them is guaranteed to fail at publish time). */
+  connected?: Partial<Record<SchedulePlatform, boolean>>
 }) {
   const editable = post.status === 'scheduled' || post.status === 'draft'
   // The API also allows cancelling FAILED posts (they'd otherwise sit on the
@@ -39,7 +43,12 @@ export function PostEditorModal({
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   function toggle(p: SchedulePlatform) {
-    setPlatforms((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]))
+    // Turning OFF is always allowed; turning ON needs a live connection.
+    setPlatforms((cur) => {
+      if (cur.includes(p)) return cur.filter((x) => x !== p)
+      if (connected && connected[p] === false) return cur
+      return [...cur, p]
+    })
   }
 
   async function save() {
@@ -119,14 +128,17 @@ export function PostEditorModal({
               />
               {ALL_PLATFORMS.map((p) => {
                 const on = platforms.includes(p.key)
+                const unavailable = !on && connected && connected[p.key] === false
                 return (
                   <button
                     key={p.key}
                     type="button"
                     role="checkbox"
                     aria-checked={on}
+                    disabled={Boolean(unavailable)}
+                    title={unavailable ? `Connect ${p.label} in Profile to enable` : undefined}
                     onClick={() => toggle(p.key)}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-code-label text-code-label transition-colors ${
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                       on ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface' : 'border-border-muted text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
