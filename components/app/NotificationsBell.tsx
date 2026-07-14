@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type Notif = { id: string; kind: string; title: string; body: string | null; link: string | null; readAt: string | null; createdAt: string }
 
@@ -18,6 +18,16 @@ export function NotificationsBell() {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notif[]>([])
   const [unread, setUnread] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
 
   async function loadNotifications() {
     try {
@@ -47,7 +57,7 @@ export function NotificationsBell() {
     // No `relative` here on purpose: the panel anchors to the nearest positioned
     // ancestor - the sidebar footer row - so it aligns with the sidebar edge
     // instead of overflowing off-screen from the icon's corner.
-    <div>
+    <div ref={rootRef}>
       {/* Compact icon-only trigger - it sits inline next to the profile row. */}
       <button
         type="button"
