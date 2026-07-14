@@ -536,7 +536,9 @@ export function ComposeHome({
     'flex h-8 items-center gap-1.5 rounded-md px-2 font-code-label text-code-label text-on-surface-variant transition-colors hover:bg-white/[0.06] hover:text-on-surface focus-visible:outline-none'
 
   const modeDropdown = commands.length > 0 && (
-    <DropdownMenu>
+    // modal={false}: the default modal mode locks body scroll, which drops the
+    // scrollbar and shifts the whole sticky-sidebar layout while the menu is open.
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger data-tour="mode-picker" className={triggerClass} aria-label="Mode">
         <span className="material-symbols-outlined text-[16px] text-electric-indigo">category</span>
         {modeTitle}
@@ -559,7 +561,7 @@ export function ComposeHome({
 
   const currentVoiceName = voices.find((v) => v.id === voiceId)?.name ?? 'Voice'
   const voiceDropdown = voices.length > 0 && (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger data-tour="voice-picker" className={triggerClass} aria-label="Voice">
         <span className="material-symbols-outlined text-[16px] text-electric-indigo">graphic_eq</span>
         {currentVoiceName}
