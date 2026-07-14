@@ -73,24 +73,39 @@ export function DraftImageControls({
   return (
     <div className="mt-3">
       {images.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
+        <div
+          className={`mb-2 grid gap-0.5 overflow-hidden rounded-2xl border border-border-muted ${
+            images.length > 1 ? 'grid-cols-2' : ''
+          }`}
+        >
           {images.map((img, i) => (
-            <div key={`${img.url}-${i}`} className="relative">
+            <div
+              key={`${img.url}-${i}`}
+              className={`relative ${images.length === 3 && i === 0 ? 'row-span-2' : ''}`}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}
                 alt={img.alt || ''}
                 onClick={() => setZoom(img)}
                 title="Click to view full screen"
-                className="size-24 cursor-zoom-in rounded-xl border border-border-muted object-cover transition-opacity hover:opacity-90"
+                className={`w-full cursor-zoom-in object-cover transition-opacity hover:opacity-90 ${
+                  images.length === 1
+                    ? 'max-h-[500px]'
+                    : images.length === 3 && i === 0
+                      ? 'h-full'
+                      : images.length === 2
+                        ? 'aspect-[7/8]'
+                        : 'aspect-[2/1]'
+                }`}
               />
               <button
                 type="button"
                 onClick={() => removeAt(i)}
                 aria-label="Remove image"
-                className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full border border-border-muted bg-surface-container-high text-on-surface-variant transition-colors hover:text-on-surface"
+                className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white"
               >
-                <span aria-hidden className="material-symbols-outlined text-[15px]">close</span>
+                <span aria-hidden className="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
           ))}

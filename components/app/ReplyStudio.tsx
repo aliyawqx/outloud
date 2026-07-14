@@ -270,7 +270,7 @@ function ReplyChat({
           rows={1}
           aria-label="Refine reply"
           placeholder="ask to tighten, sharpen the take, change the angle…"
-          className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-1.5 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
+          className="composer-input max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-1.5 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
         />
         <button
           type="button"

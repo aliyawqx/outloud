@@ -606,7 +606,7 @@ export function ComposeHome({
           rows={1}
           aria-label="Message"
           placeholder={started ? 'reply, or ask to tighten / change the hook…' : 'what do you want to post about?  (type / for formats)'}
-          className="max-h-[50vh] min-h-[60px] w-full resize-none overflow-y-auto rounded-2xl rounded-b-none bg-transparent px-4 pb-2 pt-4 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
+          className="composer-input max-h-[50vh] min-h-[60px] w-full resize-none overflow-y-auto rounded-2xl rounded-b-none bg-transparent px-4 pb-2 pt-4 font-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none"
         />
         {/* toolbar: mode + voice dropdowns, send */}
         <div className="flex items-center gap-1 px-2.5 pb-2.5">

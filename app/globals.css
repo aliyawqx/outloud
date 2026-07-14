@@ -66,6 +66,16 @@ body {
   background-color: rgba(168, 85, 247, 0.55);
 }
 
+/* Chat composer textareas: keep scrolling functional but hide the scrollbar
+   tracks (macOS "always show scrollbars" renders them even without overflow). */
+.composer-input {
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.composer-input::-webkit-scrollbar {
+  display: none;
+}
+
 /* Onboarding tour (driver.js) — dark theme with the #A855F7 purple accent. */
 .driver-popover.outloud-tour {
   background: #15131c;
