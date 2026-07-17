@@ -81,6 +81,9 @@ export type HookIntensity = 'safe' | 'bold' | 'spicy' | 'funny'
 /** A generated post draft. Mirrors the structure the generation core produces. */
 export type DraftImage = { url: string; source: 'ai' | 'stock' | 'upload'; alt?: string }
 
+/** Where a draft has been published. Republishing overwrites with the newest link. */
+export type PublishedMap = Partial<Record<'x' | 'threads' | 'linkedin', { url: string; at: string }>>
+
 export type DraftPost = {
   angle: string
   hook: string
@@ -89,6 +92,8 @@ export type DraftPost = {
   fullText: string
   /** Attached images (up to 4), stored in Vercel Blob and sent to the publishers. */
   images?: DraftImage[]
+  /** Per-platform publish record, persisted so reopened chats show where the post went. */
+  published?: PublishedMap
   /** Legacy single-image fields — kept so drafts saved before multi-image still load. */
   imageUrl?: string
   imageSource?: 'ai' | 'stock' | 'upload'

@@ -9,7 +9,7 @@ import { useCredits } from '@/components/app/CreditsContext'
 import { GenerationStatus, type FeedStep } from '@/components/app/GenerationStatus'
 import { DraftImageControls, type DraftImage } from '@/components/app/DraftImageControls'
 import { ScheduleModal } from '@/components/app/ScheduleModal'
-import type { ChatTurnRecord, DraftPost } from '@/lib/voice/types'
+import type { ChatTurnRecord, DraftPost, PublishedMap } from '@/lib/voice/types'
 import type { ComposeEvent, DoneEvent } from '@/lib/compose/stream'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -34,6 +34,7 @@ function DraftCard({
   onInsufficient,
   onImagesChange,
   onTextChange,
+  onPublished,
 }: {
   draft: DraftPost
   index: number
@@ -43,6 +44,7 @@ function DraftCard({
   onInsufficient: () => void
   onImagesChange?: (imgs: DraftImage[]) => void
   onTextChange?: (text: string) => void
+  onPublished?: (published: PublishedMap) => void
 }) {
   const router = useRouter()
   const [text, setText] = useState(draft.fullText)
@@ -80,13 +82,17 @@ function DraftCard({
   }
   // Per-platform outcome after a publish attempt (url on success, error on failure).
   const [results, setResults] = useState<Partial<Record<Dest, { url?: string; error?: string; note?: string }>>>({})
+  // Where this draft has already been published (persisted with the chat, survives
+  // reloads). Successful publishes merge in here and are lifted to the parent to save.
+  const [published, setPublished] = useState<PublishedMap>(draft.published ?? {})
 
   const connected: Record<Dest, boolean> = { x: xConnected, threads: threadsConnected, linkedin: linkedInConnected }
-  // Pre-select every connected platform; the user can toggle any off before publishing.
+  // Pre-select the connected platforms this draft hasn't gone to yet (all of them for
+  // a fresh draft). Already-published ones can still be toggled on to republish.
   const [selected, setSelected] = useState<Record<Dest, boolean>>({
-    x: xConnected,
-    threads: threadsConnected,
-    linkedin: linkedInConnected,
+    x: xConnected && !draft.published?.x,
+    threads: threadsConnected && !draft.published?.threads,
+    linkedin: linkedInConnected && !draft.published?.linkedin,
   })
 
   async function copy() {
@@ -121,6 +127,9 @@ function DraftCard({
   }
 
   const chosen = DESTINATIONS.filter((d) => connected[d.key] && selected[d.key])
+  // Every selected platform already has this post → the action is a republish (the
+  // platforms can't overwrite; it always goes out as a new post).
+  const republishing = chosen.length > 0 && chosen.every((d) => published[d.key])
 
   async function publish() {
     if (chosen.length === 0) return
@@ -129,6 +138,16 @@ function DraftCard({
     try {
       const settled = await Promise.all(chosen.map(publishTo))
       setResults(Object.fromEntries(settled))
+      // Record successes (republish keeps the newest link) and persist to history.
+      const wins = settled.filter(([, r]) => r.url)
+      if (wins.length) {
+        const at = new Date().toISOString()
+        const next: PublishedMap = { ...published }
+        for (const [key, r] of wins) next[key] = { url: r.url!, at }
+        setPublished(next)
+        setSelected((s) => ({ ...s, ...Object.fromEntries(wins.map(([key]) => [key, false])) }))
+        onPublished?.(next)
+      }
     } finally {
       setPublishing(false)
     }
@@ -173,24 +192,30 @@ function DraftCard({
         {DESTINATIONS.map((d) => {
           const isConnected = connected[d.key]
           const on = isConnected && selected[d.key]
+          const isPublished = Boolean(published[d.key])
           return (
             <button
               key={d.key}
               type="button"
               role="checkbox"
               aria-checked={on}
-              aria-label={d.label}
+              aria-label={isPublished ? `${d.label} (already posted)` : d.label}
               disabled={!isConnected}
               onClick={() => toggle(d.key)}
-              title={isConnected ? undefined : `Connect ${d.label} in Profile to enable`}
+              title={!isConnected ? `Connect ${d.label} in Profile to enable` : isPublished ? 'Already posted - select to post again' : undefined}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-code-label text-code-label transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                 on
                   ? 'border-electric-indigo bg-electric-indigo/15 text-on-surface'
-                  : 'border-border-muted text-on-surface-variant hover:text-on-surface'
+                  : isPublished
+                    ? 'border-cyber-lime/50 text-on-surface-variant hover:text-on-surface'
+                    : 'border-border-muted text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{on ? 'check_circle' : 'radio_button_unchecked'}</span>
+              <span aria-hidden="true" className={`material-symbols-outlined text-[16px] ${isPublished && !on ? 'text-cyber-lime' : ''}`}>
+                {on ? 'check_circle' : isPublished ? 'task_alt' : 'radio_button_unchecked'}
+              </span>
               {d.label}
+              {isPublished && <span className="text-cyber-lime/90">posted</span>}
             </button>
           )
         })}
@@ -216,8 +241,8 @@ function DraftCard({
           disabled={publishing || !text.trim() || chosen.length === 0}
           className="flex items-center gap-1.5 rounded-full bg-electric-indigo px-4 py-2 font-code-label text-code-label text-white transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
         >
-          {publishing ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">send</span>}
-          {publishing ? 'Publishing…' : 'Publish'}
+          {publishing ? <Spinner size={16} /> : <span aria-hidden="true" className="material-symbols-outlined text-[16px]">{republishing ? 'replay' : 'send'}</span>}
+          {publishing ? 'Publishing…' : republishing ? 'Republish' : 'Publish'}
         </button>
         <button
           type="button"
@@ -231,21 +256,27 @@ function DraftCard({
         </button>
         <span className="font-code-label text-code-label text-on-surface-variant/60">{text.length} chars</span>
       </div>
+      {chosen.some((d) => published[d.key]) && (
+        <p className="mt-2 font-code-label text-code-label text-on-surface-variant/60">
+          {DESTINATIONS.filter((d) => selected[d.key] && published[d.key]).map((d) => d.label).join(', ')}: will post again as a new post
+        </p>
+      )}
 
-      {/* Per-platform outcomes. */}
+      {/* Per-platform outcomes: this session's errors/notes + persisted publish links. */}
       <div className="mt-2 flex flex-col gap-1">
         {DESTINATIONS.map((d) => {
           const r = results[d.key]
-          if (!r) return null
-          return r.url ? (
+          const link = r?.url ?? published[d.key]?.url
+          if (!r && !link) return null
+          return link && !r?.error ? (
             <div key={d.key} className="flex flex-col">
-              <a href={r.url} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
+              <a href={link} target="_blank" rel="noreferrer" className="font-code-label text-code-label text-cyber-lime hover:underline">
                 View on {d.label} →
               </a>
-              {r.note && <span className="font-code-label text-code-label text-on-surface-variant/70">{r.note}</span>}
+              {r?.note && <span className="font-code-label text-code-label text-on-surface-variant/70">{r.note}</span>}
             </div>
           ) : (
-            <p key={d.key} className="font-body-sm text-body-sm text-error">{d.label}: {r.error}</p>
+            <p key={d.key} className="font-body-sm text-body-sm text-error">{d.label}: {r?.error}</p>
           )
         })}
       </div>
@@ -697,6 +728,29 @@ export function ComposeHome({
     }
   }
 
+  // Persist where a draft has been published the same way, so reopened chats show
+  // per-platform publish state and offer republish.
+  function persistDraftPublished(draftIndex: number, published: PublishedMap) {
+    setTurns((prev) => {
+      let n = 0
+      return prev.map((t) => {
+        if ('draft' in t) {
+          const here = n === draftIndex
+          n++
+          if (here) return { ...t, draft: { ...t.draft, published } }
+        }
+        return t
+      })
+    })
+    if (historyId) {
+      fetch('/api/voice/history/published', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ historyId, draftIndex, published }),
+      }).catch(() => {})
+    }
+  }
+
   let draftN = 0
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-3xl flex-col">
@@ -704,7 +758,7 @@ export function ComposeHome({
         {turns.map((t) => {
           if ('draft' in t) {
             const di = draftN++
-            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} linkedInConnected={linkedInConnected} onInsufficient={() => setShowUpgrade(true)} onImagesChange={(imgs) => persistDraftImages(di, imgs)} onTextChange={(txt) => persistDraftText(di, txt)} />
+            return <DraftCard key={t.id} draft={t.draft} index={di} xConnected={xConnected} threadsConnected={threadsConnected} linkedInConnected={linkedInConnected} onInsufficient={() => setShowUpgrade(true)} onImagesChange={(imgs) => persistDraftImages(di, imgs)} onTextChange={(txt) => persistDraftText(di, txt)} onPublished={(p) => persistDraftPublished(di, p)} />
           }
           if (t.role === 'user') {
             return (
