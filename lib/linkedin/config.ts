@@ -1,6 +1,6 @@
 // LinkedIn app credentials + the pinned Posts API version month.
 // .trim() everything — a trailing newline in an env var broke X OAuth once.
-const DEFAULT_LINKEDIN_VERSION = '202506'
+const DEFAULT_LINKEDIN_VERSION = '202606'
 
 export function linkedinConfig(): { clientId: string; clientSecret: string; redirectUri: string } {
   const clientId = (process.env.LINKEDIN_CLIENT_ID ?? '').trim()
