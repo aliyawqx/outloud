@@ -113,6 +113,15 @@ export function NotificationsBell() {
               )
             })
           )}
+          {/* Tap-through to the full history page - the dropdown only shows recents. */}
+          <a
+            href="/app/notifications"
+            onClick={() => setOpen(false)}
+            className="mt-1 flex items-center justify-center gap-1 rounded-xl border-t border-border-muted p-2.5 font-code-label text-code-label text-electric-indigo hover:bg-white/[0.04]"
+          >
+            View all notifications
+            <span aria-hidden="true" className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </a>
         </div>
       )}
     </div>
